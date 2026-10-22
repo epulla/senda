@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createServer } from 'node:http';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
@@ -10,8 +10,8 @@ import { CLOSE_INVALID_TOKEN, DEFAULT_PORT, EXTENSION_ID, ErrorCode, Hello, meth
 export async function loadToken(dir = join(homedir(), '.senda')) {
   await mkdir(dir, { recursive: true, mode: 0o700 });
   const path = join(dir, 'token');
-  try { return (await readFile(path, 'utf8')).trim(); }
-  catch { const token = randomBytes(32).toString('hex'); await writeFile(path, token, { mode: 0o600, flag: 'wx' }); return token; }
+  try { await chmod(path, 0o600); return (await readFile(path, 'utf8')).trim(); }
+  catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; const token = randomBytes(32).toString('hex'); try { await writeFile(path, token, { mode: 0o600, flag: 'wx' }); return token; } catch (writeError) { if ((writeError as NodeJS.ErrnoException).code !== 'EEXIST') throw writeError; await chmod(path, 0o600); return (await readFile(path, 'utf8')).trim(); } }
 }
 
 export function createRelay(token: string, port = Number(process.env.SENDA_PORT ?? DEFAULT_PORT), helloTimeout = 5000) {
@@ -45,10 +45,10 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
     const id = randomUUID();
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => { pending.delete(id); reject(new Error(`${ErrorCode.TIMEOUT}: Request timed out.`)); }, 30000);
-      pending.set(id, { resolve, reject, timer }); client!.send(JSON.stringify({ id, method, params } satisfies Request));
+      pending.set(id, { resolve, reject, timer }); try { client!.send(JSON.stringify({ id, method, params } satisfies Request)); } catch (error) { clearTimeout(timer); pending.delete(id); reject(error as Error); }
     });
   }, close: () => { wss.close(); http.close(); } };
-  return { relay, http, port: (http.address() as any)?.port ?? port, close: relay.close };
+  return { relay, http, close: relay.close };
 }
 
 async function main() {
