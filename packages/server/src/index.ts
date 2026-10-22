@@ -178,6 +178,8 @@ async function main() {
       },
     );
   await mcp.connect(new StdioServerTransport());
+  // The MCP client closing stdin means it is gone; exit so the port is freed.
+  process.stdin.on('end', () => process.exit(0));
   process.stderr.write('Senda MCP server listening on 127.0.0.1\n');
 }
 if (process.argv[1]?.endsWith('index.js'))
