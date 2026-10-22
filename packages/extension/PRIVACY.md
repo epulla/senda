@@ -1,0 +1,12 @@
+# Senda Privacy
+
+Senda sends no data outside your machine except to the local Senda server on `127.0.0.1`, which your AI client runs. Page content read by the AI is sent by that client to your chosen AI provider. Senda stores its pairing token in extension local storage.
+
+## Permissions
+
+- **tabs**: find and select browser tabs.
+- **scripting**: read and interact with pages when requested.
+- **storage**: store the local pairing token.
+- **alarms**: schedule local keepalive checks.
+- **tabGroups** (Chromium only): work with tab groups.
+- **All websites**: access pages only to provide browser capabilities requested by your AI.
