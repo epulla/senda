@@ -45,4 +45,13 @@ describe('Senda WebSocket relay', () => {
     const { server } = await setup();
     await expect(server.relay.call('navigate', {})).rejects.toThrow('NOT_CONNECTED: Open your browser and check that the Senda extension is connected.');
   });
+  it('waits for a busy port instead of crashing, then takes it over', async () => {
+    const { server: first, port } = await setup();
+    const second = createRelay(token, port); servers.push(second);
+    await new Promise<void>(resolve => second.http.once('error', () => resolve()));
+    await expect(second.relay.call('navigate', {})).rejects.toThrow('NOT_CONNECTED: Another Senda server');
+    first.close();
+    await new Promise<void>(resolve => second.http.once('listening', resolve));
+    await expect(second.relay.call('navigate', {})).rejects.toThrow('NOT_CONNECTED: Open your browser');
+  }, 10000);
 });

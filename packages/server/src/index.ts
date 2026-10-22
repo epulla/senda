@@ -102,9 +102,26 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
       }
     });
   });
+  // Several MCP clients can each start a server; extra ones wait for the port instead of crashing.
+  let portBusy = false;
+  let retry: NodeJS.Timeout | undefined;
+  http.on('error', (error: NodeJS.ErrnoException) => {
+    if (error.code !== 'EADDRINUSE') throw error;
+    portBusy = true;
+    retry = setTimeout(() => http.listen(port, '127.0.0.1'), 5000);
+  });
+  http.on('listening', () => {
+    portBusy = false;
+  });
   http.listen(port, '127.0.0.1');
   const relay = {
     call(method: string, params: unknown): Promise<Response> {
+      if (portBusy)
+        return Promise.reject(
+          new Error(
+            `${ErrorCode.NOT_CONNECTED}: Another Senda server (another chat or MCP client) is using the browser connection. Close it or use that one.`,
+          ),
+        );
       if (!client || client.readyState !== WebSocket.OPEN)
         return Promise.reject(
           new Error(`${ErrorCode.NOT_CONNECTED}: Open your browser and check that the Senda extension is connected.`),
@@ -126,6 +143,7 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
       });
     },
     close: () => {
+      clearTimeout(retry);
       wss.close();
       http.close();
     },
