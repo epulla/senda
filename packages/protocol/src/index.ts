@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 export const PROTOCOL_VERSION = 1;
 export const EXTENSION_ID = 'ljggnmhahelgodcecefjnfijlgomcoce';
+export const DEFAULT_PORT = 18765;
+export const CLOSE_INVALID_TOKEN = 4001;
 export enum ErrorCode {
   NOT_CONNECTED = 'NOT_CONNECTED', REF_NOT_FOUND = 'REF_NOT_FOUND', DENIED_BY_USER = 'DENIED_BY_USER',
   DOMAIN_BLOCKED = 'DOMAIN_BLOCKED', TIMEOUT = 'TIMEOUT', TAB_GONE = 'TAB_GONE',
