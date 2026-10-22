@@ -10,6 +10,8 @@ let ping: ReturnType<typeof setInterval> | undefined;
 let attempt = 0;
 let stoppedForToken = false;
 let started = false;
+let socketToken: string | undefined;
+let socketPort: number | undefined;
 
 async function badge(status: "connected" | "disconnected" | "invalid_token") {
   await statusItem.setValue(status);
@@ -30,9 +32,12 @@ async function connect() {
   const token = await tokenItem.getValue();
   const port = await portItem.getValue();
   if (!token || stoppedForToken) { await badge("disconnected"); return; }
+  if (socket && socketToken === token && socketPort === port && socket.readyState < WebSocket.CLOSING) return;
   clearSocket();
   const ws = new WebSocket(`ws://127.0.0.1:${port}`);
   socket = ws;
+  socketToken = token;
+  socketPort = port;
   ws.onopen = () => {
     if (socket !== ws) return;
     ws.send(JSON.stringify({ event: "hello", data: { token, extensionVersion: browser.runtime.getManifest().version, protocolVersion: PROTOCOL_VERSION, engineVersion: 1, browser: import.meta.env.BROWSER, capabilities: detectCapabilities(browser), adapters: [] } }));
