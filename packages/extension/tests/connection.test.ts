@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fakeBrowser } from "wxt/testing/fake-browser";
-import { CLOSE_INVALID_TOKEN, PROTOCOL_VERSION } from "@senda/protocol";
-import { tokenItem, statusItem } from "../src/bg/state";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { CLOSE_INVALID_TOKEN, PROTOCOL_VERSION } from '@senda/protocol';
+import { tokenItem, statusItem } from '../src/bg/state';
 
 class FakeSocket {
   static instances: FakeSocket[] = [];
@@ -12,54 +12,71 @@ class FakeSocket {
   onmessage?: (event: { data: string }) => void;
   onerror?: () => void;
   sent: string[] = [];
-  constructor(public url: string) { FakeSocket.instances.push(this); }
-  send(data: string) { this.sent.push(data); }
-  close(code = 1000) { this.readyState = 3; this.onclose?.({ code }); }
-  open() { this.readyState = 1; this.onopen?.(); }
+  constructor(public url: string) {
+    FakeSocket.instances.push(this);
+  }
+  send(data: string) {
+    this.sent.push(data);
+  }
+  close(code = 1000) {
+    this.readyState = 3;
+    this.onclose?.({ code });
+  }
+  open() {
+    this.readyState = 1;
+    this.onopen?.();
+  }
 }
 
 function latestSocket(): FakeSocket {
   const socket = FakeSocket.instances.at(-1);
-  if (!socket) throw new Error("Expected connection to create a WebSocket");
+  if (!socket) throw new Error('Expected connection to create a WebSocket');
   return socket;
 }
 
-describe("connection", () => {
+describe('connection', () => {
   beforeEach(async () => {
-    vi.resetModules(); FakeSocket.instances = [];
-    vi.stubGlobal("browser", fakeBrowser);
-    vi.stubGlobal("WebSocket", FakeSocket);
-    vi.spyOn(fakeBrowser.runtime, "getManifest").mockReturnValue({ version: "1.0.0" } as ReturnType<typeof fakeBrowser.runtime.getManifest>);
-    await tokenItem.setValue("secret");
+    vi.resetModules();
+    FakeSocket.instances = [];
+    vi.stubGlobal('browser', fakeBrowser);
+    vi.stubGlobal('WebSocket', FakeSocket);
+    vi.spyOn(fakeBrowser.runtime, 'getManifest').mockReturnValue({ version: '1.0.0' } as ReturnType<
+      typeof fakeBrowser.runtime.getManifest
+    >);
+    await tokenItem.setValue('secret');
   });
-  it("sends hello with pairing and protocol capabilities on open", async () => {
-    const { startConnection } = await import("../src/bg/connection");
+  it('sends hello with pairing and protocol capabilities on open', async () => {
+    const { startConnection } = await import('../src/bg/connection');
     startConnection();
     await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
-    const ws = latestSocket(); ws.open();
+    const ws = latestSocket();
+    ws.open();
     const payload = ws.sent[0];
-    if (!payload) throw new Error("Expected hello payload");
+    if (!payload) throw new Error('Expected hello payload');
     const hello = JSON.parse(payload);
-    expect(hello).toMatchObject({ event: "hello", data: { token: "secret", protocolVersion: PROTOCOL_VERSION, capabilities: expect.any(Array) } });
+    expect(hello).toMatchObject({
+      event: 'hello',
+      data: { token: 'secret', protocolVersion: PROTOCOL_VERSION, capabilities: expect.any(Array) },
+    });
   });
-  it("marks invalid token and does not retry", async () => {
+  it('marks invalid token and does not retry', async () => {
     vi.useFakeTimers();
-    const { startConnection } = await import("../src/bg/connection");
+    const { startConnection } = await import('../src/bg/connection');
     startConnection();
     await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
     latestSocket().close(CLOSE_INVALID_TOKEN);
-    await vi.waitFor(async () => expect(await statusItem.getValue()).toBe("invalid_token"));
+    await vi.waitFor(async () => expect(await statusItem.getValue()).toBe('invalid_token'));
     await vi.advanceTimersByTimeAsync(60_000);
     expect(FakeSocket.instances).toHaveLength(1);
     vi.useRealTimers();
   });
-  it("marks ordinary close disconnected and schedules retry", async () => {
+  it('marks ordinary close disconnected and schedules retry', async () => {
     vi.useFakeTimers();
-    const { startConnection } = await import("../src/bg/connection");
+    const { startConnection } = await import('../src/bg/connection');
     startConnection();
     await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
     latestSocket().close(1006);
-    await vi.waitFor(async () => expect(await statusItem.getValue()).toBe("disconnected"));
+    await vi.waitFor(async () => expect(await statusItem.getValue()).toBe('disconnected'));
     await vi.advanceTimersByTimeAsync(1000);
     expect(FakeSocket.instances).toHaveLength(2);
     vi.useRealTimers();

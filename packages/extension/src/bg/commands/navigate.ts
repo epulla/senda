@@ -6,8 +6,20 @@ export default async function navigate(p: { url: string; tabId?: number }) {
   let tabId: number | undefined;
   const completed = new Set<number>();
   const loaded = new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(() => { browser.tabs.onUpdated.removeListener(listener); reject(new CommandError(ErrorCode.TIMEOUT, 'Navigation timed out.')); }, 25000);
-    const listener = (updated: number, change: { status?: string }) => { if (change.status === 'complete') { completed.add(updated); if (updated === tabId) { clearTimeout(timer); browser.tabs.onUpdated.removeListener(listener); resolve(); } } };
+    const timer = setTimeout(() => {
+      browser.tabs.onUpdated.removeListener(listener);
+      reject(new CommandError(ErrorCode.TIMEOUT, 'Navigation timed out.'));
+    }, 25000);
+    const listener = (updated: number, change: { status?: string }) => {
+      if (change.status === 'complete') {
+        completed.add(updated);
+        if (updated === tabId) {
+          clearTimeout(timer);
+          browser.tabs.onUpdated.removeListener(listener);
+          resolve();
+        }
+      }
+    };
     browser.tabs.onUpdated.addListener(listener);
     void (async () => {
       const created = id < 0;
@@ -15,10 +27,26 @@ export default async function navigate(p: { url: string; tabId?: number }) {
       if (!tab?.id) throw new CommandError(ErrorCode.TAB_GONE, 'Could not open tab.');
       tabId = tab.id;
       trackAgentTab(tab.id);
-      if (created && completed.has(tab.id)) { clearTimeout(timer); browser.tabs.onUpdated.removeListener(listener); resolve(); }
-      if (created) { const { detectCapabilities } = await import('../../core/capabilities'); if (detectCapabilities(browser).includes('tabGroups')) try { const groupId = await browser.tabs.group({ tabIds: [tab.id] }); await browser.tabGroups.update(groupId, { title: '🤖 MCP' }); } catch {} }
-    })().catch(error => { clearTimeout(timer); browser.tabs.onUpdated.removeListener(listener); reject(error); });
+      if (created && completed.has(tab.id)) {
+        clearTimeout(timer);
+        browser.tabs.onUpdated.removeListener(listener);
+        resolve();
+      }
+      if (created) {
+        const { detectCapabilities } = await import('../../core/capabilities');
+        if (detectCapabilities(browser).includes('tabGroups'))
+          try {
+            const groupId = await browser.tabs.group({ tabIds: [tab.id] });
+            await browser.tabGroups.update(groupId, { title: '🤖 MCP' });
+          } catch {}
+      }
+    })().catch((error) => {
+      clearTimeout(timer);
+      browser.tabs.onUpdated.removeListener(listener);
+      reject(error);
+    });
   });
   await loaded;
-  const done = await browser.tabs.get(tabId!); return { tabId: done.id, url: done.url, title: done.title };
+  const done = await browser.tabs.get(tabId!);
+  return { tabId: done.id, url: done.url, title: done.title };
 }
