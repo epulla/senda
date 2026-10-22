@@ -9,6 +9,7 @@ export enum ErrorCode {
   DOMAIN_BLOCKED = 'DOMAIN_BLOCKED', TIMEOUT = 'TIMEOUT', TAB_GONE = 'TAB_GONE',
   UNSUPPORTED_IN_BROWSER = 'UNSUPPORTED_IN_BROWSER', ADAPTER_NOT_FOUND = 'ADAPTER_NOT_FOUND',
   ADAPTER_BROKEN = 'ADAPTER_BROKEN', ADAPTER_NEEDS_LOGIN = 'ADAPTER_NEEDS_LOGIN', READ_ONLY = 'READ_ONLY',
+  INVALID_PARAMS = 'INVALID_PARAMS', INTERNAL = 'INTERNAL',
 }
 export type Request = { id: string; method: string; params: unknown };
 export type Response = { id: string; result?: unknown; error?: { code: ErrorCode; message: string; data?: unknown } };

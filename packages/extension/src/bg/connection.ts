@@ -49,7 +49,7 @@ async function connect() {
     catch (error) {
       const code = error && typeof error === "object" && "code" in error && typeof error.code === "string"
         ? error.code
-        : error instanceof Error && /tab/i.test(error.message) ? ErrorCode.TAB_GONE : ErrorCode.UNSUPPORTED_IN_BROWSER;
+        : ErrorCode.INTERNAL;
       ws.send(JSON.stringify({ id: request.id, error: { code, message: error instanceof Error ? error.message : String(error) } }));
     }
   };
