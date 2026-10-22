@@ -1,0 +1,1 @@
+{"name":"senda","private":true,"packageManager":"pnpm@11.18.0","scripts":{"compile":"pnpm -r compile","test":"pnpm -r test","build":"pnpm --filter ./packages/extension build"}}
