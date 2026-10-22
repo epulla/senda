@@ -1,0 +1,1 @@
+{"name":"senda-mcp","private":true,"type":"module","bin":{"senda":"dist/index.js"},"scripts":{"compile":"tsc --noEmit","test":"vitest run --passWithNoTests"},"dependencies":{"@senda/protocol":"workspace:*"},"devDependencies":{"typescript":"^5.9.3","vitest":"^5.0.2"}}
