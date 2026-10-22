@@ -18,7 +18,7 @@ async function badge(status: 'connected' | 'disconnected' | 'invalid_token') {
   await browser.action.setBadgeBackgroundColor({
     color: status === 'connected' ? '#16a34a' : status === 'invalid_token' ? '#dc2626' : '#9ca3af',
   });
-  await browser.action.setBadgeText({ text: status === 'invalid_token' ? '!' : '' });
+  await browser.action.setBadgeText({ text: status === 'connected' ? 'on' : status === 'invalid_token' ? '!' : 'off' });
   await browser.action.setTitle({
     title:
       status === 'connected'
