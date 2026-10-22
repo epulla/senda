@@ -1,3 +1,3 @@
-# WXT + React
+# Senda extension
 
-This template should help get you started developing with React in WXT.
+Browser extension for Senda. See the repository root README for setup and development commands.
