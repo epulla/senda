@@ -18,24 +18,36 @@ class FakeSocket {
   open() { this.readyState = 1; this.onopen?.(); }
 }
 
+function latestSocket(): FakeSocket {
+  const socket = FakeSocket.instances.at(-1);
+  if (!socket) throw new Error("Expected connection to create a WebSocket");
+  return socket;
+}
+
 describe("connection", () => {
   beforeEach(async () => {
     vi.resetModules(); FakeSocket.instances = [];
     vi.stubGlobal("browser", fakeBrowser);
     vi.stubGlobal("WebSocket", FakeSocket);
+    vi.spyOn(fakeBrowser.runtime, "getManifest").mockReturnValue({ version: "1.0.0" } as ReturnType<typeof fakeBrowser.runtime.getManifest>);
     await tokenItem.setValue("secret");
   });
   it("sends hello with pairing and protocol capabilities on open", async () => {
     const { startConnection } = await import("../src/bg/connection");
     startConnection();
-    const ws = FakeSocket.instances[0]; ws.open();
-    const hello = JSON.parse(ws.sent[0]);
+    await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
+    const ws = latestSocket(); ws.open();
+    const payload = ws.sent[0];
+    if (!payload) throw new Error("Expected hello payload");
+    const hello = JSON.parse(payload);
     expect(hello).toMatchObject({ event: "hello", data: { token: "secret", protocolVersion: PROTOCOL_VERSION, capabilities: expect.any(Array) } });
   });
   it("marks invalid token and does not retry", async () => {
     vi.useFakeTimers();
     const { startConnection } = await import("../src/bg/connection");
-    startConnection(); FakeSocket.instances[0].close(CLOSE_INVALID_TOKEN);
+    startConnection();
+    await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
+    latestSocket().close(CLOSE_INVALID_TOKEN);
     await vi.waitFor(async () => expect(await statusItem.getValue()).toBe("invalid_token"));
     await vi.advanceTimersByTimeAsync(60_000);
     expect(FakeSocket.instances).toHaveLength(1);
@@ -44,7 +56,9 @@ describe("connection", () => {
   it("marks ordinary close disconnected and schedules retry", async () => {
     vi.useFakeTimers();
     const { startConnection } = await import("../src/bg/connection");
-    startConnection(); FakeSocket.instances[0].close(1006);
+    startConnection();
+    await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
+    latestSocket().close(1006);
     await vi.waitFor(async () => expect(await statusItem.getValue()).toBe("disconnected"));
     await vi.advanceTimersByTimeAsync(1000);
     expect(FakeSocket.instances).toHaveLength(2);
