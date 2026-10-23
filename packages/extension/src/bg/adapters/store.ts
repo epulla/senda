@@ -1,7 +1,7 @@
 import type { Adapter } from '@senda/adapter-schema';
 import { ErrorCode } from '@senda/protocol';
 import { CommandError } from '../commands/shared';
-import { adaptersItem, draftsItem } from '../state';
+import { adaptersItem, draftsItem, settingsItem } from '../state';
 import { validateAdapter } from '../../core/adapters/validate';
 import { describeChanges } from '../../core/adapters/diff';
 
@@ -29,7 +29,7 @@ export async function saveTestResult(id: string, text: string) {
   await draftsItem.setValue(drafts);
 }
 export async function saveDraft(recipe: unknown) {
-  const parsed = validateAdapter(recipe);
+  const parsed = validateAdapter(recipe, { blockedDomains: (await settingsItem.getValue()).blockedDomains });
   if (!parsed.ok) throw new CommandError(ErrorCode.ADAPTER_BROKEN, 'Adapter validation failed.', parsed.errors);
   const adapter = { ...parsed.adapter, source: 'local' as const };
   const installed = (await adaptersItem.getValue())[adapter.id]?.adapter;
@@ -51,7 +51,7 @@ export async function approveDraft(id: string) {
   const drafts = await draftsItem.getValue();
   const item = drafts[id];
   if (!item) return false;
-  const parsed = validateAdapter(item.adapter);
+  const parsed = validateAdapter(item.adapter, { blockedDomains: (await settingsItem.getValue()).blockedDomains });
   if (!parsed.ok) return false;
   const installed = await adaptersItem.getValue();
   installed[id] = {

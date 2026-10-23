@@ -6,8 +6,8 @@
   "source": "local",
   "sites": ["http://127.0.0.1:18766/moodle/*"],
   "start_url": "http://127.0.0.1:18766/moodle/my/",
-  "mode": "read",
-  "description": "Read fixture Moodle data",
+  "mode": "write",
+  "description": "Read and edit fixture Moodle data",
   "login_check": { "exists": "a[href*='logout.php']" },
   "read_endpoints": ["/moodle/lib/ajax/service.php"],
   "tools": {
@@ -64,6 +64,25 @@
         },
         { "pick": { "from": "response", "path": "0.data.events" }, "save": "events" },
         { "return": "events" }
+      ]
+    },
+    "rename_course": {
+      "description": "Rename a course",
+      "effect": "write",
+      "confirm": "Rename course {{args.id}}: {{vars.old_full}} → {{args.fullname}}",
+      "params": {
+        "id": { "type": "number", "required": true },
+        "fullname": { "type": "string", "required": true },
+        "shortname": { "type": "string", "required": true }
+      },
+      "steps": [
+        { "navigate": { "url": "http://127.0.0.1:18766/moodle/course/edit.php?id={{args.id}}" } },
+        { "extract": { "selector": "#id_fullname", "attr": "value" }, "save": "old_full" },
+        { "extract": { "selector": "#id_shortname", "attr": "value" }, "save": "old_short" },
+        { "type": { "selector": "#id_fullname", "text": "{{args.fullname}}" } },
+        { "type": { "selector": "#id_shortname", "text": "{{args.shortname}}" } },
+        { "submit": { "selector": "form" } },
+        { "return": { "fullname": "old_full", "shortname": "old_short" } }
       ]
     }
   }

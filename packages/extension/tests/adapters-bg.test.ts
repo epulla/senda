@@ -35,7 +35,10 @@ describe('adapter background', () => {
 
   it('rejects invalid drafts and stores valid recipes as local with changes', async () => {
     const { saveDraft } = await import('../src/bg/adapters/store');
-    const nested = { ...recipe, tools: { search: { ...recipe.tools.search, steps: [{ extract: { selector: 'title', save: 'x' } }] } } };
+    const nested = {
+      ...recipe,
+      tools: { search: { ...recipe.tools.search, steps: [{ extract: { selector: 'title', save: 'x' } }] } },
+    };
     await expect(saveDraft(nested)).rejects.toMatchObject({
       code: ErrorCode.ADAPTER_BROKEN,
       data: ['tools.search.steps.0.extract: Unrecognized key: "save"'],
@@ -78,7 +81,9 @@ describe('adapter background', () => {
       details.files ? [] : [{ result: { ok: true, value: 'ok' } }],
     );
     const { runAdapter } = await import('../src/bg/adapters/run');
+    const approval = vi.spyOn(await import('../src/bg/approvals'), 'requestApproval');
     await runAdapter({ adapter: 'example', tool: 'search', args: {} });
+    expect(approval).not.toHaveBeenCalled();
     expect(fakeBrowser.scripting.executeScript).toHaveBeenCalledWith(expect.objectContaining({ target: { tabId: 2 } }));
     expect(navigate).not.toHaveBeenCalled();
   });
@@ -96,7 +101,7 @@ describe('adapter background', () => {
     });
     const { runAdapter } = await import('../src/bg/adapters/run');
     await runAdapter({ adapter: 'example', tool: 'search', args: {} });
-    expect(navigate).toHaveBeenCalledWith({ url: 'https://example.com/', newTab: true });
+    expect(navigate).toHaveBeenCalledWith({ url: 'https://example.com/', newTab: true, internal: true });
   });
 
   it('returns null when the run has no value', async () => {
@@ -120,12 +125,57 @@ describe('adapter background', () => {
     await expect(removeAdapter('example')).rejects.toMatchObject({ code: ErrorCode.ADAPTER_NOT_FOUND });
   });
 
-  it('blocks write tools', async () => {
+  it('requests approval for write tools', async () => {
     const { adaptersItem } = await import('../src/bg/state');
     await adaptersItem.setValue({ writer: { adapter: writeRecipe as any, status: 'active', installed_at: '' } });
     const { runAdapter } = await import('../src/bg/adapters/run');
     await expect(runAdapter({ adapter: 'writer', tool: 'write', args: {} })).rejects.toMatchObject({
-      code: ErrorCode.READ_ONLY,
+      code: ErrorCode.TAB_GONE,
     });
+  });
+  it('approves write only after showing previous value, and rejects denial without resuming', async () => {
+    const { adaptersItem } = await import('../src/bg/state');
+    const { trackAgentTab } = await import('../src/bg/agent-tabs');
+    const approval = await import('../src/bg/approvals');
+    await adaptersItem.setValue({ writer: { adapter: writeRecipe as any, status: 'active', installed_at: '' } });
+    vi.spyOn(fakeBrowser.tabs, 'query').mockResolvedValue([{ id: 2, url: 'https://example.com/edit' }] as any);
+    trackAgentTab(2);
+    const ask = vi.spyOn(approval, 'requestApproval').mockResolvedValue('allow');
+    let calls = 0;
+    vi.spyOn(fakeBrowser.scripting, 'executeScript').mockImplementation(async (details: any) => {
+      if (details.files) return [];
+      calls++;
+      return [
+        { result: calls === 1 ? { confirm: { step: 1, vars: { old: 'Old name' } } } : { ok: true, value: 'done' } },
+      ];
+    });
+    const { runAdapter } = await import('../src/bg/adapters/run');
+    await runAdapter({ adapter: 'writer', tool: 'write', args: { name: 'New name' } });
+    expect(ask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        details: [
+          ['name', 'New name'],
+          ['Current old', 'Old name'],
+        ],
+      }),
+    );
+    expect(calls).toBe(2);
+    ask.mockRejectedValueOnce(Object.assign(new Error('denied'), { code: ErrorCode.DENIED_BY_USER }));
+    calls = 0;
+    await expect(runAdapter({ adapter: 'writer', tool: 'write', args: {} })).rejects.toMatchObject({
+      code: ErrorCode.DENIED_BY_USER,
+    });
+    expect(calls).toBe(1);
+  });
+  it('rejects adapters whose site is blocked', async () => {
+    const { settingsItem } = await import('../src/bg/state');
+    const { saveDraft } = await import('../src/bg/adapters/store');
+    await settingsItem.setValue({
+      askBefore: 'destructive',
+      allowedDomains: [],
+      blockedDomains: ['example.com'],
+      alwaysSites: [],
+    });
+    await expect(saveDraft(recipe)).rejects.toMatchObject({ code: ErrorCode.ADAPTER_BROKEN });
   });
 });

@@ -3,6 +3,7 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import { Adapter } from '@senda/adapter-schema';
 import { render } from '../src/core/adapters/template';
 import { runRecipe } from '../src/injected/runner';
+import { validateAdapter } from '../src/core/adapters/validate';
 import chat from './fixtures/adapters/fixturechat.json';
 import moodle from './fixtures/adapters/fixturemoodle.json';
 import { handleMoodle } from './fixtures/moodle-api.mjs';
@@ -10,6 +11,32 @@ import { handleMoodle } from './fixtures/moodle-api.mjs';
 describe('recipe runner', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
+  });
+  it('validates reference Moodle adapter including write confirmation', () => {
+    expect(validateAdapter(moodle).ok).toBe(true);
+    expect(() =>
+      Adapter.parse({
+        ...moodle,
+        tools: { ...moodle.tools, rename_course: { ...moodle.tools.rename_course, confirm: 'x'.repeat(201) } },
+      }),
+    ).toThrow();
+  });
+  it('pauses before write and resumes with approval using extracted old names', async () => {
+    const a = Adapter.parse(moodle);
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: new URL('http://127.0.0.1:18766/moodle/my/'),
+    });
+    const args = { id: 2, fullname: 'New title', shortname: 'NEW' };
+    const first = await runRecipe({ adapter: a, tool: 'rename_course', args });
+    expect(first).toHaveProperty('navigate');
+    document.body.innerHTML =
+      '<input id="id_fullname" value="Fixture course"><input id="id_shortname" value="FIX1"><form></form>';
+    const edit = await runRecipe({ adapter: a, tool: 'rename_course', args, resume: { step: 1, vars: {} } });
+    expect(edit).toMatchObject({ confirm: { vars: { old_full: 'Fixture course', old_short: 'FIX1' } } });
+    if (!('confirm' in edit)) throw new Error('Expected write confirmation');
+    const resumed = await runRecipe({ adapter: a, tool: 'rename_course', args, approved: true, resume: edit.confirm });
+    expect(resumed).toMatchObject({ ok: true, value: { fullname: 'Fixture course', shortname: 'FIX1' } });
   });
   it('renders raw values and interpolated strings', () =>
     expect([

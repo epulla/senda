@@ -9,13 +9,16 @@ type Input = {
   tool: string;
   args: Record<string, unknown>;
   resume?: { step: number; vars: Record<string, unknown> };
+  approved?: boolean;
 };
 export type RunResult =
   | { ok: true; value: unknown }
   | { ok: false; code: string; message: string; data?: unknown }
-  | { navigate: string; resume: { step: number; vars: Record<string, unknown> } };
+  | { navigate: string; resume: { step: number; vars: Record<string, unknown> } }
+  | { confirm: { step: number; vars: Record<string, unknown> } };
 const path = (o: any, p: string): any => p.split('.').reduce((v, k) => v?.[/^\d+$/.test(k) ? +k : k], o);
-const safe = (el: Element | null): boolean => !el || !el.matches('input[type=password], [autocomplete~=cc-number]');
+const safe = (el: Element | null): boolean =>
+  !el || !el.matches('input[type=password], [autocomplete~=cc-number], [autocomplete~=cc-csc], [autocomplete~=cc-exp]');
 function select(selector: string, root: ParentNode = document): Element | null {
   if (selector === ':scope') return root instanceof Element ? root : null;
   if (selector.startsWith('text=')) {
@@ -101,6 +104,12 @@ export async function runRecipe(input: Input): Promise<RunResult> {
       current = i;
       currentStep = steps[i];
       const [kind, payload] = Object.entries(currentStep).find(([k]) => k !== 'save') as [string, any];
+      if (def.effect === 'write' && !input.approved && ['type', 'select', 'press', 'submit'].includes(kind))
+        return { confirm: { step: i, vars } };
+      if (def.effect === 'write' && !input.approved && kind === 'request' && payload.method === 'POST') {
+        const u = new URL(render(payload.path, ctx()) as string, location.origin);
+        if (!(adapter.read_endpoints ?? []).includes(u.pathname)) return { confirm: { step: i, vars } };
+      }
       let out: any;
       try {
         switch (kind) {
@@ -185,7 +194,6 @@ export async function runRecipe(input: Input): Promise<RunResult> {
             const el = sel(payload.selector) as HTMLElement | null;
             if (!el) throw Error('Missing click target');
             if (
-              def.effect === 'read' &&
               isSensitiveLabel(
                 [
                   el.textContent,
@@ -194,8 +202,10 @@ export async function runRecipe(input: Input): Promise<RunResult> {
                   el.getAttribute('title'),
                 ].join(' '),
               )
-            )
-              return fail(ErrorCode.READ_ONLY, 'Sensitive action blocked');
+            ) {
+              if (def.effect === 'read') return fail(ErrorCode.READ_ONLY, 'Sensitive action blocked');
+              if (!input.approved) return { confirm: { step: i, vars } };
+            }
             for (const t of ['pointerdown', 'mousedown', 'pointerup', 'mouseup'])
               el.dispatchEvent(new MouseEvent(t, { bubbles: true }));
             el.click();

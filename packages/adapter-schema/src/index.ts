@@ -121,6 +121,7 @@ const parameter = z
 const tool = z
   .object({
     description: z.string().max(500),
+    confirm: z.string().max(200).optional(),
     effect: z.enum(['read', 'write']),
     params: z.record(name, parameter),
     steps: z.array(Step),
