@@ -162,6 +162,27 @@ describe('recipe runner', () => {
     document.body.innerHTML = '<input type="password" value="secret">';
     expect(await runRecipe({ adapter: a, tool: 'password', args: {} })).toMatchObject({ ok: true, value: null });
   });
+  it('keeps step data when a step throws outside its handler', async () => {
+    const steps = [{ save: 'x' }];
+    const a = { ...chat, tools: { odd: { description: 'odd', effect: 'read', params: {}, steps } } } as any;
+    expect(await runRecipe({ adapter: a, tool: 'odd', args: {} })).toMatchObject({
+      ok: false,
+      code: 'ADAPTER_BROKEN',
+      data: { step_index: 0, step: { save: 'x' }, page: { url: expect.any(String) } },
+    });
+  });
+  it('reports returning an unknown variable', async () => {
+    const a = Adapter.parse({
+      ...chat,
+      tools: { ret: { description: 'ret', effect: 'read', params: {}, steps: [{ return: 'x' }] } },
+    });
+    expect(await runRecipe({ adapter: a, tool: 'ret', args: {} })).toMatchObject({
+      ok: false,
+      code: 'ADAPTER_BROKEN',
+      message: 'Unknown variable: x',
+      data: { step_index: 0, step: { return: 'x' } },
+    });
+  });
   it('enforces 200-step limit', async () => {
     const steps = Array.from({ length: 201 }, () => ({ exists: { selector: 'body' } }));
     const a = Adapter.parse({ ...chat, tools: { many: { description: 'many', effect: 'read', params: {}, steps } } });

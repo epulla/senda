@@ -290,12 +290,17 @@ export async function runRecipe(input: Input): Promise<RunResult> {
             else e.click();
             break;
           }
-          case 'return':
+          case 'return': {
+            const missing = (typeof payload === 'string' ? [payload] : Object.values(payload)).find(
+              (name) => !Object.hasOwn(vars, name as string),
+            );
+            if (missing !== undefined) throw Error(`Unknown variable: ${missing}`);
             out =
               typeof payload === 'string'
                 ? vars[payload]
                 : Object.fromEntries(Object.entries(payload).map(([k, v]) => [k, vars[v as string]]));
             return { ok: true, value: out };
+          }
           default:
             throw Error(`Unsupported step: ${kind}`);
         }
@@ -308,11 +313,11 @@ export async function runRecipe(input: Input): Promise<RunResult> {
   };
   const timeout = def.timeout_ms ?? 120000;
   const result = await Promise.race([
-    execute(def.steps),
+    execute(def.steps).catch((e) => bad(e instanceof Error ? e.message : String(e))),
     new Promise<RunResult>((r) => setTimeout(() => r(fail(ErrorCode.TIMEOUT, 'Recipe timed out')), timeout)),
   ]);
   const final = result ?? { ok: true, value: undefined };
-  if ('ok' in final && final.ok && JSON.stringify(final.value).length > 1024 * 1024)
+  if ('ok' in final && final.ok && (JSON.stringify(final.value)?.length ?? 0) > 1024 * 1024)
     return fail(ErrorCode.ADAPTER_BROKEN, 'Recipe output exceeds 1 MB');
   return final;
 }
