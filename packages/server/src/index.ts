@@ -523,7 +523,7 @@ async function main() {
   );
   registerAdapter('adapter_submit', 'Submit a draft for user approval.', { id: z.string() }, 'adapter.submit');
   registerAdapter('adapter_disable', 'Disable an installed adapter.', { id: z.string() }, 'adapter.disable');
-  registerAdapter('adapter_remove', 'Remove an installed adapter.', { id: z.string() }, 'adapter.remove');
+  registerAdapter('adapter_remove', 'Remove an installed adapter or draft.', { id: z.string() }, 'adapter.remove');
   registerAdapter(
     'adapter_call',
     'Run a tool from an installed adapter.',

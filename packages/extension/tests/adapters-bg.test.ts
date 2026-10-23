@@ -112,6 +112,14 @@ describe('adapter background', () => {
     expect(await runAdapter({ adapter: 'example', tool: 'search', args: {} })).toContain('null');
   });
 
+  it('removes drafts and rejects unknown ids', async () => {
+    const { saveDraft, removeAdapter, list } = await import('../src/bg/adapters/store');
+    await saveDraft(recipe);
+    await removeAdapter('example');
+    expect((await list()).drafts).toEqual([]);
+    await expect(removeAdapter('example')).rejects.toMatchObject({ code: ErrorCode.ADAPTER_NOT_FOUND });
+  });
+
   it('blocks write tools', async () => {
     const { adaptersItem } = await import('../src/bg/state');
     await adaptersItem.setValue({ writer: { adapter: writeRecipe as any, status: 'active', installed_at: '' } });

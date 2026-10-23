@@ -76,8 +76,12 @@ export async function setStatus(id: string, status: 'active' | 'paused') {
 }
 export async function removeAdapter(id: string) {
   const installed = await adaptersItem.getValue();
+  const drafts = await draftsItem.getValue();
+  if (!installed[id] && !drafts[id]) throw new CommandError(ErrorCode.ADAPTER_NOT_FOUND, 'Adapter not found.');
   delete installed[id];
+  delete drafts[id];
   await adaptersItem.setValue(installed);
+  await draftsItem.setValue(drafts);
   return { ok: true };
 }
 export async function list() {
