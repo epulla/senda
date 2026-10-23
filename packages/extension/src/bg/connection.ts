@@ -3,7 +3,8 @@ import { detectCapabilities } from '../core/capabilities';
 import { detectBrowserName } from '../core/browser-name';
 import { nextDelay } from '../core/backoff';
 import { handle } from './router';
-import { instanceIdItem, portItem, statusItem, tokenItem } from './state';
+import { adaptersItem, instanceIdItem, portItem, statusItem, tokenItem } from './state';
+import { summaries } from './adapters/store';
 
 let socket: WebSocket | undefined;
 let timer: ReturnType<typeof setTimeout> | undefined;
@@ -55,7 +56,7 @@ async function connect() {
   socket = ws;
   socketToken = token;
   socketPort = port;
-  ws.onopen = () => {
+  ws.onopen = async () => {
     if (socket !== ws) return;
     ws.send(
       JSON.stringify({
@@ -69,7 +70,7 @@ async function connect() {
           engineVersion: 1,
           browser: import.meta.env.BROWSER,
           capabilities: detectCapabilities(browser),
-          adapters: [],
+          adapters: await summaries(),
         },
       }),
     );
@@ -98,7 +99,13 @@ async function connect() {
       ws.send(
         JSON.stringify({
           id: request.id,
-          error: { code, message: error instanceof Error ? error.message : String(error) },
+          error: {
+            code,
+            message: error instanceof Error ? error.message : String(error),
+            ...(error && typeof error === 'object' && 'data' in error && error.data !== undefined
+              ? { data: error.data }
+              : {}),
+          },
         }),
       );
     }
@@ -132,6 +139,10 @@ export function startConnection() {
   if (started) return;
   started = true;
   tokenItem.watch(reconnect);
+  adaptersItem.watch(async () => {
+    if (socket?.readyState === WebSocket.OPEN)
+      socket.send(JSON.stringify({ event: 'adapters_changed', data: await summaries() }));
+  });
   portItem.watch(reconnect);
   browser.alarms.create('reconnect', { periodInMinutes: 1 });
   browser.alarms.onAlarm.addListener((alarm) => {

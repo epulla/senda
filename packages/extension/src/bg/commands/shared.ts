@@ -4,6 +4,7 @@ export class CommandError extends Error {
   constructor(
     public code: ErrorCode,
     message: string,
+    public data?: unknown,
   ) {
     super(message);
   }

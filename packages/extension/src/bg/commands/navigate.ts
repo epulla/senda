@@ -2,8 +2,8 @@ import { ErrorCode } from '@senda/protocol';
 import { detectCapabilities } from '../../core/capabilities';
 import { trackAgentTab } from '../agent-tabs';
 import { CommandError, target } from './shared';
-export default async function navigate(p: { url: string; tabId?: number }) {
-  const id = await target(p.tabId, true);
+export default async function navigate(p: { url: string; tabId?: number; newTab?: boolean }) {
+  const id = p.newTab ? -1 : await target(p.tabId, true);
   let tabId: number | undefined = id < 0 ? undefined : id;
   const completed = new Set<number>();
   const loaded = new Promise<void>((resolve, reject) => {

@@ -5,14 +5,10 @@ import click from './commands/click';
 import typeCommand from './commands/type';
 import scroll from './commands/scroll';
 import tabs from './commands/tabs';
-export class CommandError extends Error {
-  constructor(
-    public code: ErrorCode,
-    message: string,
-  ) {
-    super(message);
-  }
-}
+import { draft, list, remove, setStatus, submit } from './adapters/store';
+import { runAdapter } from './adapters/run';
+import { CommandError } from './commands/shared';
+export { CommandError } from './commands/shared';
 const commands: Record<string, (p: any) => Promise<unknown>> = {
   navigate,
   snapshot,
@@ -20,6 +16,13 @@ const commands: Record<string, (p: any) => Promise<unknown>> = {
   type: typeCommand,
   scroll,
   tabs,
+  'adapter.list': list,
+  'adapter.draft': draft,
+  'adapter.test': (p: any) => runAdapter({ adapter: p.id, tool: p.tool, args: p.args ?? {}, draft: true }),
+  'adapter.run': (p: any) => runAdapter({ adapter: p.adapter, tool: p.tool, args: p.args ?? {} }),
+  'adapter.submit': submit,
+  'adapter.disable': (p: any) => setStatus(p.id, 'paused'),
+  'adapter.remove': remove,
 };
 export async function handle(method: string, params: unknown): Promise<unknown> {
   if (!(method in methods)) throw new CommandError(ErrorCode.INVALID_PARAMS, `Unknown method: ${method}`);

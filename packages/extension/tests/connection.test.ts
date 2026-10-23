@@ -51,6 +51,7 @@ describe('connection', () => {
     await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
     const ws = latestSocket();
     ws.open();
+    await vi.waitFor(() => expect(ws.sent).toHaveLength(1));
     const payload = ws.sent[0];
     if (!payload) throw new Error('Expected hello payload');
     const hello = JSON.parse(payload);
@@ -82,11 +83,13 @@ describe('connection', () => {
     startConnection();
     await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
     latestSocket().open();
+    await vi.waitFor(() => expect(latestSocket().sent).toHaveLength(1));
     latestSocket().close(1006);
     await vi.waitFor(async () => expect(await statusItem.getValue()).toBe('disconnected'));
     await vi.advanceTimersByTimeAsync(1000);
     expect(FakeSocket.instances).toHaveLength(2);
     latestSocket().open();
+    await vi.advanceTimersByTimeAsync(0);
     const firstHello = JSON.parse(FakeSocket.instances[0]!.sent[0]!);
     const secondHello = JSON.parse(latestSocket().sent[0]!);
     expect(secondHello.data.instanceId).toBe(firstHello.data.instanceId);
