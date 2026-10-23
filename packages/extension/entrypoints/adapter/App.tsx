@@ -4,6 +4,7 @@ import { removeAdapter, resetToTemplate, setStatus } from '@/src/bg/adapters/sto
 import { bundledTemplates } from '@/src/bg/adapters/templates';
 import { exportRecipe } from '@/src/core/adapters/export';
 import { ModeBadge, siteNames, sourceLabel } from '@/src/ui/adapterLabels';
+import { LanguageToggle } from '@/src/ui/LanguageToggle';
 import { ThemeToggle } from '@/src/ui/ThemeToggle';
 import { useItem } from '@/src/ui/useItem';
 
@@ -47,7 +48,10 @@ export default function App() {
             <span>Works on {siteNames(adapter)}</span>
           </p>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-1">
+          <LanguageToggle />
+          <ThemeToggle />
+        </div>
       </div>
 
       <section className="card space-y-3">

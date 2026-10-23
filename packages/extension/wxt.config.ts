@@ -7,8 +7,9 @@ export default defineConfig({
   manifest: ({ browser }) => {
     const chromium = browser !== 'firefox' && browser !== 'safari';
     return {
-      name: 'Senda',
-      description: 'Lets your AI assistant read and use your browser, with your approval.',
+      name: '__MSG_extName__',
+      description: '__MSG_extDescription__',
+      default_locale: 'en',
       permissions: ['tabs', 'scripting', 'storage', 'alarms', ...(chromium ? ['tabGroups', 'sidePanel'] : [])],
       host_permissions: ['<all_urls>'],
       ...(chromium && {

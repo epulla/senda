@@ -7,6 +7,7 @@ import { bundledTemplates, fetchTemplate } from '@/src/bg/adapters/templates';
 import { describeChanges } from '@/src/core/adapters/diff';
 import { permissionIncrease } from '@/src/core/adapters/permissions';
 import { ModeBadge, modeLabel, siteNames } from '@/src/ui/adapterLabels';
+import { LanguageToggle } from '@/src/ui/LanguageToggle';
 import { ThemeToggle } from '@/src/ui/ThemeToggle';
 import { useItem } from '@/src/ui/useItem';
 
@@ -263,6 +264,7 @@ export default function App() {
       <div className="flex items-center justify-between gap-2 border-b border-line pb-3">
         <h1 className="text-lg font-bold tracking-tight text-primary-text">Senda</h1>
         <div className="flex items-center gap-1">
+          <LanguageToggle />
           <ThemeToggle />
           {panic === 0 && (
             <button type="button" onClick={() => void requestPanic()} className="btn btn-danger">

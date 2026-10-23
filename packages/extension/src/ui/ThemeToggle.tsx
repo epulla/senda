@@ -1,4 +1,5 @@
 import { settingsItem } from '@/src/bg/state';
+import { useText } from '@/src/ui/i18n';
 import { useItem } from '@/src/ui/useItem';
 
 // Lucide sun/moon paths (ISC), same icons as Patio's theme toggle.
@@ -18,10 +19,11 @@ const icons = {
 };
 
 export function ThemeToggle() {
+  const t = useText().theme;
   const [settings, setSettings] = useItem(settingsItem);
   const systemDark = matchMedia('(prefers-color-scheme: dark)').matches;
   const dark = (settings.theme ?? 'system') === 'system' ? systemDark : settings.theme === 'dark';
-  const label = dark ? 'Switch to light mode' : 'Switch to dark mode';
+  const label = dark ? t.toLight : t.toDark;
   return (
     <button
       type="button"

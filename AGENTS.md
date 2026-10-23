@@ -52,7 +52,9 @@ Before finishing a change, run `pnpm compile && pnpm test` (extension, server, a
 ## UI copy
 
 - Audience is non-technical. Use plain words that say what will happen; avoid jargon.
-- Explain permission requests and actions clearly. No i18n; strings live inline in components.
+- Explain permission requests and actions clearly.
+- Every user-facing string lives in `src/core/text/en.ts` and `es.ts` (neutral Latin American Spanish, "tú"). UI reads them with `useText()` from `src/ui/i18n.ts`; core functions take the dictionary as a parameter defaulting to English. Text returned to the AI (errors, tool descriptions) and adapter recipes stay English.
+- Manifest name and description live in `public/_locales/{en,es}/messages.json`.
 
 ## Git
 

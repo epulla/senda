@@ -1,6 +1,7 @@
 import { DEFAULT_PORT } from '@senda/protocol';
 import { storage } from 'wxt/utils/storage';
 import type { Adapter } from '@senda/adapter-schema';
+import type { Language } from '../core/i18n';
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'invalid_token';
 export const tokenItem = storage.defineItem<string>('local:token', { fallback: '' });
@@ -21,6 +22,7 @@ export const settingsItem = storage.defineItem<{
   blockedDomains: string[];
   alwaysSites: string[];
   theme?: 'system' | 'light' | 'dark';
+  language?: Language;
 }>('local:settings', { fallback: { askBefore: 'destructive', allowedDomains: [], blockedDomains: [], alwaysSites: [] } });
 export const activityItem = storage.defineItem<
   Array<{
