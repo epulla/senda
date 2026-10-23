@@ -4,7 +4,7 @@ import { matchesSites } from '../../core/adapters/sites';
 import { wrapExternal } from '../../core/snapshot-format';
 import { CommandError } from '../commands/shared';
 import navigate from '../commands/navigate';
-import { isAgentTab, listAgentIds } from '../agent-tabs';
+import { listAgentIds, trackAgentTab } from '../agent-tabs';
 import { getAdapter } from './store';
 import { requestApproval, noteExternal, logActivity } from '../approvals';
 import { settingsItem, taintItem } from '../state';
@@ -23,15 +23,19 @@ export async function runAdapter(input: {
   const definition = adapter.tools[input.tool];
   if (!definition) throw new CommandError(ErrorCode.INVALID_PARAMS, 'Unknown adapter tool.');
   const start = adapter.start_url ?? adapter.sites[0]!.replace(/\*$/, '');
-  const tab = (await browser.tabs.query({})).find(
-    (candidate) =>
-      candidate.id !== undefined && isAgentTab(candidate.id) && matchesSites(candidate.url ?? '', adapter.sites),
-  );
+  const open = await browser.tabs.query({});
+  const matching = listAgentIds()
+    .reverse()
+    .map((id) => open.find((candidate) => candidate.id === id))
+    .filter((candidate) => candidate && matchesSites(candidate.url ?? '', adapter.sites));
+  const tab = matching.find((candidate) => candidate!.url?.startsWith(start)) ?? matching[0];
   let tabId = tab?.id;
   if (tabId === undefined) {
     await navigate({ url: start, newTab: true, internal: true });
     tabId = listAgentIds().at(-1);
-  }
+  } else if (adapter.start_url && !tab!.url?.startsWith(adapter.start_url)) {
+    await navigate({ url: adapter.start_url, tabId, internal: true });
+  } else trackAgentTab(tabId);
   if (tabId === undefined) throw new CommandError(ErrorCode.TAB_GONE, 'Could not open agent tab.');
   if (adapter.login_check) {
     const [{ result: loggedIn } = {}] = await browser.scripting.executeScript({

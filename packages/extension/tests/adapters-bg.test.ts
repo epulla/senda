@@ -88,6 +88,30 @@ describe('adapter background', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
+  it.each([
+    [undefined, 2, undefined],
+    ['https://example.com/chat/', 3, undefined],
+    ['https://example.com/inbox/', 2, { url: 'https://example.com/inbox/', tabId: 2, internal: true }],
+  ])('with two matching agent tabs and start_url %s runs in tab %s', async (start_url, tabId, navigated) => {
+    const { adaptersItem } = await import('../src/bg/state');
+    const { trackAgentTab } = await import('../src/bg/agent-tabs');
+    await adaptersItem.setValue({ example: { adapter: { ...recipe, start_url } as any, status: 'active', installed_at: '' } });
+    vi.spyOn(fakeBrowser.tabs, 'query').mockResolvedValue([
+      { id: 3, url: 'https://example.com/chat/' },
+      { id: 2, url: 'https://example.com/other' },
+    ] as any);
+    trackAgentTab(3);
+    trackAgentTab(2);
+    vi.spyOn(fakeBrowser.scripting, 'executeScript').mockImplementation(async (details: any) =>
+      details.files ? [] : [{ result: { ok: true, value: 'ok' } }],
+    );
+    const { runAdapter } = await import('../src/bg/adapters/run');
+    await runAdapter({ adapter: 'example', tool: 'search', args: {} });
+    expect(fakeBrowser.scripting.executeScript).toHaveBeenCalledWith(expect.objectContaining({ target: { tabId } }));
+    if (navigated) expect(navigate).toHaveBeenCalledWith(navigated);
+    else expect(navigate).not.toHaveBeenCalled();
+  });
+
   it('opens a new agent tab when no matching agent tab exists', async () => {
     const { adaptersItem } = await import('../src/bg/state');
     const { trackAgentTab } = await import('../src/bg/agent-tabs');
