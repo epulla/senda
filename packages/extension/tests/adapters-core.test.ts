@@ -53,6 +53,13 @@ describe('adapter policies', () => {
       errors: ['tools.sample.steps: last step must be "return"'],
     });
   });
+  it.each([
+    [{ t: withTool([]).tools.sample }, 'tools.t: invalid name, must match ^[a-z][a-z0-9_]{1,40}$'],
+    [withTool([{ extract: { selector: 'h1' }, save: 'x' }]).tools, 'tools.sample.steps.0.save: must match ^[a-z][a-z0-9_]{1,40}$'],
+  ])('explains short names (%#)', (tools, error) => {
+    const result = validateAdapter({ ...valid, tools });
+    expect(result.ok ? [] : result.errors).toEqual([expect.stringContaining(error)]);
+  });
   it('describes additions and selector changes', () => {
     expect(describeChanges(undefined, valid)[0]).toContain('WhatsApp');
     const updated = structuredClone(valid);

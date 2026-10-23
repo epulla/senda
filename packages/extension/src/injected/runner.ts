@@ -136,8 +136,9 @@ export async function runRecipe(input: Input): Promise<RunResult> {
             if (!container) throw Error('Missing container');
             if (kind === 'extract') {
               const el = sel(payload.selector);
-              if (!el) throw Error('Missing extraction target');
-              out = get(el, payload);
+              if (el) out = get(el, payload);
+              else if ('default' in payload) out = payload.default;
+              else throw Error('Missing extraction target');
             } else {
               const items = [...container.querySelectorAll(String(render(payload.item, ctx())))].slice(
                 0,

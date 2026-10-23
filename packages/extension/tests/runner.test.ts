@@ -235,6 +235,20 @@ describe('recipe runner', () => {
     document.body.innerHTML = '<main></main>';
     expect(await runRecipe({ adapter: a, tool: 'rows', args: {} })).toMatchObject(expected);
   });
+  it('returns extract default when the target is missing', async () => {
+    const a = Adapter.parse({
+      ...chat,
+      tools: {
+        title: {
+          description: 'title',
+          effect: 'read',
+          params: {},
+          steps: [{ extract: { selector: '#none', default: 'n/a' }, save: 'title' }, { return: 'title' }],
+        },
+      },
+    });
+    expect(await runRecipe({ adapter: a, tool: 'title', args: {} })).toMatchObject({ ok: true, value: 'n/a' });
+  });
   it('enforces 200-step limit', async () => {
     const steps = Array.from({ length: 201 }, () => ({ exists: { selector: 'body' } }));
     const a = Adapter.parse({ ...chat, tools: { many: { description: 'many', effect: 'read', params: {}, steps } } });

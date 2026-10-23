@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
 export const ENGINE_VERSION = 1;
-const name = z.string().regex(/^[a-z][a-z0-9_]{1,40}$/);
+const name = z
+  .string()
+  .regex(/^[a-z][a-z0-9_]{1,40}$/, 'must match ^[a-z][a-z0-9_]{1,40}$ (2–41 chars: lowercase letter, then letters, digits or _)');
 const selector = z.string();
 const field = z
   .object({

@@ -7,7 +7,10 @@ export function validateAdapter(
 ): { ok: true; adapter: AdapterType } | { ok: false; errors: string[] } {
   const parsed = Adapter.safeParse(input);
   if (!parsed.success)
-    return { ok: false, errors: parsed.error.issues.map((i) => `${i.path.join('.') || 'adapter'}: ${i.message}`) };
+    return { ok: false, errors: parsed.error.issues.map(
+        (i) =>
+          `${i.path.join('.') || 'adapter'}: ${i.code === 'invalid_key' ? `invalid name, ${i.issues[0]?.message}` : i.message}`,
+      ) };
   const adapter = parsed.data;
   const errors: string[] = [];
   for (const site of adapter.sites) {
