@@ -1,4 +1,5 @@
-import { draftsItem, statusItem } from '@/src/bg/state';
+import { approvalsItem, draftsItem, panicItem, statusItem } from '@/src/bg/state';
+import { requestPanic } from '@/src/bg/approvals';
 import { detectBrowserName } from '@/src/core/browser-name';
 import { detectCapabilities } from '@/src/core/capabilities';
 import { STATUS } from '@/src/ui/status';
@@ -15,7 +16,11 @@ async function openAdapters() {
 export default function App() {
   const [status] = useItem(statusItem);
   const [drafts] = useItem(draftsItem);
-  const pending = Object.values(drafts).filter((draft) => draft.pending).length;
+  const [approvals] = useItem(approvalsItem);
+  const [panic] = useItem(panicItem);
+  const pending =
+    Object.values(drafts).filter((draft) => draft.pending).length +
+    Object.values(approvals).filter((item) => !item.answer).length;
   const { label, dot } = STATUS[status];
   return (
     <main className="w-72 space-y-3 p-4 text-sm">
@@ -26,13 +31,23 @@ export default function App() {
           ? `Connected as ${detectBrowserName(navigator as never, import.meta.env.BROWSER)}`
           : label}
       </p>
+      {panic > 0 && <p className="font-medium text-red-700">Senda is stopped. Open the side panel to reconnect.</p>}
       <button
         type="button"
         onClick={openAdapters}
         className="block w-full rounded bg-blue-700 px-3 py-1.5 font-medium text-white hover:bg-blue-800"
       >
-        {pending ? `Review ${pending} waiting for approval` : 'Adapters'}
+        {pending ? `Review ${pending} waiting for approval` : 'Open side panel'}
       </button>
+      {panic === 0 && (
+        <button
+          type="button"
+          onClick={() => void requestPanic()}
+          className="block w-full rounded border border-red-300 px-3 py-1.5 font-medium text-red-700 hover:bg-red-50"
+        >
+          Stop everything
+        </button>
+      )}
       <a href="/onboarding.html" target="_blank" className="text-blue-700 underline">
         {status === 'invalid_token' ? 'Paste the code' : 'Setup'}
       </a>
