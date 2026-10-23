@@ -190,5 +190,5 @@ export function startConnection() {
   browser.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === 'reconnect' && !stoppedForToken && (!socket || socket.readyState !== WebSocket.OPEN)) reconnect();
   });
-  reconnect();
+  void panicItem.getValue().then((value) => (value ? stopConnection() : reconnect()));
 }

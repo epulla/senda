@@ -76,6 +76,7 @@ export async function requestPanic() {
   await panicItem.setValue(Date.now());
 }
 export function watchPanic() {
+  void approvalsItem.setValue({});
   panicItem.watch(async (value) => {
     if (!value) return;
     const rows = await approvalsItem.getValue();

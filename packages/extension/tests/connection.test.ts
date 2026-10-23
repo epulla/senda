@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { CLOSE_INVALID_TOKEN, PROTOCOL_VERSION } from '@senda/protocol';
-import { tokenItem, statusItem, adaptersItem } from '../src/bg/state';
+import { tokenItem, statusItem, adaptersItem, panicItem } from '../src/bg/state';
 
 class FakeSocket {
   static instances: FakeSocket[] = [];
@@ -133,5 +133,12 @@ describe('connection', () => {
     });
     await vi.waitFor(() => expect(ws.sent).toHaveLength(2));
     expect(JSON.parse(ws.sent[1]!).event).toBe('adapters_changed');
+  });
+  it('stays disconnected when panic switch is set at worker startup', async () => {
+    await panicItem.setValue(Date.now());
+    const { startConnection } = await import('../src/bg/connection');
+    startConnection();
+    await vi.waitFor(async () => expect(await statusItem.getValue()).toBe('disconnected'));
+    expect(FakeSocket.instances).toHaveLength(0);
   });
 });

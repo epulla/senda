@@ -183,6 +183,14 @@ describe('approval background', () => {
     expect(fakeBrowser.tabs.remove).toHaveBeenCalledWith(98);
   });
 
+  it('clears approval cards left by a previous worker', async () => {
+    const { approvalsItem } = await import('../src/bg/state');
+    await approvalsItem.setValue({ stale: { id: 'stale' } as any });
+    const { watchPanic } = await import('../src/bg/approvals');
+    watchPanic();
+    await vi.waitFor(async () => expect(await approvalsItem.getValue()).toEqual({}));
+  });
+
   it('resumes connection after clearing panic', async () => {
     const { panicItem } = await import('../src/bg/state');
     await panicItem.setValue(Date.now());
