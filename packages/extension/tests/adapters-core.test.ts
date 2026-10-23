@@ -29,9 +29,10 @@ describe('adapter policies', () => {
     const base = materialize(moodleTemplate(), 'https://moodle.example.edu', 'work');
     expect(base.ok).toBe(true);
     if (!base.ok) return;
-    const edited = { ...base.adapter, tools: { ...base.adapter.tools, changed: base.adapter.tools['get_courses']! } };
-    expect(computeOverride(base.adapter, edited)?.override).toHaveProperty('changed');
-    expect(applyOverride(base.adapter, { changed: edited.tools.changed }).tools).toHaveProperty('changed');
+    const name = Object.keys(base.adapter.tools)[0]!;
+    const edited = { ...base.adapter, tools: { ...base.adapter.tools, [name]: { ...base.adapter.tools[name]!, description: 'Repaired description' } } };
+    expect(computeOverride(base.adapter, edited)?.override).toHaveProperty(name);
+    expect(applyOverride(base.adapter, { [name]: edited.tools[name]! }).tools[name]?.description).toBe('Repaired description');
     expect(computeOverride(base.adapter, { ...edited, sites: [] } as Adapter)).toBeNull();
   });
   it.each([
