@@ -4,7 +4,7 @@ import { CLOSE_INVALID_TOKEN, EXTENSION_ID, PROTOCOL_VERSION } from '@senda/prot
 import { createRelay } from '../src/index.js';
 
 const token = 'a'.repeat(64);
-const hello = (value = token) => ({ event: 'hello', data: { token: value, extensionVersion: '1', protocolVersion: PROTOCOL_VERSION, engineVersion: 1, browser: 'chrome', capabilities: [], adapters: [] } });
+const hello = (value = token, instanceId?: string, name?: string) => ({ event: 'hello', data: { token: value, extensionVersion: '1', protocolVersion: PROTOCOL_VERSION, engineVersion: 1, browser: name ?? 'chrome', ...(instanceId ? { instanceId } : {}), ...(name ? { name } : {}), capabilities: [], adapters: [] } });
 const servers: ReturnType<typeof createRelay>[] = [];
 afterEach(() => { for (const server of servers.splice(0)) server.close(); });
 async function setup(timeout = 5000) {
@@ -19,6 +19,9 @@ function connect(port: number, origin?: string) {
 function connected(ws: WebSocket) { return new Promise<void>((resolve, reject) => { ws.once('open', resolve); ws.once('error', reject); }); }
 function closed(ws: WebSocket) { return new Promise<number>(resolve => ws.once('close', code => resolve(code))); }
 function authenticate(ws: WebSocket, value = token) { ws.send(JSON.stringify(hello(value))); }
+function replyOn(ws: WebSocket, result: unknown) {
+  return new Promise<void>(resolve => ws.once('message', raw => { const request = JSON.parse(raw.toString()); ws.send(JSON.stringify({ id: request.id, result })); resolve(); }));
+}
 
 describe('Senda WebSocket relay', () => {
   it('rejects invalid token with protocol close code', async () => {
@@ -48,11 +51,34 @@ describe('Senda WebSocket relay', () => {
     const response = server.relay.call('navigate', { url: 'https://example.com' });
     const request = await new Promise<any>(resolve => ws.once('message', raw => resolve(JSON.parse(raw.toString()))));
     ws.send(JSON.stringify({ id: request.id, result: { title: 'Example' } }));
-    await expect(response).resolves.toEqual({ id: request.id, result: { title: 'Example' } });
+    await expect(response).resolves.toMatchObject({ id: request.id, result: { title: 'Example' }, browser: { name: 'chrome' } });
   });
   it('returns NOT_CONNECTED without an extension', async () => {
     const { server } = await setup();
     await expect(server.relay.call('navigate', {})).rejects.toThrow('NOT_CONNECTED: Open your browser and check that the Senda extension is connected.');
+  });
+  it('keeps browsers connected and routes by name', async () => {
+    const { port, server } = await setup();
+    const chrome = connect(port, `chrome-extension://${EXTENSION_ID}`); const edge = connect(port, `chrome-extension://${EXTENSION_ID}`);
+    await Promise.all([connected(chrome), connected(edge)]); chrome.send(JSON.stringify(hello(token, 'chrome-id', 'Chrome'))); edge.send(JSON.stringify(hello(token, 'edge-id', 'Edge')));
+    await new Promise(resolve => setTimeout(resolve, 20));
+    expect(chrome.readyState).toBe(WebSocket.OPEN); expect(edge.readyState).toBe(WebSocket.OPEN);
+    const reply = replyOn(edge, { browser: 'edge' });
+    await expect(server.relay.call('snapshot', {}, { browser: 'Edge' })).resolves.toMatchObject({ result: { browser: 'edge' }, browser: { name: 'Edge' } }); await reply;
+    expect(chrome.listenerCount('message')).toBe(0);
+  });
+  it('reconnect with same instance id replaces only that socket', async () => {
+    const { port } = await setup();
+    const a = connect(port, `chrome-extension://${EXTENSION_ID}`); const b = connect(port, `chrome-extension://${EXTENSION_ID}`);
+    await Promise.all([connected(a), connected(b)]); a.send(JSON.stringify(hello(token, 'same', 'A'))); b.send(JSON.stringify(hello(token, 'other', 'B')));
+    await new Promise(resolve => setTimeout(resolve, 20));
+    const replacement = connect(port, `chrome-extension://${EXTENSION_ID}`); await connected(replacement); const wasClosed = closed(a);
+    replacement.send(JSON.stringify(hello(token, 'same', 'A2'))); await wasClosed; expect(a.readyState).toBe(WebSocket.CLOSED);
+    expect(b.readyState).toBe(WebSocket.OPEN); expect(replacement.readyState).toBe(WebSocket.OPEN);
+  });
+  it('rejects unknown browser name', async () => {
+    const { server } = await setup();
+    await expect(server.relay.call('snapshot', {}, { browser: 'Missing' })).rejects.toThrow('No connected browser named');
   });
   it('relays follower calls through leader and takes over after leader exits', async () => {
     const { server: first, port } = await setup();
@@ -60,6 +86,10 @@ describe('Senda WebSocket relay', () => {
     await new Promise<void>(resolve => second.http.once('error', () => resolve()));
     const extension = connect(port, `chrome-extension://${EXTENSION_ID}`); await connected(extension); authenticate(extension);
     await new Promise(resolve => setTimeout(resolve, 50));
+    const other = connect(port, `chrome-extension://${EXTENSION_ID}`); await connected(other); other.send(JSON.stringify(hello(token, 'edge', 'Edge')));
+    await new Promise(resolve => setTimeout(resolve, 20));
+    const listed = second.relay.call('list_browsers', {});
+    await expect(listed).resolves.toMatchObject({ result: [{ name: 'chrome' }, { id: 'edge', name: 'Edge' }] });
     const call = second.relay.call('navigate', { url: 'https://example.com' });
     const request = await new Promise<any>(resolve => extension.once('message', raw => resolve(JSON.parse(raw.toString()))));
     extension.send(JSON.stringify({ id: request.id, result: { title: 'Example' } }));

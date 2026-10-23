@@ -5,6 +5,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { WebSocket, WebSocketServer } from 'ws';
+import { z } from 'zod';
 import {
   CLOSE_INVALID_TOKEN,
   DEFAULT_PORT,
@@ -39,13 +40,13 @@ export async function loadToken(dir = join(homedir(), '.senda')) {
 }
 
 export function createRelay(token: string, port = Number(process.env.SENDA_PORT ?? DEFAULT_PORT), helloTimeout = 5000) {
-  let client: WebSocket | undefined;
+  const clients = new Map<string, { ws: WebSocket; name: string }>();
   // Set while another server owns the port; calls go through it.
   let leader: WebSocket | undefined;
   let closed = false;
   const pending = new Map<
     string,
-    { resolve: (r: Response) => void; reject: (e: Error) => void; timer: NodeJS.Timeout }
+    { resolve: (r: Response) => void; reject: (e: Error) => void; timer: NodeJS.Timeout; targetId?: string }
   >();
   const resolvePending = (msg: any) => {
     const item = pending.get(msg?.id);
@@ -54,8 +55,9 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
     pending.delete(msg.id);
     item.resolve(msg as Response);
   };
-  const rejectPending = () => {
+  const rejectPending = (targetId?: string) => {
     for (const [id, p] of pending) {
+      if (targetId !== undefined && p.targetId !== targetId) continue;
       clearTimeout(p.timer);
       p.reject(
         new Error(`${ErrorCode.NOT_CONNECTED}: Open your browser and check that the Senda extension is connected.`),
@@ -104,15 +106,17 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
         authenticated = true;
         clearTimeout(timer);
         if (isPeer) return;
-        if (client && client !== ws) client.close();
-        client = ws;
+        const id = msg.data.instanceId ?? randomUUID();
+        const old = clients.get(id);
+        if (old && old.ws !== ws) old.ws.close();
+        clients.set(id, { ws, name: msg.data.name ?? msg.data.browser });
         return;
       }
       if (isPeer) {
         const send = (response: Response) => {
           if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ ...response, id: msg?.id }));
         };
-        relay.call(msg?.method, msg?.params).then(send, (error: Error) => {
+        relay.call(msg?.method, msg?.params, msg?.pick).then(send, (error: Error) => {
           const [code, ...message] = error.message.split(': ');
           send({ id: msg?.id, error: { code: code as ErrorCode, message: message.join(': ') } });
         });
@@ -122,9 +126,12 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
     });
     ws.on('close', () => {
       clearTimeout(timer);
-      if (client !== ws) return;
-      client = undefined;
-      rejectPending();
+      for (const [id, client] of clients)
+        if (client.ws === ws) {
+          clients.delete(id);
+          rejectPending(id);
+          break;
+        }
     });
   });
   // Several MCP clients can each start a server; extra ones follow the one on the port and take over when it exits.
@@ -154,8 +161,33 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
   });
   http.listen(port, '127.0.0.1');
   const relay = {
-    call(method: string, params: unknown): Promise<Response> {
-      const target = portBusy ? leader : client;
+    call(method: string, params: unknown, pick: { browser?: string; prefer?: string } = {}): Promise<Response> {
+      if (!portBusy && method === 'list_browsers')
+        return Promise.resolve({
+          id: randomUUID(),
+          result: [...clients].map(([id, client]) => ({ id, name: client.name })),
+        });
+      let targetId: string | undefined;
+      let target: WebSocket | undefined;
+      if (portBusy) target = leader;
+      else if (pick.browser !== undefined) {
+        const entry = [...clients].find(
+          ([id, client]) => id === pick.browser || client.name.toLowerCase() === pick.browser!.toLowerCase(),
+        );
+        if (!entry)
+          return Promise.reject(
+            new Error(
+              `${ErrorCode.NOT_CONNECTED}: No connected browser named "${pick.browser}". Connected: ${[...clients.values()].map((c) => c.name).join(', ')}.`,
+            ),
+          );
+        [targetId, { ws: target }] = entry;
+      } else if (pick.prefer && clients.has(pick.prefer)) {
+        targetId = pick.prefer;
+        target = clients.get(targetId)!.ws;
+      } else {
+        const first = clients.entries().next().value as [string, { ws: WebSocket; name: string }] | undefined;
+        if (first) [targetId, { ws: target }] = first;
+      }
       if (!target || target.readyState !== WebSocket.OPEN)
         return Promise.reject(
           new Error(
@@ -170,9 +202,18 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
           pending.delete(id);
           reject(new Error(`${ErrorCode.TIMEOUT}: Request timed out.`));
         }, 30000);
-        pending.set(id, { resolve, reject, timer });
+        pending.set(id, {
+          resolve: (response) => {
+            if (!portBusy && targetId)
+              response.browser = { id: targetId, name: clients.get(targetId)?.name ?? '', connected: clients.size };
+            resolve(response);
+          },
+          reject,
+          timer,
+          targetId,
+        });
         try {
-          target.send(JSON.stringify({ id, method, params } satisfies Request));
+          target.send(JSON.stringify({ id, method, params, ...(portBusy ? { pick } : {}) }));
         } catch (error) {
           clearTimeout(timer);
           pending.delete(id);
@@ -216,13 +257,37 @@ async function main() {
     scroll: 'Scroll the current page.',
     tabs: 'List or manage browser tabs.',
   };
+  let lastBrowser: string | undefined;
+  mcp.registerTool(
+    'browser_list',
+    { description: 'List connected browsers by name and id.', inputSchema: {} },
+    async () => {
+      try {
+        const response = await server.relay.call('list_browsers', {});
+        return { content: [{ type: 'text' as const, text: JSON.stringify(response.result) }] };
+      } catch (e) {
+        return { isError: true, content: [{ type: 'text' as const, text: (e as Error).message }] };
+      }
+    },
+  );
   for (const method of Object.keys(methods) as Array<keyof typeof methods>)
     mcp.registerTool(
       `browser_${method}`,
-      { description: descriptions[method], inputSchema: methods[method].shape },
+      {
+        description: descriptions[method],
+        inputSchema: {
+          ...methods[method].shape,
+          browser: z.string().describe('Browser name or id from browser_list; omit to use the last one').optional(),
+        },
+      },
       async (args: Record<string, unknown>) => {
         try {
-          const response = await server.relay.call(method, args);
+          const { browser, ...params } = args;
+          const response = await server.relay.call(method, params, {
+            browser: browser as string | undefined,
+            prefer: lastBrowser,
+          });
+          lastBrowser = response.browser?.id ?? lastBrowser;
           if (response.error)
             return {
               isError: true,
@@ -230,7 +295,12 @@ async function main() {
             };
           const value = response.result;
           return {
-            content: [{ type: 'text' as const, text: typeof value === 'string' ? value : JSON.stringify(value) }],
+            content: [
+              {
+                type: 'text' as const,
+                text: `${response.browser && response.browser.connected > 1 ? `[${response.browser.name}] ` : ''}${typeof value === 'string' ? value : JSON.stringify(value)}`,
+              },
+            ],
           };
         } catch (e) {
           return { isError: true, content: [{ type: 'text' as const, text: (e as Error).message }] };
