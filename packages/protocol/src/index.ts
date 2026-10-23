@@ -20,7 +20,13 @@ export enum ErrorCode {
   INTERNAL = 'INTERNAL',
 }
 export type Request = { id: string; method: string; params: unknown };
-export type Response = { id: string; result?: unknown; error?: { code: ErrorCode; message: string; data?: unknown } };
+export type Response = {
+  id: string;
+  result?: unknown;
+  error?: { code: ErrorCode; message: string; data?: unknown };
+  // Set by the server: which browser answered and how many are connected.
+  browser?: { id: string; name: string; connected: number };
+};
 export type Event = {
   event: 'hello' | 'peer_hello' | 'tab_closed' | 'approval_pending' | 'adapters_changed' | 'ping';
   data?: unknown;
@@ -33,6 +39,9 @@ export const Hello = z.object({
   browser: z.string(),
   capabilities: z.array(z.string()),
   adapters: z.array(z.unknown()),
+  // Optional so older extensions still connect.
+  instanceId: z.string().optional(),
+  name: z.string().optional(),
 });
 export const PeerHello = z.object({ token: z.string() });
 const tabId = z.number().optional();

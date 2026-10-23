@@ -1,8 +1,9 @@
 import { CLOSE_INVALID_TOKEN, ErrorCode, PROTOCOL_VERSION, type Request } from '@senda/protocol';
 import { detectCapabilities } from '../core/capabilities';
+import { detectBrowserName } from '../core/browser-name';
 import { nextDelay } from '../core/backoff';
 import { handle } from './router';
-import { portItem, statusItem, tokenItem } from './state';
+import { instanceIdItem, portItem, statusItem, tokenItem } from './state';
 
 let socket: WebSocket | undefined;
 let timer: ReturnType<typeof setTimeout> | undefined;
@@ -43,6 +44,7 @@ function clearSocket() {
 async function connect() {
   const token = await tokenItem.getValue();
   const port = await portItem.getValue();
+  const instanceId = await instanceIdItem.getValue();
   if (!token || stoppedForToken) {
     await badge('disconnected');
     return;
@@ -60,6 +62,8 @@ async function connect() {
         event: 'hello',
         data: {
           token,
+          instanceId,
+          name: detectBrowserName(navigator as never, import.meta.env.BROWSER),
           extensionVersion: browser.runtime.getManifest().version,
           protocolVersion: PROTOCOL_VERSION,
           engineVersion: 1,

@@ -56,7 +56,13 @@ describe('connection', () => {
     const hello = JSON.parse(payload);
     expect(hello).toMatchObject({
       event: 'hello',
-      data: { token: 'secret', protocolVersion: PROTOCOL_VERSION, capabilities: expect.any(Array) },
+      data: {
+        token: 'secret',
+        protocolVersion: PROTOCOL_VERSION,
+        capabilities: expect.any(Array),
+        instanceId: expect.any(String),
+        name: expect.any(String),
+      },
     });
   });
   it('marks invalid token and does not retry', async () => {
@@ -75,10 +81,15 @@ describe('connection', () => {
     const { startConnection } = await import('../src/bg/connection');
     startConnection();
     await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
+    latestSocket().open();
     latestSocket().close(1006);
     await vi.waitFor(async () => expect(await statusItem.getValue()).toBe('disconnected'));
     await vi.advanceTimersByTimeAsync(1000);
     expect(FakeSocket.instances).toHaveLength(2);
+    latestSocket().open();
+    const firstHello = JSON.parse(FakeSocket.instances[0]!.sent[0]!);
+    const secondHello = JSON.parse(latestSocket().sent[0]!);
+    expect(secondHello.data.instanceId).toBe(firstHello.data.instanceId);
     vi.useRealTimers();
   });
 });

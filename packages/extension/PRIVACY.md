@@ -1,6 +1,6 @@
 # Senda Privacy
 
-Senda sends no data outside your machine except to the local Senda server on `127.0.0.1`, which your AI client runs. Page content read by the AI is sent by that client to your chosen AI provider. Senda stores its pairing token in extension local storage.
+Senda sends no data outside your machine except to the local Senda server on `127.0.0.1`, which your AI client runs. Page content read by the AI is sent by that client to your chosen AI provider. Senda stores its pairing token and a random browser id in extension local storage; the id is sent only to the local server.
 
 ## Permissions
 
