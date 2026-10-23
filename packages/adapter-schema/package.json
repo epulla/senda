@@ -1,1 +1,1 @@
-{"name":"@senda/adapter-schema","private":true,"type":"module","scripts":{"compile":"tsc --noEmit","test":"vitest run --passWithNoTests"},"devDependencies":{"typescript":"^5.9.3","vitest":"^5.0.2"}}
+{"name":"@senda/adapter-schema","private":true,"type":"module","exports":{".":"./src/index.ts"},"scripts":{"compile":"tsc --noEmit","test":"vitest run"},"devDependencies":{"typescript":"^5.9.3","vitest":"^5.0.2"},"dependencies":{"zod":"^4.1.12"}}

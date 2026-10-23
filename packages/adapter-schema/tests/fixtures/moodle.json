@@ -1,0 +1,10 @@
+{
+  "id": "moodle", "name": "Moodle", "version": "1.0.0", "engine": 1, "source": "community",
+  "sites": ["https://moodle.example/*"], "mode": "read", "description": "Read calendar events", "read_endpoints": ["/lib/ajax/service.php"],
+  "tools": {"events": {"description": "Get events", "effect": "read", "params": {}, "steps": [
+    {"extract": {"selector": "a[href*='logout.php']", "attr": "href", "pattern": "sesskey=([^&]+)"}, "save": "sesskey"},
+    {"request": {"method": "POST", "path": "/lib/ajax/service.php", "query": {"sesskey": "{{vars.sesskey}}", "info": "core_calendar_get_action_events_by_timesort"}, "json": [{"index": 0, "methodname": "core_calendar_get_action_events_by_timesort", "args": {"timesortfrom": "{{now}}", "limitnum": 20}}]}, "save": "response"},
+    {"pick": {"from": "response", "path": "0.data.events"}, "save": "events"},
+    {"return": "events"}
+  ]}}
+}

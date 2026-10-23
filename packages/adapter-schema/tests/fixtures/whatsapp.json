@@ -1,0 +1,9 @@
+{
+  "id": "whatsapp", "name": "WhatsApp", "version": "1.0.0", "engine": 1, "source": "official",
+  "sites": ["https://web.whatsapp.com/*"], "mode": "read", "description": "Read chats",
+  "tools": {"list_chats": {"description": "List chats", "effect": "read", "params": {}, "steps": [
+    {"extract_list": {"container": "[role=grid]", "item": "[role=row]", "fields": {"title": {"selector": "[title]", "attr": "title"}}}, "save": "chats"},
+    {"filter": {"from": "chats", "where": {}}, "save": "filtered"},
+    {"return": "filtered"}
+  ]}}
+}
