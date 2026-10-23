@@ -52,6 +52,15 @@ describe('adapter background', () => {
     expect((await draftsItem.getValue()).example?.adapter.source).toBe('local');
   });
 
+  it('installs a non-template recipe as pending community draft without from', async () => {
+    const { installTemplate } = await import('../src/bg/adapters/store');
+    const { draftsItem } = await import('../src/bg/state');
+    const community = { ...recipe, id: 'community', source: 'community' };
+    await installTemplate({ recipe: community });
+    expect(await draftsItem.getValue()).toMatchObject({ community: { pending: true, source: 'community' } });
+    expect((await draftsItem.getValue()).community?.from).toBeUndefined();
+  });
+
   it('approves draft as active summary', async () => {
     const { saveDraft, approveDraft, summaries } = await import('../src/bg/adapters/store');
     await saveDraft(recipe);

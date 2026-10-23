@@ -6,6 +6,7 @@ import { matchesSites } from '../src/core/adapters/sites';
 import { describeChanges } from '../src/core/adapters/diff';
 import { permissionIncrease } from '../src/core/adapters/permissions';
 import { materialize, applyOverride, computeOverride } from '../src/core/adapters/materialize';
+import { exportRecipe } from '../src/core/adapters/export';
 import moodle from './fixtures/adapters/fixturemoodle.json';
 
 const moodleTemplate = () => {
@@ -25,6 +26,20 @@ const withTool = (steps: unknown[], effect = 'read') => ({
 });
 
 describe('adapter policies', () => {
+  it('exports template overrides back into a re-materializable recipe', () => {
+    const template = moodleTemplate(), site = 'https://moodle.example.edu/moodle/', label = 'work';
+    const base = materialize(template, site, label);
+    expect(base.ok).toBe(true);
+    if (!base.ok) return;
+    const name = Object.keys(base.adapter.tools)[0]!;
+    const override = { [name]: { ...base.adapter.tools[name]!, description: 'Edited' } };
+    const exported = exportRecipe({ adapter: applyOverride(base.adapter, override), from: { site }, override }, template as any);
+    const again = materialize(exported, site, label);
+    expect(again.ok && again.adapter.tools).toEqual(applyOverride(base.adapter, override).tools);
+  });
+  it('returns non-template adapter unchanged', () => {
+    expect(exportRecipe({ adapter: valid })).toBe(valid);
+  });
   it('tracks tool-only overrides but rejects non-tool changes', () => {
     const base = materialize(moodleTemplate(), 'https://moodle.example.edu', 'work');
     expect(base.ok).toBe(true);

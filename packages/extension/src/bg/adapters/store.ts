@@ -8,18 +8,21 @@ import { materialize, applyOverride, computeOverride } from '../../core/adapters
 import { bundledTemplates, fetchTemplate } from './templates';
 import { permissionIncrease } from '../../core/adapters/permissions';
 
-export async function installTemplate(p: { template?: string; recipe?: unknown; url?: string; site: string; label: string }) {
+export async function installTemplate(p: { template?: string; recipe?: unknown; url?: string; site?: string; label?: string }) {
   if ([p.template, p.recipe, p.url].filter((x) => x !== undefined).length !== 1)
     throw new CommandError(ErrorCode.INVALID_PARAMS, 'Provide exactly one template, recipe, or URL.');
   let recipe: unknown = p.recipe, source: 'official' | 'community' = 'community', templateId: string;
   if (p.template) { recipe = bundledTemplates()[p.template]; source = 'official'; templateId = p.template; }
   else if (p.url) { recipe = await fetchTemplate(p.url); templateId = (recipe as any)?.id; }
   else templateId = (recipe as any)?.id;
-  const parsed = materialize(recipe, p.site, p.label, { blockedDomains: (await settingsItem.getValue()).blockedDomains });
+  const blockedDomains = (await settingsItem.getValue()).blockedDomains;
+  const parsed = (recipe as any)?.template
+    ? materialize(recipe, p.site ?? '', p.label ?? '', { blockedDomains })
+    : validateAdapter(recipe, { blockedDomains });
   if (!parsed.ok) throw new CommandError(ErrorCode.ADAPTER_BROKEN, 'Adapter validation failed.', parsed.errors);
-  const from = { template: templateId!, version: (recipe as any)?.version ?? '', site: p.site, label: p.label, source, ...(source === 'community' ? { recipe } : {}) };
+  const from = (recipe as any)?.template ? { template: templateId!, version: (recipe as any)?.version ?? '', site: p.site!, label: p.label!, source, ...(source === 'community' ? { recipe } : {}) } : undefined;
   const drafts = await draftsItem.getValue();
-  drafts[parsed.adapter.id] = { adapter: { ...parsed.adapter, source }, updated_at: new Date().toISOString(), pending: true, source, from };
+  drafts[parsed.adapter.id] = { adapter: { ...parsed.adapter, source }, updated_at: new Date().toISOString(), pending: true, source, ...(from ? { from } : {}) };
   await draftsItem.setValue(drafts);
   return { status: 'pending', id: parsed.adapter.id, message: `Open the Senda side panel to approve ${parsed.adapter.name}.` };
 }
