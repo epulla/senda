@@ -398,7 +398,7 @@ async function main() {
           const response = await server.relay.call(method, params, {
             browser: browser as string | undefined,
             prefer: lastBrowser,
-          });
+          }, ['click', 'type', 'navigate'].includes(method) ? 125_000 : 30_000);
           lastBrowser = response.browser?.id ?? lastBrowser;
           if (response.error)
             return {

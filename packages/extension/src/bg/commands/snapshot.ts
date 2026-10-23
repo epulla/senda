@@ -1,6 +1,7 @@
 import { snapshotPage } from '../../injected/snapshot';
 import { wrapExternal } from '../../core/snapshot-format';
 import { target } from './shared';
+import { noteExternal } from '../approvals';
 export default async function snapshot(p: { tabId?: number }) {
   const tabId = await target(p.tabId);
   const tab = await browser.tabs.get(tabId);
@@ -9,5 +10,6 @@ export default async function snapshot(p: { tabId?: number }) {
   try {
     origin = new URL(tab.url || '').host || 'unknown';
   } catch {}
+  await noteExternal(origin, result);
   return { tabId, url: tab.url, title: tab.title, snapshot: wrapExternal(origin, result) };
 }

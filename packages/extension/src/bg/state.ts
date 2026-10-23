@@ -13,3 +13,10 @@ export const adaptersItem = storage.defineItem<
 export const draftsItem = storage.defineItem<
   Record<string, { adapter: Adapter; updated_at: string; pending: boolean; test?: string }>
 >('local:drafts', { fallback: {} });
+export type ApprovalCard = { id: string; kind: 'generic'|'adapter'; summary: string; host: string; url?: string; details?: [string,string][]; source?: string; allowAlways: boolean; created_at: string };
+export const approvalsItem = storage.defineItem<Record<string, ApprovalCard & { answer?: 'allow'|'deny'|'always' }>>('session:approvals', { fallback: {} });
+export const settingsItem = storage.defineItem<{ askBefore: 'destructive'|'changes'|'everything'; allowedDomains: string[]; blockedDomains: string[]; alwaysSites: string[] }>('local:settings', { fallback: { askBefore: 'destructive', allowedDomains: [], blockedDomains: [], alwaysSites: [] } });
+export const activityItem = storage.defineItem<Array<{ at: string; kind: 'approval'|'denied'|'injection'|'adapter'|'panic'; text: string }>>('local:activity', { fallback: [] });
+export const visitedHostsItem = storage.defineItem<string[]>('session:visitedHosts', { fallback: [] });
+export const taintItem = storage.defineItem<string|null>('session:taint', { fallback: null });
+export const panicItem = storage.defineItem<number>('session:panic', { fallback: 0 });
