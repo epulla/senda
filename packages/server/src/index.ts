@@ -12,6 +12,7 @@ import {
   ErrorCode,
   Hello,
   methods,
+  PeerHello,
   PROTOCOL_VERSION,
   type Request,
   type Response,
@@ -39,21 +40,43 @@ export async function loadToken(dir = join(homedir(), '.senda')) {
 
 export function createRelay(token: string, port = Number(process.env.SENDA_PORT ?? DEFAULT_PORT), helloTimeout = 5000) {
   let client: WebSocket | undefined;
+  // Set while another server owns the port; calls go through it.
+  let leader: WebSocket | undefined;
+  let closed = false;
   const pending = new Map<
     string,
     { resolve: (r: Response) => void; reject: (e: Error) => void; timer: NodeJS.Timeout }
   >();
+  const resolvePending = (msg: any) => {
+    const item = pending.get(msg?.id);
+    if (!item) return;
+    clearTimeout(item.timer);
+    pending.delete(msg.id);
+    item.resolve(msg as Response);
+  };
+  const rejectPending = () => {
+    for (const [id, p] of pending) {
+      clearTimeout(p.timer);
+      p.reject(
+        new Error(`${ErrorCode.NOT_CONNECTED}: Open your browser and check that the Senda extension is connected.`),
+      );
+      pending.delete(id);
+    }
+  };
   const http = createServer();
   const wss = new WebSocketServer({ noServer: true });
   http.on('upgrade', (req, socket, head) => {
-    if (req.headers.origin !== `chrome-extension://${EXTENSION_ID}`) {
+    // Browsers always send Origin, so only local processes can connect as peers (no Origin).
+    const origin = req.headers.origin;
+    if (origin !== undefined && origin !== `chrome-extension://${EXTENSION_ID}`) {
       socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
       socket.destroy();
       return;
     }
     wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
   });
-  wss.on('connection', (ws) => {
+  wss.on('connection', (ws, req) => {
+    const isPeer = req.headers.origin === undefined;
     let authenticated = false;
     const timer = setTimeout(() => ws.close(1008, 'Hello timeout'), helloTimeout);
     ws.on('message', (raw) => {
@@ -65,7 +88,10 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
         return;
       }
       if (!authenticated) {
-        if (msg?.event !== 'hello' || !Hello.safeParse(msg.data).success) {
+        const valid = isPeer
+          ? msg?.event === 'peer_hello' && PeerHello.safeParse(msg.data).success
+          : msg?.event === 'hello' && Hello.safeParse(msg.data).success;
+        if (!valid) {
           ws.close(1008, 'Malformed hello');
           return;
         }
@@ -77,38 +103,51 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
         }
         authenticated = true;
         clearTimeout(timer);
+        if (isPeer) return;
         if (client && client !== ws) client.close();
         client = ws;
         return;
       }
-      if (msg?.id) {
-        const item = pending.get(msg.id);
-        if (item) {
-          clearTimeout(item.timer);
-          pending.delete(msg.id);
-          item.resolve(msg as Response);
-        }
+      if (isPeer) {
+        const send = (response: Response) => {
+          if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ ...response, id: msg?.id }));
+        };
+        relay.call(msg?.method, msg?.params).then(send, (error: Error) => {
+          const [code, ...message] = error.message.split(': ');
+          send({ id: msg?.id, error: { code: code as ErrorCode, message: message.join(': ') } });
+        });
+        return;
       }
+      resolvePending(msg);
     });
     ws.on('close', () => {
       clearTimeout(timer);
-      if (client === ws) client = undefined;
-      for (const [id, p] of pending) {
-        clearTimeout(p.timer);
-        p.reject(
-          new Error(`${ErrorCode.NOT_CONNECTED}: Open your browser and check that the Senda extension is connected.`),
-        );
-        pending.delete(id);
-      }
+      if (client !== ws) return;
+      client = undefined;
+      rejectPending();
     });
   });
-  // Several MCP clients can each start a server; extra ones wait for the port instead of crashing.
+  // Several MCP clients can each start a server; extra ones follow the one on the port and take over when it exits.
   let portBusy = false;
   let retry: NodeJS.Timeout | undefined;
   http.on('error', (error: NodeJS.ErrnoException) => {
     if (error.code !== 'EADDRINUSE') throw error;
     portBusy = true;
-    retry = setTimeout(() => http.listen(port, '127.0.0.1'), 5000);
+    if (closed) return;
+    const ws = new WebSocket(`ws://127.0.0.1:${port}`);
+    leader = ws;
+    ws.on('open', () => ws.send(JSON.stringify({ event: 'peer_hello', data: { token } })));
+    ws.on('message', (raw) => {
+      try {
+        resolvePending(JSON.parse(raw.toString()));
+      } catch {}
+    });
+    ws.on('error', () => {});
+    ws.on('close', () => {
+      leader = undefined;
+      rejectPending();
+      if (!closed) retry = setTimeout(() => http.listen(port, '127.0.0.1'), 100 + Math.random() * 900);
+    });
   });
   http.on('listening', () => {
     portBusy = false;
@@ -116,15 +155,14 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
   http.listen(port, '127.0.0.1');
   const relay = {
     call(method: string, params: unknown): Promise<Response> {
-      if (portBusy)
+      const target = portBusy ? leader : client;
+      if (!target || target.readyState !== WebSocket.OPEN)
         return Promise.reject(
           new Error(
-            `${ErrorCode.NOT_CONNECTED}: Another Senda server (another chat or MCP client) is using the browser connection. Close it or use that one.`,
+            portBusy
+              ? `${ErrorCode.NOT_CONNECTED}: Connecting to the Senda server another chat started. Try again in a moment.`
+              : `${ErrorCode.NOT_CONNECTED}: Open your browser and check that the Senda extension is connected.`,
           ),
-        );
-      if (!client || client.readyState !== WebSocket.OPEN)
-        return Promise.reject(
-          new Error(`${ErrorCode.NOT_CONNECTED}: Open your browser and check that the Senda extension is connected.`),
         );
       const id = randomUUID();
       return new Promise((resolve, reject) => {
@@ -134,7 +172,7 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
         }, 30000);
         pending.set(id, { resolve, reject, timer });
         try {
-          client!.send(JSON.stringify({ id, method, params } satisfies Request));
+          target.send(JSON.stringify({ id, method, params } satisfies Request));
         } catch (error) {
           clearTimeout(timer);
           pending.delete(id);
@@ -143,7 +181,11 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
       });
     },
     close: () => {
+      closed = true;
       clearTimeout(retry);
+      leader?.terminate();
+      // ws 8 leaves open connections on wss.close(); followers must notice the leader is gone.
+      for (const ws of wss.clients) ws.terminate();
       wss.close();
       http.close();
     },

@@ -25,9 +25,18 @@ describe('Senda WebSocket relay', () => {
     const { port } = await setup(); const ws = connect(port, `chrome-extension://${EXTENSION_ID}`); await connected(ws);
     const close = closed(ws); authenticate(ws, 'wrong'); expect(await close).toBe(CLOSE_INVALID_TOKEN);
   });
-  it.each([['http origin', 'http://localhost'], ['missing origin', undefined]])('rejects %s', async (_name, origin) => {
-    const { port } = await setup(); const ws = connect(port, origin as string | undefined);
+  it('rejects invalid peer token with protocol close code', async () => {
+    const { port } = await setup(); const ws = connect(port); await connected(ws);
+    const close = closed(ws); ws.send(JSON.stringify({ event: 'peer_hello', data: { token: 'wrong' } }));
+    expect(await close).toBe(CLOSE_INVALID_TOKEN);
+  });
+  it('rejects http origin', async () => {
+    const { port } = await setup(); const ws = connect(port, 'http://localhost');
     await expect(connected(ws)).rejects.toBeDefined();
+  });
+  it('rejects extension hello on a no-origin peer socket', async () => {
+    const { port } = await setup(); const ws = connect(port); await connected(ws); const close = closed(ws);
+    authenticate(ws); expect(await close).toBe(1008);
   });
   it('closes clients that do not hello before timeout', async () => {
     const { port } = await setup(30); const ws = connect(port, `chrome-extension://${EXTENSION_ID}`); await connected(ws);
@@ -45,11 +54,16 @@ describe('Senda WebSocket relay', () => {
     const { server } = await setup();
     await expect(server.relay.call('navigate', {})).rejects.toThrow('NOT_CONNECTED: Open your browser and check that the Senda extension is connected.');
   });
-  it('waits for a busy port instead of crashing, then takes it over', async () => {
+  it('relays follower calls through leader and takes over after leader exits', async () => {
     const { server: first, port } = await setup();
     const second = createRelay(token, port); servers.push(second);
     await new Promise<void>(resolve => second.http.once('error', () => resolve()));
-    await expect(second.relay.call('navigate', {})).rejects.toThrow('NOT_CONNECTED: Another Senda server');
+    const extension = connect(port, `chrome-extension://${EXTENSION_ID}`); await connected(extension); authenticate(extension);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    const call = second.relay.call('navigate', { url: 'https://example.com' });
+    const request = await new Promise<any>(resolve => extension.once('message', raw => resolve(JSON.parse(raw.toString()))));
+    extension.send(JSON.stringify({ id: request.id, result: { title: 'Example' } }));
+    await expect(call).resolves.toMatchObject({ result: { title: 'Example' } });
     first.close();
     await new Promise<void>(resolve => second.http.once('listening', resolve));
     await expect(second.relay.call('navigate', {})).rejects.toThrow('NOT_CONNECTED: Open your browser');

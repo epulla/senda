@@ -22,7 +22,7 @@ export enum ErrorCode {
 export type Request = { id: string; method: string; params: unknown };
 export type Response = { id: string; result?: unknown; error?: { code: ErrorCode; message: string; data?: unknown } };
 export type Event = {
-  event: 'hello' | 'tab_closed' | 'approval_pending' | 'adapters_changed' | 'ping';
+  event: 'hello' | 'peer_hello' | 'tab_closed' | 'approval_pending' | 'adapters_changed' | 'ping';
   data?: unknown;
 };
 export const Hello = z.object({
@@ -34,6 +34,7 @@ export const Hello = z.object({
   capabilities: z.array(z.string()),
   adapters: z.array(z.unknown()),
 });
+export const PeerHello = z.object({ token: z.string() });
 const tabId = z.number().optional();
 export const methods = {
   navigate: z.object({ url: z.string().url(), tabId }).strict(),
