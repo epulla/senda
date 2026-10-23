@@ -11,6 +11,7 @@ import {
 import { CommandError } from './commands/shared';
 import { listAgentIds } from './agent-tabs';
 import { stopConnection } from './connection';
+import { looksLikeInjection } from '../core/injection';
 
 export async function logActivity(kind: 'approval' | 'denied' | 'injection' | 'adapter' | 'panic', text: string) {
   const rows = await activityItem.getValue();
@@ -67,8 +68,9 @@ export async function requestApproval(card: Omit<ApprovalCard, 'id' | 'created_a
     await approvalsItem.setValue(current);
   }
 }
-export async function noteExternal(host: string, _text: string) {
+export async function noteExternal(host: string, text: string) {
   await taintItem.setValue(host);
+  if (looksLikeInjection(text)) await logActivity('injection', `Possible prompt injection on ${host}`);
 }
 export async function requestPanic() {
   await panicItem.setValue(Date.now());

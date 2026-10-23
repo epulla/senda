@@ -24,3 +24,7 @@ pnpm build
 4. The Senda icon turns green when connected. Ask: "Open example.com and tell me the title."
 
 Pages, emails and chats your AI reads (including other people's messages) are sent to your AI provider.
+
+# Security
+
+Senda pauses protected actions for approval in its side panel. Suspected prompt injection is marked ⚠️ and logged; pages can taint a site and trigger extra approval. Other MCP servers connected to your AI client (such as Slack or email) are outside Senda's protection. Keep client approvals enabled for outbound tools.

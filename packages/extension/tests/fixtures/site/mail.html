@@ -1,0 +1,11 @@
+<!doctype html><title>Compose mail</title>
+<form
+  onsubmit="
+    event.preventDefault();
+    document.querySelector('#status').textContent = 'Sent';
+  "
+>
+  <label>To <input /></label><label>Subject <input /></label><label>Body <textarea></textarea></label
+  ><button>Send</button>
+  <p id="status"></p>
+</form>
