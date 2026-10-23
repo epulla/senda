@@ -3,6 +3,7 @@ import { requestPanic } from '@/src/bg/approvals';
 import { detectBrowserName } from '@/src/core/browser-name';
 import { detectCapabilities } from '@/src/core/capabilities';
 import { STATUS } from '@/src/ui/status';
+import { ThemeToggle } from '@/src/ui/ThemeToggle';
 import { useItem } from '@/src/ui/useItem';
 
 async function openAdapters() {
@@ -25,7 +26,10 @@ export default function App() {
   const { label, dot } = STATUS[status];
   return (
     <main className="w-72 space-y-3 p-4 text-sm">
-      <h1 className="text-lg font-bold tracking-tight text-primary-text">Senda</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-bold tracking-tight text-primary-text">Senda</h1>
+        <ThemeToggle />
+      </div>
       <p role="status" className="flex items-center gap-2">
         <span aria-hidden className={`size-2.5 shrink-0 rounded-full ${dot}`} />
         {status === 'connected'

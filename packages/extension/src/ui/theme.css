@@ -137,6 +137,10 @@
   .btn-danger-text:hover {
     background: color-mix(in srgb, var(--error) 12%, transparent);
   }
+  .btn-ghost {
+    background: transparent;
+    border-color: transparent;
+  }
   .btn-sm {
     padding: 0.125rem 0.5rem;
     font-weight: 500;

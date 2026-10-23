@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { portItem, statusItem, tokenItem } from '@/src/bg/state';
 import { STATUS } from '@/src/ui/status';
+import { ThemeToggle } from '@/src/ui/ThemeToggle';
 import { useItem } from '@/src/ui/useItem';
 
 export default function App() {
@@ -22,7 +23,10 @@ export default function App() {
 
   return (
     <main className="card mx-auto my-8 max-w-xl space-y-6 !p-8 text-base">
-      <h1 className="text-2xl font-semibold">Set up Senda</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Set up Senda</h1>
+        <ThemeToggle />
+      </div>
       <p>Senda lets your AI assistant read and use this browser. It only talks to the Senda app on this computer.</p>
       <ol className="list-decimal space-y-2 pl-6">
         <li>Add Senda to your AI app (for example Claude Code).</li>

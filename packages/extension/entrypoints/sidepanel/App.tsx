@@ -7,6 +7,7 @@ import { approveDraft, installTemplate, rejectDraft, removeAdapter, resetToTempl
 import { bundledTemplates } from '@/src/bg/adapters/templates';
 import { describeChanges } from '@/src/core/adapters/diff';
 import { permissionIncrease } from '@/src/core/adapters/permissions';
+import { ThemeToggle } from '@/src/ui/ThemeToggle';
 import { useItem } from '@/src/ui/useItem';
 
 const siteNames = (adapter: Adapter) =>
@@ -181,15 +182,14 @@ export default function App() {
     <main className="space-y-5 p-4 text-sm leading-relaxed">
       <div className="flex items-center justify-between gap-2 border-b border-line pb-3">
         <h1 className="text-lg font-bold tracking-tight text-primary-text">Senda</h1>
-        {panic === 0 && (
-          <button
-            type="button"
-            onClick={() => void requestPanic()}
-            className="btn btn-danger"
-          >
-            Stop everything
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          {panic === 0 && (
+            <button type="button" onClick={() => void requestPanic()} className="btn btn-danger">
+              Stop everything
+            </button>
+          )}
+        </div>
       </div>
 
       {panic > 0 && (
@@ -432,28 +432,6 @@ export default function App() {
               </span>
             </label>
           ))}
-        </fieldset>
-        <fieldset>
-          <legend className="mb-1 font-semibold">Appearance</legend>
-          <div className="flex gap-4">
-            {(
-              [
-                ['system', 'Same as my computer'],
-                ['light', 'Light'],
-                ['dark', 'Dark'],
-              ] as const
-            ).map(([value, label]) => (
-              <label key={value} className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="theme"
-                  checked={(settings.theme ?? 'system') === value}
-                  onChange={() => void setSettings({ ...settings, theme: value })}
-                />
-                {label}
-              </label>
-            ))}
-          </div>
         </fieldset>
         <SiteList
           title="Trusted sites"
