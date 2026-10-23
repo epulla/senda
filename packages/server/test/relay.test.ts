@@ -4,7 +4,7 @@ import { CLOSE_INVALID_TOKEN, EXTENSION_ID, PROTOCOL_VERSION } from '@senda/prot
 import { createRelay } from '../src/index.js';
 
 const token = 'a'.repeat(64);
-const hello = (value = token, instanceId?: string, name?: string) => ({ event: 'hello', data: { token: value, extensionVersion: '1', protocolVersion: PROTOCOL_VERSION, engineVersion: 1, browser: name ?? 'chrome', ...(instanceId ? { instanceId } : {}), ...(name ? { name } : {}), capabilities: [], adapters: [] } });
+const hello = (value = token, instanceId?: string, name?: string, adapters: unknown[] = []) => ({ event: 'hello', data: { token: value, extensionVersion: '1', protocolVersion: PROTOCOL_VERSION, engineVersion: 1, browser: name ?? 'chrome', ...(instanceId ? { instanceId } : {}), ...(name ? { name } : {}), capabilities: [], adapters } });
 const servers: ReturnType<typeof createRelay>[] = [];
 afterEach(() => { for (const server of servers.splice(0)) server.close(); });
 async function setup(timeout = 5000) {
@@ -57,6 +57,13 @@ describe('Senda WebSocket relay', () => {
     const { server } = await setup();
     await expect(server.relay.call('navigate', {})).rejects.toThrow('NOT_CONNECTED: Open your browser and check that the Senda extension is connected.');
   });
+  it('honors an explicit relay timeout', async () => {
+    const { port, server } = await setup();
+    const ws = connect(port, `chrome-extension://${EXTENSION_ID}`); await connected(ws); authenticate(ws);
+    await new Promise(resolve => setTimeout(resolve, 10));
+    await expect(server.relay.call('snapshot', {}, {}, 20)).rejects.toThrow('TIMEOUT: Request timed out.');
+    ws.close();
+  });
   it('keeps browsers connected and routes by name', async () => {
     const { port, server } = await setup();
     const chrome = connect(port, `chrome-extension://${EXTENSION_ID}`); const edge = connect(port, `chrome-extension://${EXTENSION_ID}`);
@@ -66,6 +73,19 @@ describe('Senda WebSocket relay', () => {
     const reply = replyOn(edge, { browser: 'edge' });
     await expect(server.relay.call('snapshot', {}, { browser: 'Edge' })).resolves.toMatchObject({ result: { browser: 'edge' }, browser: { name: 'Edge' } }); await reply;
     expect(chrome.listenerCount('message')).toBe(0);
+  });
+  it('unions hello adapters, updates from adapters_changed, and drops them on disconnect', async () => {
+    const { port, server } = await setup();
+    const adapter = { id: 'example', name: 'Example', version: '1.0.0', source: 'local', mode: 'read', sites: ['https://example.com/*'], status: 'active', tools: [] };
+    const ws = connect(port, `chrome-extension://${EXTENSION_ID}`); await connected(ws); ws.send(JSON.stringify(hello(token, 'adapter-browser', 'Chrome', [adapter])));
+    await new Promise(resolve => setTimeout(resolve, 15));
+    expect(server.relay.adapters()).toEqual([adapter]);
+    const changed = { ...adapter, version: '1.1.0' };
+    ws.send(JSON.stringify({ event: 'adapters_changed', data: [changed] }));
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(server.relay.adapters()).toEqual([changed]);
+    ws.close(); await new Promise(resolve => setTimeout(resolve, 15));
+    expect(server.relay.adapters()).toEqual([]);
   });
   it('reconnect with same instance id replaces only that socket', async () => {
     const { port } = await setup();
@@ -84,8 +104,15 @@ describe('Senda WebSocket relay', () => {
     const { server: first, port } = await setup();
     const second = createRelay(token, port); servers.push(second);
     await new Promise<void>(resolve => second.http.once('error', () => resolve()));
-    const extension = connect(port, `chrome-extension://${EXTENSION_ID}`); await connected(extension); authenticate(extension);
+    const extension = connect(port, `chrome-extension://${EXTENSION_ID}`); await connected(extension);
+    const adapter = { id: 'example', name: 'Example', version: '1.0.0', source: 'local', mode: 'read', sites: ['https://example.com/*'], status: 'active', tools: [] };
+    extension.send(JSON.stringify(hello(token, 'first', undefined, [adapter])));
     await new Promise(resolve => setTimeout(resolve, 50));
+    expect(second.relay.adapters()).toEqual([adapter]);
+    const changed = { ...adapter, version: '1.0.1' };
+    extension.send(JSON.stringify({ event: 'adapters_changed', data: [changed] }));
+    await new Promise(resolve => setTimeout(resolve, 20));
+    expect(second.relay.adapters()).toEqual([changed]);
     const other = connect(port, `chrome-extension://${EXTENSION_ID}`); await connected(other); other.send(JSON.stringify(hello(token, 'edge', 'Edge')));
     await new Promise(resolve => setTimeout(resolve, 20));
     const listed = second.relay.call('list_browsers', {});
