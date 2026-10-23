@@ -56,6 +56,7 @@ if (hasGroups()) {
     membership.set(id, now);
     if (before === now) return;
     const { logActivity } = await import('./approvals');
-    await logActivity('tab', `Senda can ${now ? 'now' : 'no longer'} use ${tab.title || 'tab'}`);
+    const { activity } = await (await import('./text')).bgText();
+    await logActivity('tab', activity.tab(now, tab.title || activity.untitled));
   });
 }

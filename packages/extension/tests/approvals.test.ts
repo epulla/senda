@@ -3,6 +3,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { stubBrowserWithoutTabGroups } from './no-tab-groups';
 import { ErrorCode } from '@senda/protocol';
 import { needsApproval } from '../src/core/approvals';
+import { es } from '../src/core/text/es';
 
 const input = (overrides: Partial<Parameters<typeof needsApproval>[0]> = {}) => ({
   action: 'read' as const,
@@ -58,6 +59,10 @@ it.each([
   ['everything asks read', input({ action: 'read', askBefore: 'everything' }), true],
   ['everything asks navigate', input({ action: 'navigate', askBefore: 'everything' }), true],
 ])('%s', (_name, args, asks) => expect(Boolean(needsApproval(args))).toBe(asks));
+
+it('returns localized approval reason', () => {
+  expect(needsApproval(input({ action: 'type', submit: true }), es.approval)).toBe('Esto enviará un formulario.');
+});
 
 describe('approval background', () => {
   beforeEach(async () => {

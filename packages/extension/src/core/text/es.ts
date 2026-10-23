@@ -142,5 +142,47 @@ export const es: Text = {
   },
   approval: {
     useTool: (tool: string, adapter: string) => `Tu IA quiere usar ${tool} en ${adapter}.`,
+    reasons: {
+      everything: 'Pediste aprobar todas las acciones del navegador.',
+      sensitiveClick: 'Este clic podría enviar, cambiar o borrar información.',
+      submit: 'Esto enviará un formulario.',
+      changes: 'Pediste aprobar los cambios.',
+      newSiteData: 'Esto podría enviar datos a un sitio nuevo.',
+    },
+    clickSummary: (label: string, host: string) => `Tu IA quiere hacer clic en “${label}” en ${host}.`,
+    typeSummary: (host: string, submit: boolean) =>
+      `Tu IA quiere escribir en ${host}${submit ? ' y enviar el formulario' : ''}.`,
+    navigateSummary: (host: string) => `Tu IA quiere abrir ${host}.`,
+    element: 'un elemento',
+    reasonLabel: 'Motivo',
+    adapterSummary: (tool: string, adapter: string, host: string) =>
+      `Tu IA quiere usar ${tool} en ${adapter} (${host}).`,
+    current: (key: string) => `Valor actual de ${key}`,
+  },
+  diff: {
+    mode: { read: 'solo lectura', write: 'puede hacer cambios' },
+    add: (name: string, mode: string, count: number, tools: string, sites: string) =>
+      `Agregar "${name}" (${mode}) con ${count} herramientas: ${tools}. Solo funciona en ${sites}.`,
+    addTool: (name: string) => `Agregar herramienta: ${name}.`,
+    removeTool: (name: string) => `Quitar herramienta: ${name}.`,
+    updateTool: (name: string, change: string) => `Actualizar herramienta ${name}${change}.`,
+    selector: 'selector',
+    addSite: (site: string) => `Agregar sitio: ${site}.`,
+    removeSite: (site: string) => `Quitar sitio: ${site}.`,
+    changeAccess: (from: string, to: string) => `Cambiar acceso de ${from} a ${to}.`,
+    addEndpoint: (endpoint: string) => `Agregar endpoint aprobado: ${endpoint}.`,
+    updateVersion: (from: string, to: string) => `Actualizar versión de ${from} a ${to}.`,
+  },
+  permissions: {
+    newSite: (site: string) => `Sitio nuevo: ${site}`,
+    canChange: 'El adaptador ahora puede hacer cambios',
+    newEndpoint: (endpoint: string) => `Endpoint aprobado nuevo: ${endpoint}`,
+    newWriteTool: (name: string) => `Herramienta nueva que hace cambios: ${name}`,
+  },
+  activity: {
+    injection: (host: string) => `Posibles instrucciones ocultas en ${host}`,
+    panic: 'Se activó el botón de emergencia.',
+    tab: (now: boolean, title: string) => `Senda ${now ? 'ahora' : 'ya no'} puede usar ${title}`,
+    untitled: 'pestaña',
   },
 };

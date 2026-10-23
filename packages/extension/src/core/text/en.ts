@@ -138,5 +138,47 @@ export const en = {
   },
   approval: {
     useTool: (tool: string, adapter: string) => `Your AI wants to use ${tool} on ${adapter}.`,
+    reasons: {
+      everything: 'You asked to approve every browser action.',
+      sensitiveClick: 'This click may send, change, or delete information.',
+      submit: 'This will submit a form.',
+      changes: 'You asked to approve changes.',
+      newSiteData: 'This may send data to a new site.',
+    },
+    clickSummary: (label: string, host: string) => `Your AI wants to click “${label}” on ${host}.`,
+    typeSummary: (host: string, submit: boolean) =>
+      `Your AI wants to enter text on ${host}${submit ? ' and submit the form' : ''}.`,
+    navigateSummary: (host: string) => `Your AI wants to open ${host}.`,
+    element: 'an element',
+    reasonLabel: 'Reason',
+    adapterSummary: (tool: string, adapter: string, host: string) =>
+      `Your AI wants to use ${tool} on ${adapter} (${host}).`,
+    current: (key: string) => `Current ${key}`,
+  },
+  diff: {
+    mode: { read: 'read only', write: 'can make changes' },
+    add: (name: string, mode: string, count: number, tools: string, sites: string) =>
+      `Add "${name}" (${mode}) with ${count} tools: ${tools}. Only works on ${sites}.`,
+    addTool: (name: string) => `Add tool: ${name}.`,
+    removeTool: (name: string) => `Remove tool: ${name}.`,
+    updateTool: (name: string, change: string) => `Update tool ${name}${change}.`,
+    selector: 'selector',
+    addSite: (site: string) => `Add site: ${site}.`,
+    removeSite: (site: string) => `Remove site: ${site}.`,
+    changeAccess: (from: string, to: string) => `Change access from ${from} to ${to}.`,
+    addEndpoint: (endpoint: string) => `Add approved endpoint: ${endpoint}.`,
+    updateVersion: (from: string, to: string) => `Update version from ${from} to ${to}.`,
+  },
+  permissions: {
+    newSite: (site: string) => `New site: ${site}`,
+    canChange: 'Adapter can now make changes',
+    newEndpoint: (endpoint: string) => `New approved endpoint: ${endpoint}`,
+    newWriteTool: (name: string) => `New write tool: ${name}`,
+  },
+  activity: {
+    injection: (host: string) => `Possible prompt injection on ${host}`,
+    panic: 'Panic switch activated.',
+    tab: (now: boolean, title: string) => `Senda can ${now ? 'now' : 'no longer'} use ${title}`,
+    untitled: 'tab',
   },
 };

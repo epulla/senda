@@ -361,7 +361,7 @@ export default function App() {
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{t.adaptersWaiting}</h2>
           {pending.map(({ adapter, test, source }) => {
             const previous = installed[adapter.id]?.adapter;
-            const more = previous ? permissionIncrease(previous, adapter) : [];
+            const more = previous ? permissionIncrease(previous, adapter, text.permissions) : [];
             return (
               <article key={adapter.id} className="card card-warn space-y-2">
                 <p>
@@ -374,7 +374,7 @@ export default function App() {
                   </p>
                 )}
                 <ul className="list-disc space-y-1 pl-5">
-                  {describeChanges(previous, adapter).map((line) => (
+                  {describeChanges(previous, adapter, text.diff).map((line) => (
                     <li key={line}>{line}</li>
                   ))}
                 </ul>

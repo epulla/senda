@@ -8,6 +8,7 @@ import { permissionIncrease } from '../src/core/adapters/permissions';
 import { materialize, applyOverride, computeOverride } from '../src/core/adapters/materialize';
 import { exportRecipe } from '../src/core/adapters/export';
 import moodle from './fixtures/adapters/fixturemoodle.json';
+import { es } from '../src/core/text/es';
 
 const moodleTemplate = () => {
   const replace = (value: any): any => typeof value === 'string'
@@ -134,5 +135,9 @@ describe('adapter policies', () => {
     next.tools.change = { description: 'Change', effect: 'write', params: {}, steps: [] };
     expect(permissionIncrease(valid, next)).toHaveLength(4);
     expect(permissionIncrease(valid, valid)).toEqual([]);
+    expect(permissionIncrease(valid, next, es.permissions)[0]).toBe('Sitio nuevo: https://extra.example/*');
+  });
+  it('describes adapter changes in Spanish', () => {
+    expect(describeChanges(undefined, valid, es.diff)[0]).toContain('Agregar');
   });
 });

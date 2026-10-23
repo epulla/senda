@@ -4,12 +4,14 @@ import { CommandError, target } from './shared';
 import { needsApproval } from '../../core/approvals';
 import { requestApproval } from '../approvals';
 import { settingsItem, visitedHostsItem, taintItem } from '../state';
+import { bgText } from '../text';
 export default async function type(p: { ref: string; text: string; submit?: boolean; tabId?: number }) {
   const tabId = await target(p.tabId);
   const tab = await browser.tabs.get(tabId);
   const url = tab.url || '';
   const host = new URL(url).host;
   const settings = await settingsItem.getValue();
+  const text = await bgText();
   const taint = await taintItem.getValue();
   const reason = needsApproval({
     action: 'type',
@@ -20,14 +22,14 @@ export default async function type(p: { ref: string; text: string; submit?: bool
     alwaysSites: settings.alwaysSites,
     askBefore: settings.askBefore,
     tainted: !!taint,
-  });
+  }, text.approval);
   if (reason)
     await requestApproval({
       kind: 'generic',
-      summary: `Your AI wants to enter text on ${host}${p.submit ? ' and submit the form' : ''}.`,
+      summary: text.approval.typeSummary(host, !!p.submit),
       host,
       url,
-      details: [['Reason', reason]],
+      details: [[text.approval.reasonLabel, reason]],
       source: taint || undefined,
       allowAlways: true,
     });

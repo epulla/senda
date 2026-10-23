@@ -1,4 +1,6 @@
 import { isSensitiveLabel } from './sensitive';
+import { en } from './text/en';
+import type { Text } from './i18n';
 
 export function needsApproval(input: {
   action: 'click' | 'type' | 'navigate' | 'read';
@@ -10,7 +12,7 @@ export function needsApproval(input: {
   alwaysSites: string[];
   askBefore: 'never' | 'destructive' | 'changes' | 'everything';
   tainted: boolean;
-}): string | null {
+}, t: Text['approval'] = en.approval): string | null {
   let host = '';
   try {
     host = new URL(input.url).host;
@@ -19,16 +21,16 @@ export function needsApproval(input: {
   if (input.askBefore === 'never' && !input.tainted) return null;
   if (!input.tainted && includes(input.alwaysSites)) return null;
   const askBefore = input.askBefore === 'never' ? 'destructive' : input.askBefore;
-  if (askBefore === 'everything') return 'You asked to approve every browser action.';
+  if (askBefore === 'everything') return t.reasons.everything;
   if (input.action === 'click' && input.label && isSensitiveLabel(input.label))
-    return 'This click may send, change, or delete information.';
-  if (input.action === 'type' && input.submit) return 'This will submit a form.';
+    return t.reasons.sensitiveClick;
+  if (input.action === 'type' && input.submit) return t.reasons.submit;
   if (askBefore === 'changes' && (input.action === 'click' || input.action === 'type'))
-    return 'You asked to approve changes.';
+    return t.reasons.changes;
   if (input.action === 'navigate' && !input.visitedHosts.includes(host) && !includes(input.allowedDomains)) {
     try {
       const url = new URL(input.url);
-      if (url.search || url.hash) return 'This may send data to a new site.';
+      if (url.search || url.hash) return t.reasons.newSiteData;
     } catch {}
   }
   return null;

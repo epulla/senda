@@ -4,9 +4,11 @@ import { CommandError, target } from './shared';
 import { needsApproval } from '../../core/approvals';
 import { requestApproval } from '../approvals';
 import { settingsItem, visitedHostsItem, taintItem, openedTabsItem } from '../state';
+import { bgText } from '../text';
 export default async function navigate(p: { url: string; tabId?: number; newTab?: boolean; internal?: boolean }) {
   const host = new URL(p.url).host;
   const settings = await settingsItem.getValue();
+  const text = await bgText();
   if (settings.blockedDomains.some((d) => host === d || host.endsWith(`.${d}`)))
     throw new CommandError(ErrorCode.DOMAIN_BLOCKED, `Domain ${host} is blocked.`);
   const taint = await taintItem.getValue();
@@ -18,14 +20,14 @@ export default async function navigate(p: { url: string; tabId?: number; newTab?
     alwaysSites: settings.alwaysSites,
     askBefore: settings.askBefore,
     tainted: !!taint,
-  });
+  }, text.approval);
   if (reason && !p.internal)
     await requestApproval({
       kind: 'generic',
-      summary: `Your AI wants to open ${host}.`,
+      summary: text.approval.navigateSummary(host),
       host,
       url: p.url,
-      details: [['Reason', reason]],
+      details: [[text.approval.reasonLabel, reason]],
       source: taint || undefined,
       allowAlways: true,
     });

@@ -13,6 +13,7 @@ import { CommandError } from './commands/shared';
 import { listAgentIds } from './agent-tabs';
 import { stopConnection } from './connection';
 import { looksLikeInjection } from '../core/injection';
+import { bgText } from './text';
 
 export async function logActivity(kind: 'approval' | 'denied' | 'injection' | 'adapter' | 'panic' | 'tab', text: string) {
   const rows = await activityItem.getValue();
@@ -71,7 +72,7 @@ export async function requestApproval(card: Omit<ApprovalCard, 'id' | 'created_a
 }
 export async function noteExternal(host: string, text: string) {
   await taintItem.setValue(host);
-  if (looksLikeInjection(text)) await logActivity('injection', `Possible prompt injection on ${host}`);
+  if (looksLikeInjection(text)) await logActivity('injection', (await bgText()).activity.injection(host));
 }
 export async function requestPanic() {
   await panicItem.setValue(Date.now());
@@ -95,6 +96,6 @@ export function watchPanic() {
     }
     await openedTabsItem.setValue([]);
     stopConnection();
-    await logActivity('panic', 'Panic switch activated.');
+    await logActivity('panic', (await bgText()).activity.panic);
   });
 }

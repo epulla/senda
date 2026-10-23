@@ -4,6 +4,7 @@ import { CommandError, target } from './shared';
 import { needsApproval } from '../../core/approvals';
 import { requestApproval } from '../approvals';
 import { settingsItem, visitedHostsItem, taintItem } from '../state';
+import { bgText } from '../text';
 export default async function click(p: { ref: string; tabId?: number }) {
   const tabId = await target(p.tabId);
   const tab = await browser.tabs.get(tabId);
@@ -20,6 +21,7 @@ export default async function click(p: { ref: string; tabId?: number }) {
     args: [p.ref],
   });
   const settings = await settingsItem.getValue();
+  const text = await bgText();
   const taint = await taintItem.getValue();
   const reason = needsApproval({
     action: 'click',
@@ -30,14 +32,14 @@ export default async function click(p: { ref: string; tabId?: number }) {
     alwaysSites: settings.alwaysSites,
     askBefore: settings.askBefore,
     tainted: !!taint,
-  });
+  }, text.approval);
   if (reason)
     await requestApproval({
       kind: 'generic',
-      summary: `Your AI wants to click “${label || 'an element'}” on ${host}.`,
+      summary: text.approval.clickSummary(label || text.approval.element, host),
       host,
       url,
-      details: [['Reason', reason]],
+      details: [[text.approval.reasonLabel, reason]],
       source: taint || undefined,
       allowAlways: true,
     });

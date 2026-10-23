@@ -8,6 +8,7 @@ import { listAgentIds } from '../agent-tabs';
 import { getAdapter } from './store';
 import { requestApproval, noteExternal, logActivity } from '../approvals';
 import { settingsItem, taintItem } from '../state';
+import { bgText } from '../text';
 
 export async function runAdapter(input: {
   adapter: string;
@@ -80,6 +81,7 @@ export async function runAdapter(input: {
     }
     if (result && 'confirm' in result) {
       const vars = result.confirm.vars;
+      const uiText = await bgText();
       const text = definition.confirm
         ? String(
             (await import('../../core/adapters/template')).render(definition.confirm, {
@@ -88,7 +90,7 @@ export async function runAdapter(input: {
               now: Math.floor(Date.now() / 1000),
             }),
           )
-        : `Your AI wants to use ${input.tool} on ${adapter.name} (${host}).`;
+        : uiText.approval.adapterSummary(input.tool, adapter.name, host);
       const taint = await taintItem.getValue();
       const settings = await settingsItem.getValue();
       if (settings.askBefore !== 'never' || taint) await requestApproval({
@@ -98,7 +100,7 @@ export async function runAdapter(input: {
         url: tab?.url,
         details: [
           ...Object.entries(input.args).map(([k, v]) => [k, String(v).slice(0, 200)] as [string, string]),
-          ...Object.entries(vars).map(([k, v]) => [`Current ${k}`, String(v).slice(0, 200)] as [string, string]),
+          ...Object.entries(vars).map(([k, v]) => [uiText.approval.current(k), String(v).slice(0, 200)] as [string, string]),
         ],
         source: taint || undefined,
         allowAlways: false,
