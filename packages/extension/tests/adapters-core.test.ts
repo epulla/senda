@@ -5,6 +5,16 @@ import { validateAdapter } from '../src/core/adapters/validate';
 import { matchesSites } from '../src/core/adapters/sites';
 import { describeChanges } from '../src/core/adapters/diff';
 import { permissionIncrease } from '../src/core/adapters/permissions';
+import { materialize } from '../src/core/adapters/materialize';
+import moodle from './fixtures/adapters/fixturemoodle.json';
+
+const moodleTemplate = () => {
+  const replace = (value: any): any => typeof value === 'string'
+    ? value.replaceAll('http://127.0.0.1:18766/moodle', '{{site}}').replaceAll('/moodle', '{{site_path}}')
+    : Array.isArray(value) ? value.map(replace) : value && typeof value === 'object'
+      ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, replace(item)])) : value;
+  return { ...replace(moodle), template: { site: { description: 'Moodle site', example: 'https://moodle.example.edu' } } };
+};
 
 const fixture = (name: string) =>
   JSON.parse(readFileSync(new URL(`../../adapter-schema/tests/fixtures/${name}.json`, import.meta.url), 'utf8'));
@@ -15,6 +25,31 @@ const withTool = (steps: unknown[], effect = 'read') => ({
 });
 
 describe('adapter policies', () => {
+  it.each([
+    ['http://127.0.0.1:18766/moodle', 'local', ['http://127.0.0.1:18766/moodle/*'], '/moodle/lib/ajax/service.php'],
+    ['https://moodle.example.edu', 'root', ['https://moodle.example.edu/*'], '/lib/ajax/service.php'],
+  ])('materializes Moodle template for %s', (site, label, sites, path) => {
+    const result = materialize(moodleTemplate(), site, label);
+    expect(result).toMatchObject({ ok: true, adapter: { id: `fixturemoodle_${label}`, sites, read_endpoints: [path] } });
+    if (result.ok) {
+      expect(result.adapter.start_url).toBe(`${site.replace(/\/$/, '')}/my/`);
+      expect(result.adapter.tools.rename_course!.steps[0]).toMatchObject({ navigate: { url: `${site.replace(/\/$/, '')}/course/edit.php?id={{args.id}}` } });
+    }
+  });
+  it.each([
+    ['site pattern', (t: any) => { t.sites = ['https://evil.example/{{site}}']; }],
+    ['other host', (t: any) => { t.sites = ['https://evil.example/*']; }],
+  ])('rejects template with invalid %s', (_name, change) => {
+    const t = moodleTemplate(); change(t);
+    expect(materialize(t, 'https://moodle.example.edu', 'test').ok).toBe(false);
+  });
+  it.each(['javascript:alert(1)', 'ftp://moodle.example.edu'])('rejects unsafe site %s', (site) => {
+    expect(materialize(moodleTemplate(), site, 'test').ok).toBe(false);
+  });
+  it('rejects invalid labels and raw templates', () => {
+    expect(materialize(moodleTemplate(), 'https://moodle.example.edu', 'Bad Label').ok).toBe(false);
+    expect(validateAdapter(moodleTemplate()).ok).toBe(false);
+  });
   it('accepts both fixture recipes', () => {
     expect(validateAdapter(fixture('whatsapp')).ok).toBe(true);
     expect(validateAdapter(fixture('moodle')).ok).toBe(true);
