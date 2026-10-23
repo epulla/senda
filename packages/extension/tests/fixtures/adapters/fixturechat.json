@@ -41,7 +41,7 @@
           "extract_list": {
             "container": ".messages",
             "item": "p",
-            "fields": { "message": { "selector": "*", "text": true } }
+            "fields": { "message": { "selector": ":scope", "text": true } }
           },
           "save": "messages"
         },

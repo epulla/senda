@@ -17,6 +17,7 @@ export type RunResult =
 const path = (o: any, p: string): any => p.split('.').reduce((v, k) => v?.[/^\d+$/.test(k) ? +k : k], o);
 const safe = (el: Element | null): boolean => !el || !el.matches('input[type=password], [autocomplete~=cc-number]');
 function select(selector: string, root: ParentNode = document): Element | null {
+  if (selector === ':scope') return root instanceof Element ? root : null;
   if (selector.startsWith('text=')) {
     const q = selector.slice(5).toLowerCase();
     return (
@@ -54,6 +55,31 @@ export async function runRecipe(input: Input): Promise<RunResult> {
     current = -1,
     currentStep: any;
   const ctx = () => ({ args, vars, now: Math.floor(Date.now() / 1000) });
+  const sel = (selector: string | undefined, root?: ParentNode) =>
+    selector ? select(String(render(selector, ctx())), root) : null;
+  const get = (el: Element, f: any) => {
+    if (!safe(el)) return null;
+    let v: any = f.text
+      ? el.textContent?.trim()
+      : f.attr
+        ? el.getAttribute(f.attr)
+        : f.selector
+          ? sel(f.selector, el)?.textContent?.trim()
+          : el.getAttribute('href')
+            ? new URL(el.getAttribute('href')!, location.href).href
+            : el.textContent?.trim();
+    if (f.pattern && v) {
+      const m = new RegExp(f.pattern).exec(v);
+      v = m?.[1] ?? undefined;
+    }
+    if (v === undefined || v === null || v === '') {
+      if ('default' in f) return f.default;
+      throw Error('Missing extracted value');
+    }
+    if (f.as === 'number') v = Number(v);
+    if (f.as === 'date') v = new Date(v).toISOString();
+    return v;
+  };
   const fail = (code: string, message: string, data?: unknown): RunResult => ({ ok: false, code, message, data });
   const bad = (message: string): RunResult =>
     fail(ErrorCode.ADAPTER_BROKEN, message, {
@@ -78,58 +104,38 @@ export async function runRecipe(input: Input): Promise<RunResult> {
         switch (kind) {
           case 'wait_for': {
             const until = Date.now() + (payload.timeout_ms ?? 10000);
-            while (!(payload.selector ? select(payload.selector) : payload.text ? select(`text=${render(payload.text, ctx())}` as string) : null)) {
+            while (!(payload.selector ? sel(payload.selector) : payload.text ? sel(`text=${payload.text}`) : null)) {
               if (Date.now() > until) throw Error('Timed out waiting for selector');
               await new Promise((r) => setTimeout(r, 100));
             }
             break;
           }
           case 'exists':
-            out = !!select(payload.selector);
+            out = !!sel(payload.selector);
             break;
           case 'if_exists': {
-            const r = await execute(select(payload.selector) ? payload.then : (payload.else ?? []));
+            const r = await execute(sel(payload.selector) ? payload.then : (payload.else ?? []));
             if (r) return r;
             break;
           }
           case 'extract':
           case 'extract_list': {
-            const container = kind === 'extract' ? document : select(payload.container ?? 'body');
+            const container = kind === 'extract' ? document : sel(payload.container ?? 'body');
             if (!container) throw Error('Missing container');
-            const get = (el: Element, f: any) => {
-              if (!safe(el)) return null;
-              let v: any = f.text
-                ? el.textContent?.trim()
-                : f.attr
-                  ? el.getAttribute(f.attr)
-                  : f.selector
-                    ? select(f.selector, el)?.textContent?.trim()
-                    : el.getAttribute('href')
-                      ? new URL(el.getAttribute('href')!, location.href).href
-                      : el.textContent?.trim();
-              if (f.pattern && v) {
-                const m = new RegExp(f.pattern).exec(v);
-                v = m?.[1] ?? undefined;
-              }
-              if (v === undefined || v === null || v === '') {
-                if ('default' in f) return f.default;
-                throw Error('Missing extracted value');
-              }
-              if (f.as === 'number') v = Number(v);
-              if (f.as === 'date') v = new Date(v).toISOString();
-              return v;
-            };
             if (kind === 'extract') {
-              const el = select(payload.selector);
+              const el = sel(payload.selector);
               if (!el) throw Error('Missing extraction target');
               out = get(el, payload);
             } else {
-              const items = [...container.querySelectorAll(payload.item)].slice(0, payload.limit ?? Infinity);
+              const items = [...container.querySelectorAll(String(render(payload.item, ctx())))].slice(
+                0,
+                payload.limit ?? Infinity,
+              );
               out = items.map((el) =>
                 Object.fromEntries(
                   Object.entries(payload.fields).map(([k, f]) => {
                     const field = f as any,
-                      child = select(field.selector, el);
+                      child = field.selector ? sel(field.selector, el) : el;
                     return [k, child ? get(child, field) : 'default' in field ? field.default : null];
                   }),
                 ),
@@ -138,7 +144,7 @@ export async function runRecipe(input: Input): Promise<RunResult> {
             break;
           }
           case 'scroll_until': {
-            const el = select(payload.container) as HTMLElement | null;
+            const el = sel(payload.container) as HTMLElement | null;
             if (!el) throw Error('Missing scroll container');
             const found = new Map();
             const end = Date.now() + (payload.timeout_ms ?? 20000);
@@ -148,14 +154,13 @@ export async function runRecipe(input: Input): Promise<RunResult> {
               Date.now() - last < (payload.idle_ms ?? 1000) &&
               found.size < (payload.limit ?? Infinity)
             ) {
-              for (const row of el.querySelectorAll(payload.item)) {
+              for (const row of el.querySelectorAll(String(render(payload.item, ctx())))) {
                 const v = Object.fromEntries(
                   Object.entries(payload.fields).map(([k, f]) => {
-                    const ch = select((f as any).selector, row);
-                    return [
-                      k,
-                      ch ? ((f as any).attr ? ch.getAttribute((f as any).attr) : ch.textContent?.trim()) : null,
-                    ];
+                    const field = f as any;
+                    const ch = field.selector ? sel(field.selector, row) : row;
+                    if (!ch) return [k, 'default' in field ? field.default : null];
+                    return [k, get(ch, field)];
                   }),
                 );
                 const key = path(v, payload.key);
@@ -173,7 +178,7 @@ export async function runRecipe(input: Input): Promise<RunResult> {
             break;
           }
           case 'click': {
-            const el = select(payload.selector) as HTMLElement | null;
+            const el = sel(payload.selector) as HTMLElement | null;
             if (!el) throw Error('Missing click target');
             if (
               def.effect === 'read' &&
@@ -251,7 +256,7 @@ export async function runRecipe(input: Input): Promise<RunResult> {
               .join(payload.sep ?? '');
             break;
           case 'type': {
-            const e = select(payload.selector) as HTMLInputElement | null;
+            const e = sel(payload.selector) as HTMLInputElement | null;
             if (!e) throw Error('Missing input');
             e.focus();
             e.value = String(render(payload.text, ctx()));
@@ -259,19 +264,19 @@ export async function runRecipe(input: Input): Promise<RunResult> {
             break;
           }
           case 'select': {
-            const e = select(payload.selector) as HTMLSelectElement | null;
+            const e = sel(payload.selector) as HTMLSelectElement | null;
             if (!e) throw Error('Missing select');
             e.value = payload.value;
             e.dispatchEvent(new Event('change', { bubbles: true }));
             break;
           }
           case 'press': {
-            const e = select(payload.selector ?? 'body')!;
+            const e = sel(payload.selector ?? 'body')!;
             e.dispatchEvent(new KeyboardEvent('keydown', { key: payload.key, bubbles: true }));
             break;
           }
           case 'submit': {
-            const e = select(payload.selector) as HTMLElement | null;
+            const e = sel(payload.selector) as HTMLElement | null;
             if (!e) throw Error('Missing submit');
             if (e instanceof HTMLFormElement) e.requestSubmit();
             else e.click();
