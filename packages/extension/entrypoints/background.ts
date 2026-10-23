@@ -5,9 +5,6 @@ export default defineBackground(() => {
   startConnection();
   watchPanic();
   browser.runtime.onInstalled.addListener((details) => {
-    if (details.reason === "install")
-      browser.tabs.create({
-        url: browser.runtime.getURL("/onboarding.html" as never),
-      });
+    if (details.reason === "install") browser.tabs.create({ url: browser.runtime.getURL("/onboarding.html" as never) });
   });
 });

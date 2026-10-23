@@ -1,4 +1,4 @@
-import { ErrorCode } from "@senda/protocol";
+import { ErrorCode } from '@senda/protocol';
 import {
   adaptersItem,
   activityItem,
@@ -7,31 +7,20 @@ import {
   settingsItem,
   taintItem,
   type ApprovalCard,
-} from "./state";
-import { CommandError } from "./commands/shared";
-import { listAgentIds } from "./agent-tabs";
-import { stopConnection } from "./connection";
+} from './state';
+import { CommandError } from './commands/shared';
+import { listAgentIds } from './agent-tabs';
+import { stopConnection } from './connection';
 
-export async function logActivity(
-  kind: "approval" | "denied" | "injection" | "adapter" | "panic",
-  text: string,
-) {
+export async function logActivity(kind: 'approval' | 'denied' | 'injection' | 'adapter' | 'panic', text: string) {
   const rows = await activityItem.getValue();
-  await activityItem.setValue(
-    [...rows, { at: new Date().toISOString(), kind, text }].slice(-200),
-  );
+  await activityItem.setValue([...rows, { at: new Date().toISOString(), kind, text }].slice(-200));
 }
-export async function answerApproval(
-  id: string,
-  answer: "allow" | "deny" | "always",
-) {
+export async function answerApproval(id: string, answer: 'allow' | 'deny' | 'always') {
   const rows = await approvalsItem.getValue();
-  if (rows[id])
-    await approvalsItem.setValue({ ...rows, [id]: { ...rows[id], answer } });
+  if (rows[id]) await approvalsItem.setValue({ ...rows, [id]: { ...rows[id], answer } });
 }
-export async function requestApproval(
-  card: Omit<ApprovalCard, "id" | "created_at">,
-): Promise<"allow" | "always"> {
+export async function requestApproval(card: Omit<ApprovalCard, 'id' | 'created_at'>): Promise<'allow' | 'always'> {
   const id = crypto.randomUUID();
   const rows = await approvalsItem.getValue();
   await approvalsItem.setValue({
@@ -39,43 +28,38 @@ export async function requestApproval(
     [id]: { ...card, id, created_at: new Date().toISOString() },
   });
   try {
-    const answer = await new Promise<"allow" | "deny" | "always">(
-      (resolve, reject) => {
-        const timer = setTimeout(() => {
+    const answer = await new Promise<'allow' | 'deny' | 'always'>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        stop();
+        reject(
+          new CommandError(
+            ErrorCode.DENIED_BY_USER,
+            'No answer in the Senda side panel within 110 s. Ask the user to open the Senda side panel, then try again.',
+          ),
+        );
+      }, 110_000);
+      const stop = approvalsItem.watch((value) => {
+        const a = value[id]?.answer;
+        if (a) {
+          clearTimeout(timer);
           stop();
-          reject(
-            new CommandError(
-              ErrorCode.DENIED_BY_USER,
-              "No answer in the Senda side panel within 110 s. Ask the user to open the Senda side panel, then try again.",
-            ),
-          );
-        }, 110_000);
-        const stop = approvalsItem.watch((value) => {
-          const a = value[id]?.answer;
-          if (a) {
-            clearTimeout(timer);
-            stop();
-            resolve(a);
-          }
-        });
-      },
-    );
-    if (answer === "deny")
-      throw new CommandError(
-        ErrorCode.DENIED_BY_USER,
-        "The user denied this in the Senda side panel.",
-      );
-    if (answer === "always") {
+          resolve(a);
+        }
+      });
+    });
+    if (answer === 'deny')
+      throw new CommandError(ErrorCode.DENIED_BY_USER, 'The user denied this in the Senda side panel.');
+    if (answer === 'always') {
       const settings = await settingsItem.getValue();
       await settingsItem.setValue({
         ...settings,
         alwaysSites: [...new Set([...settings.alwaysSites, card.host])],
       });
     }
-    await logActivity("approval", card.summary);
+    await logActivity('approval', card.summary);
     return answer;
   } catch (error) {
-    await logActivity("denied", card.summary);
+    await logActivity('denied', card.summary);
     throw error;
   } finally {
     const current = await approvalsItem.getValue();
@@ -94,29 +78,14 @@ export function watchPanic() {
     if (!value) return;
     const rows = await approvalsItem.getValue();
     await approvalsItem.setValue(
-      Object.fromEntries(
-        Object.entries(rows).map(([id, c]) => [
-          id,
-          { ...c, answer: "deny" as const },
-        ]),
-      ),
+      Object.fromEntries(Object.entries(rows).map(([id, c]) => [id, { ...c, answer: 'deny' as const }])),
     );
     const adapters = await adaptersItem.getValue();
     await adaptersItem.setValue(
-      Object.fromEntries(
-        Object.entries(adapters).map(([id, a]) => [
-          id,
-          { ...a, status: "paused" as const },
-        ]),
-      ),
+      Object.fromEntries(Object.entries(adapters).map(([id, a]) => [id, { ...a, status: 'paused' as const }])),
     );
-    await Promise.all(
-      listAgentIds().map((id) =>
-        browser.tabs.remove(id).catch(() => undefined),
-      ),
-    );
+    await Promise.all(listAgentIds().map((id) => browser.tabs.remove(id).catch(() => undefined)));
     stopConnection();
-    await logActivity("panic", "Panic switch activated.");
-    await panicItem.setValue(0);
+    await logActivity('panic', 'Panic switch activated.');
   });
 }

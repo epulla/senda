@@ -1,24 +1,10 @@
-import {
-  CLOSE_INVALID_TOKEN,
-  ErrorCode,
-  PROTOCOL_VERSION,
-  type Request,
-} from "@senda/protocol";
-import { detectCapabilities } from "../core/capabilities";
-import { detectBrowserName } from "../core/browser-name";
-import { nextDelay } from "../core/backoff";
-import { handle } from "./router";
-import {
-  adaptersItem,
-  approvalsItem,
-  draftsItem,
-  instanceIdItem,
-  panicItem,
-  portItem,
-  statusItem,
-  tokenItem,
-} from "./state";
-import { summaries } from "./adapters/store";
+import { CLOSE_INVALID_TOKEN, ErrorCode, PROTOCOL_VERSION, type Request } from '@senda/protocol';
+import { detectCapabilities } from '../core/capabilities';
+import { detectBrowserName } from '../core/browser-name';
+import { nextDelay } from '../core/backoff';
+import { handle } from './router';
+import { adaptersItem, approvalsItem, draftsItem, instanceIdItem, panicItem, portItem, statusItem, tokenItem } from './state';
+import { summaries } from './adapters/store';
 
 let socket: WebSocket | undefined;
 let timer: ReturnType<typeof setTimeout> | undefined;
@@ -29,38 +15,30 @@ let started = false;
 let socketToken: string | undefined;
 let socketPort: number | undefined;
 
-async function badge(status: "connected" | "disconnected" | "invalid_token") {
+async function badge(status: 'connected' | 'disconnected' | 'invalid_token') {
   await statusItem.setValue(status);
-  const pending =
-    Object.values(await approvalsItem.getValue()).filter((item) => !item.answer)
-      .length +
-    Object.values(await draftsItem.getValue()).filter((item) => item.pending)
-      .length;
+  const pending = stoppedForToken ? 0 :
+    Object.values(await approvalsItem.getValue()).filter((item) => !item.answer).length +
+    Object.values(await draftsItem.getValue()).filter((item) => item.pending).length;
   await browser.action.setBadgeBackgroundColor({
     color: pending
-      ? "#d97706"
-      : status === "connected"
-        ? "#16a34a"
-        : status === "invalid_token"
-          ? "#dc2626"
-          : "#9ca3af",
+      ? '#d97706'
+      : status === 'connected'
+        ? '#16a34a'
+        : status === 'invalid_token'
+          ? '#dc2626'
+          : '#9ca3af',
   });
   await browser.action.setBadgeText({
-    text: pending
-      ? String(pending)
-      : status === "connected"
-        ? "on"
-        : status === "invalid_token"
-          ? "!"
-          : "off",
+    text: pending ? String(pending) : status === 'connected' ? 'on' : status === 'invalid_token' ? '!' : 'off',
   });
   await browser.action.setTitle({
     title:
-      status === "connected"
-        ? "Senda: connected"
-        : status === "invalid_token"
-          ? "Senda: wrong token"
-          : "Senda: server not running",
+      status === 'connected'
+        ? 'Senda: connected'
+        : status === 'invalid_token'
+          ? 'Senda: wrong token'
+          : 'Senda: server not running',
   });
 }
 function schedule() {
@@ -80,31 +58,21 @@ async function connect() {
   const port = await portItem.getValue();
   const instanceId = await instanceIdItem.getValue();
   if (!token || stoppedForToken) {
-    await badge("disconnected");
+    await badge('disconnected');
     return;
   }
   // Chrome logs every refused WebSocket handshake as an extension error; a caught fetch stays quiet.
   // Timeout counts as up: older servers never answer plain HTTP.
-  const up = await fetch(`http://127.0.0.1:${port}/`, {
-    mode: "no-cors",
-    signal: AbortSignal.timeout(3000),
-  }).then(
+  const up = await fetch(`http://127.0.0.1:${port}/`, { mode: 'no-cors', signal: AbortSignal.timeout(3000) }).then(
     () => true,
-    (error: unknown) =>
-      error instanceof DOMException && error.name === "TimeoutError",
+    (error: unknown) => error instanceof DOMException && error.name === 'TimeoutError',
   );
   if (!up) {
-    await badge("disconnected");
+    await badge('disconnected');
     schedule();
     return;
   }
-  if (
-    socket &&
-    socketToken === token &&
-    socketPort === port &&
-    socket.readyState < WebSocket.CLOSING
-  )
-    return;
+  if (socket && socketToken === token && socketPort === port && socket.readyState < WebSocket.CLOSING) return;
   clearSocket();
   const ws = new WebSocket(`ws://127.0.0.1:${port}`);
   socket = ws;
@@ -114,7 +82,7 @@ async function connect() {
     if (socket !== ws) return;
     ws.send(
       JSON.stringify({
-        event: "hello",
+        event: 'hello',
         data: {
           token,
           instanceId,
@@ -129,10 +97,9 @@ async function connect() {
       }),
     );
     attempt = 0;
-    void badge("connected");
+    void badge('connected');
     ping = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN)
-        ws.send(JSON.stringify({ event: "ping" }));
+      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ event: 'ping' }));
     }, 20_000);
   };
   ws.onmessage = async ({ data }) => {
@@ -143,21 +110,12 @@ async function connect() {
     } catch {
       return;
     }
-    if (typeof request.id !== "string" || typeof request.method !== "string")
-      return;
+    if (typeof request.id !== 'string' || typeof request.method !== 'string') return;
     try {
-      ws.send(
-        JSON.stringify({
-          id: request.id,
-          result: await handle(request.method, request.params),
-        }),
-      );
+      ws.send(JSON.stringify({ id: request.id, result: await handle(request.method, request.params) }));
     } catch (error) {
       const code =
-        error &&
-        typeof error === "object" &&
-        "code" in error &&
-        typeof error.code === "string"
+        error && typeof error === 'object' && 'code' in error && typeof error.code === 'string'
           ? error.code
           : ErrorCode.INTERNAL;
       ws.send(
@@ -166,10 +124,7 @@ async function connect() {
           error: {
             code,
             message: error instanceof Error ? error.message : String(error),
-            ...(error &&
-            typeof error === "object" &&
-            "data" in error &&
-            error.data !== undefined
+            ...(error && typeof error === 'object' && 'data' in error && error.data !== undefined
               ? { data: error.data }
               : {}),
           },
@@ -182,10 +137,10 @@ async function connect() {
     clearSocket();
     if (code === CLOSE_INVALID_TOKEN) {
       stoppedForToken = true;
-      void badge("invalid_token");
+      void badge('invalid_token');
       return;
     }
-    void badge("disconnected");
+    void badge('disconnected');
     schedule();
   };
   ws.onerror = () => ws.close();
@@ -211,27 +166,29 @@ export function stopConnection() {
     clearSocket();
     old.close();
   }
+  void badge('disconnected');
+}
+export async function resumeAfterPanic() {
+  await panicItem.setValue(0);
 }
 export function startConnection() {
   if (started) return;
   started = true;
   tokenItem.watch(reconnect);
+  panicItem.watch((value) => {
+    if (value) stopConnection();
+    else if (stoppedForToken) reconnect();
+  });
   approvalsItem.watch(() => void statusItem.getValue().then(badge));
   draftsItem.watch(() => void statusItem.getValue().then(badge));
   adaptersItem.watch(async () => {
     if (socket?.readyState === WebSocket.OPEN)
-      socket.send(
-        JSON.stringify({ event: "adapters_changed", data: await summaries() }),
-      );
+      socket.send(JSON.stringify({ event: 'adapters_changed', data: await summaries() }));
   });
   portItem.watch(reconnect);
-  browser.alarms.create("reconnect", { periodInMinutes: 1 });
+  browser.alarms.create('reconnect', { periodInMinutes: 1 });
   browser.alarms.onAlarm.addListener((alarm) => {
-    if (
-      alarm.name === "reconnect" &&
-      (!socket || socket.readyState !== WebSocket.OPEN)
-    )
-      reconnect();
+    if (alarm.name === 'reconnect' && !stoppedForToken && (!socket || socket.readyState !== WebSocket.OPEN)) reconnect();
   });
   reconnect();
 }
