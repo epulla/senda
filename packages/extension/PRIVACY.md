@@ -4,7 +4,7 @@ Senda sends no data outside your machine except to the local Senda server on `12
 
 When the user or AI asks to import a template by URL, Senda fetches that URL only.
 
-Approval cards and visited hosts use session storage; approval preferences and activity history use local storage; taint source and panic timestamp use session storage.
+Approval cards and visited hosts use session storage; approval preferences, appearance (light or dark) and activity history use local storage; taint source and panic timestamp use session storage.
 
 ## Permissions
 

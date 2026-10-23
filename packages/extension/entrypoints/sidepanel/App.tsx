@@ -433,6 +433,28 @@ export default function App() {
             </label>
           ))}
         </fieldset>
+        <fieldset>
+          <legend className="mb-1 font-semibold">Appearance</legend>
+          <div className="flex gap-4">
+            {(
+              [
+                ['system', 'Same as my computer'],
+                ['light', 'Light'],
+                ['dark', 'Dark'],
+              ] as const
+            ).map(([value, label]) => (
+              <label key={value} className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="theme"
+                  checked={(settings.theme ?? 'system') === value}
+                  onChange={() => void setSettings({ ...settings, theme: value })}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <SiteList
           title="Trusted sites"
           hint="Your AI can open these sites with data in the address without asking."

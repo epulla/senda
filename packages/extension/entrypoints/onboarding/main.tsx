@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
+import '@/src/ui/applyTheme';
 import '../popup/style.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

@@ -2,7 +2,7 @@
 
 /* Token structure from Patio (patio/web/src/styles.css) with Senda's own trail-green accent. */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --base-100: oklch(99.4% 0.002 150);
   --base-200: oklch(97% 0.005 150);
   --base-300: oklch(93.5% 0.008 150);
@@ -18,22 +18,22 @@
   --error-text: oklch(50% 0.19 27);
   --shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 8px -2px rgb(0 0 0 / 0.08);
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --base-100: oklch(23% 0.008 165);
-    --base-200: oklch(20% 0.008 165);
-    --base-300: oklch(29% 0.01 165);
-    --content: oklch(95% 0.01 150);
-    --border: oklch(99% 0 0 / 0.16);
-    --primary: oklch(72% 0.13 158);
-    --primary-content: oklch(18% 0.04 158);
-    --primary-text: oklch(78% 0.12 158);
-    --warning: oklch(82% 0.14 85);
-    --error: oklch(68% 0.19 25);
-    --error-content: oklch(15% 0.04 25);
-    --error-text: oklch(76% 0.15 25);
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 10px -2px rgb(0 0 0 / 0.35);
-  }
+/* data-theme is set by src/ui/applyTheme.ts from the Appearance setting. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --base-100: oklch(23% 0.008 165);
+  --base-200: oklch(20% 0.008 165);
+  --base-300: oklch(29% 0.01 165);
+  --content: oklch(95% 0.01 150);
+  --border: oklch(99% 0 0 / 0.16);
+  --primary: oklch(72% 0.13 158);
+  --primary-content: oklch(18% 0.04 158);
+  --primary-text: oklch(78% 0.12 158);
+  --warning: oklch(82% 0.14 85);
+  --error: oklch(68% 0.19 25);
+  --error-content: oklch(15% 0.04 25);
+  --error-text: oklch(76% 0.15 25);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 10px -2px rgb(0 0 0 / 0.35);
 }
 
 @theme inline {

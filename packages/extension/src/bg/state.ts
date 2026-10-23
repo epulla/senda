@@ -20,6 +20,7 @@ export const settingsItem = storage.defineItem<{
   allowedDomains: string[];
   blockedDomains: string[];
   alwaysSites: string[];
+  theme?: 'system' | 'light' | 'dark';
 }>('local:settings', { fallback: { askBefore: 'destructive', allowedDomains: [], blockedDomains: [], alwaysSites: [] } });
 export const activityItem = storage.defineItem<
   Array<{
