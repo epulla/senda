@@ -16,6 +16,7 @@
     "zip:edge": "wxt zip -b edge",
     "compile": "tsc --noEmit",
     "test": "vitest run",
+    "fixtures": "node tests/fixtures/server.mjs",
     "postinstall": "wxt prepare"
   },
   "dependencies": {

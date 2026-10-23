@@ -1,0 +1,5 @@
+<!doctype html><title>Fixture Chat</title><div id="list" style="height:600px;overflow:auto"></div><div id="pane"></div><script>
+let variant=1;const list=document.querySelector('#list'),pane=document.querySelector('#pane'),names=Array.from({length:100},(_,i)=>`Chat ${String(i+1).padStart(3,'0')}`);
+function draw(){list.innerHTML='';const first=Math.floor(list.scrollTop/40);for(const name of names.slice(first,first+15)){const row=document.createElement(variant===1?'div':'article');row.className=variant===1?'row':'chat-row';if(variant===1)row.setAttribute('role','listitem');row.style.height='40px';row.innerHTML=`<span title="${name}">${name}</span><span class="last">Hello ${name}</span><span class="unread">1</span>`;row.onclick=()=>{pane.innerHTML=`<h2>${name}</h2><div class="messages"><p>${name} says hello</p></div><button>Send</button>`};list.append(row)}}
+list.addEventListener('scroll',draw);window.setVariant=n=>{variant=n;draw()};draw();
+</script>
