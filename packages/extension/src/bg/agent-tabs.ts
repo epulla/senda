@@ -11,6 +11,4 @@ export function isAgentTab(id: number): boolean {
 export function listAgentIds(): number[] {
   return [...agentTabs];
 }
-export function lastAgentId(): number | undefined {
-  return [...agentTabs].at(-1);
-}
+browser.tabs.onRemoved.addListener(untrackAgentTab);

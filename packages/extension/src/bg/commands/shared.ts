@@ -1,5 +1,5 @@
 import { ErrorCode } from '@senda/protocol';
-import { lastAgentId } from '../agent-tabs';
+import { listAgentIds, untrackAgentTab } from '../agent-tabs';
 export class CommandError extends Error {
   constructor(
     public code: ErrorCode,
@@ -18,13 +18,12 @@ export async function target(tabId?: number, create = false): Promise<number> {
       throw new CommandError(ErrorCode.TAB_GONE, `Tab ${tabId} is closed.`);
     }
   }
-  const id = lastAgentId();
-  if (id !== undefined) {
+  for (const id of listAgentIds().reverse()) {
     try {
       await browser.tabs.get(id);
       return id;
     } catch {
-      throw new CommandError(ErrorCode.TAB_GONE, `Tab ${id} is closed.`);
+      untrackAgentTab(id);
     }
   }
   if (create) return -1;

@@ -9,7 +9,7 @@ export default async function tabs(p: { action: 'list' | 'new' | 'select' | 'clo
       .filter((t) => t.id !== undefined && isAgentTab(t.id))
       .map((t) => ({ id: t.id, title: t.title, url: t.url, active: !!t.active }));
   }
-  if (p.action === 'new') return navigate({ url: p.url ?? 'about:blank' });
+  if (p.action === 'new') return navigate({ url: p.url ?? 'about:blank', newTab: true });
   if (p.tabId === undefined || !isAgentTab(p.tabId))
     throw new CommandError(ErrorCode.DENIED_BY_USER, 'Can only select or close agent tabs.');
   if (p.action === 'select') {
