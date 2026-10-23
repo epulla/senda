@@ -36,9 +36,6 @@ export async function saveDraft(recipe: unknown) {
   await draftsItem.setValue(drafts);
   return { ok: true as const, changes: describeChanges(installed, adapter) };
 }
-export async function draft(p: { recipe: unknown }) {
-  return saveDraft(p.recipe);
-}
 export async function submitDraft(p: { id: string }) {
   const drafts = await draftsItem.getValue();
   const item = drafts[p.id];
@@ -47,9 +44,6 @@ export async function submitDraft(p: { id: string }) {
     await draftsItem.setValue(drafts);
   }
   return { status: 'pending', message: `Open the Senda side panel to approve ${item?.adapter.name ?? p.id}.` };
-}
-export async function submit(p: { id: string }) {
-  return submitDraft(p);
 }
 export async function approveDraft(id: string) {
   const drafts = await draftsItem.getValue();
@@ -83,9 +77,6 @@ export async function removeAdapter(id: string) {
   delete installed[id];
   await adaptersItem.setValue(installed);
   return { ok: true };
-}
-export async function remove(p: { id: string }) {
-  return removeAdapter(p.id);
 }
 export async function list() {
   const drafts = await draftsItem.getValue();

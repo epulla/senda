@@ -5,7 +5,7 @@ import click from './commands/click';
 import typeCommand from './commands/type';
 import scroll from './commands/scroll';
 import tabs from './commands/tabs';
-import { draft, list, remove, saveTestResult, setStatus, submit } from './adapters/store';
+import { list, removeAdapter, saveDraft, saveTestResult, setStatus, submitDraft } from './adapters/store';
 import { runAdapter } from './adapters/run';
 import { CommandError } from './commands/shared';
 export { CommandError } from './commands/shared';
@@ -17,7 +17,7 @@ const commands: Record<string, (p: any) => Promise<unknown>> = {
   scroll,
   tabs,
   'adapter.list': list,
-  'adapter.draft': draft,
+  'adapter.draft': (p: any) => saveDraft(p.recipe),
   'adapter.test': async (p: any) => {
     try {
       const text = await runAdapter({ adapter: p.id, tool: p.tool, args: p.args ?? {}, draft: true });
@@ -29,9 +29,9 @@ const commands: Record<string, (p: any) => Promise<unknown>> = {
     }
   },
   'adapter.run': (p: any) => runAdapter({ adapter: p.adapter, tool: p.tool, args: p.args ?? {} }),
-  'adapter.submit': submit,
+  'adapter.submit': submitDraft,
   'adapter.disable': (p: any) => setStatus(p.id, 'paused'),
-  'adapter.remove': remove,
+  'adapter.remove': (p: any) => removeAdapter(p.id),
 };
 export async function handle(method: string, params: unknown): Promise<unknown> {
   if (!(method in methods)) throw new CommandError(ErrorCode.INVALID_PARAMS, `Unknown method: ${method}`);

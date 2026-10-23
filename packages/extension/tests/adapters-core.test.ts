@@ -29,9 +29,12 @@ describe('adapter policies', () => {
     expect(validateAdapter(valid, { blockedDomains: ['whatsapp.com'] }).ok).toBe(false);
   });
   it('rejects outside navigation and invalid request paths', () => {
-    for (const url of ['https://evil.com/x', 'https://web.whatsapp.com//evil'])
+    for (const url of ['https://evil.com/x', 'https://web.whatsapp.com{{args.x}}', '//evil.com', '/\\evil.com'])
       expect(validateAdapter(withTool([{ navigate: { url } }])).ok).toBe(false);
-    for (const path of ['https://x.com/a', '//x.com/a'])
+    expect(validateAdapter(withTool([{ navigate: { url: 'https://web.whatsapp.com/chat/{{args.id}}' } }])).ok).toBe(
+      true,
+    );
+    for (const path of ['https://x.com/a', '//x.com/a', '/\\x.com/a'])
       expect(validateAdapter(withTool([{ request: { method: 'GET', path } }])).ok).toBe(false);
   });
   it('rejects unapproved POST and write steps including nested branches', () => {

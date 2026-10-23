@@ -207,6 +207,14 @@ export async function runRecipe(input: Input): Promise<RunResult> {
             const u = new URL(render(payload.path, ctx()) as string, location.origin);
             for (const [k, v] of Object.entries(render(payload.query ?? {}, ctx()) as any))
               u.searchParams.set(k, String(v));
+            if (u.origin !== location.origin)
+              return fail(ErrorCode.DOMAIN_BLOCKED, 'Requests can only go to the site the tab is on');
+            if (
+              def.effect === 'read' &&
+              payload.method === 'POST' &&
+              !(adapter.read_endpoints ?? []).includes(u.pathname)
+            )
+              return fail(ErrorCode.READ_ONLY, `POST to ${u.pathname} is not an approved read endpoint`);
             const res = await fetch(u, {
               method: payload.method,
               credentials: 'same-origin',

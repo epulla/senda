@@ -41,11 +41,12 @@ export function validateAdapter(
           const url = step.navigate.url,
             originText = url.split('{{')[0];
           if (url.startsWith('/')) {
-            if (url.startsWith('//')) errors.push(`Tool ${name} has invalid navigation URL: ${url}`);
+            if (/^\/[/\\]/.test(url)) errors.push(`Tool ${name} has invalid navigation URL: ${url}`);
           } else {
             try {
+              // The literal part must contain the whole origin plus "/", so templates can't change the host.
               const u = new URL(originText);
-              if (u.origin !== originText.replace(/\/$/, '') || !siteMatches(originText))
+              if (!originText.startsWith(`${u.origin}/`) || !siteMatches(originText))
                 errors.push(`Tool ${name} navigates outside its sites: ${url}`);
             } catch {
               errors.push(`Tool ${name} has invalid navigation URL: ${url}`);
@@ -54,7 +55,7 @@ export function validateAdapter(
         }
         if (step.request) {
           const path = step.request.path;
-          if (!path.startsWith('/') || path.startsWith('//') || /^\/[{]/.test(path) || /^[a-z]+:/i.test(path))
+          if (!path.startsWith('/') || /^\/[/\\{]/.test(path))
             errors.push(`Tool ${name} has invalid request path: ${path}`);
           if (
             tool.effect === 'read' &&

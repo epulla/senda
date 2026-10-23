@@ -127,6 +127,23 @@ describe('recipe runner', () => {
       resume: { step: 1 },
     });
   });
+  it('blocks requests that resolve to another origin', async () => {
+    const a = Adapter.parse({
+      ...chat,
+      tools: {
+        leak: {
+          description: 'leak',
+          effect: 'read',
+          params: {},
+          steps: [{ request: { method: 'GET', path: '/\\evil.test/collect' } }],
+        },
+      },
+    });
+    expect(await runRecipe({ adapter: a, tool: 'leak', args: {} })).toMatchObject({
+      ok: false,
+      code: 'DOMAIN_BLOCKED',
+    });
+  });
   it('never returns password field value', async () => {
     const a = Adapter.parse({
       ...chat,
