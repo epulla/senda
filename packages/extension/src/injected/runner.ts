@@ -1,0 +1,44 @@
+import type { Adapter } from '@senda/adapter-schema';
+import { ErrorCode } from '@senda/protocol';
+import { matchesSites } from '../core/adapters/sites';
+import { render } from '../core/adapters/template';
+import { isSensitiveLabel } from '../core/sensitive';
+
+type Input = { adapter: Adapter; tool: string; args: Record<string, unknown>; resume?: { step: number; vars: Record<string, unknown> } };
+export type RunResult = { ok: true; value: unknown } | { ok: false; code: string; message: string; data?: unknown } | { navigate: string; resume: { step: number; vars: Record<string, unknown> } };
+const path = (o: any, p: string): any => p.split('.').reduce((v, k) => v?.[/^\d+$/.test(k) ? +k : k], o);
+const safe = (el: Element | null): boolean => !el || !(el.matches('input[type=password], [autocomplete~=cc-number]'));
+function select(selector: string, root: ParentNode = document): Element | null {
+  if (selector.startsWith('text=')) { const q = selector.slice(5).toLowerCase(); return [...root.querySelectorAll('*')].find(e => e.textContent?.toLowerCase().includes(q) && ![...e.children].some(c => c.textContent?.toLowerCase().includes(q))) ?? null; }
+  if (selector.startsWith('role=')) { const role = selector.slice(5), implicit: Record<string,string> = {button:'button',link:'a[href]',listitem:'li',textbox:'input,textarea'}; return root.querySelector(`[role="${CSS.escape(role)}"]${implicit[role] ? `,${implicit[role]}` : ''}`); }
+  return root.querySelector(selector);
+}
+export async function runRecipe(input: Input): Promise<RunResult> {
+ const {adapter,tool}=input, def=adapter.tools[tool]; if (!def) return {ok:false,code:ErrorCode.INVALID_PARAMS,message:'Unknown tool'};
+ const args={...input.args}; for(const [k,p] of Object.entries(def.params)){ if(args[k]===undefined&&'default' in p) args[k]=p.default; if(args[k]===undefined&&p.required) return {ok:false,code:ErrorCode.INVALID_PARAMS,message:`Missing required parameter: ${k}`}; }
+ const vars={...(input.resume?.vars??{})}; let count=0, current=-1, currentStep:any;
+ const ctx=()=>({args,vars,now:Math.floor(Date.now()/1000)});
+ const fail=(code:string,message:string,data?:unknown):RunResult=>({ok:false,code,message,data});
+ const bad=(message:string):RunResult=>fail(ErrorCode.ADAPTER_BROKEN,message,{tool,step_index:current,step:currentStep,selector:currentStep?.[Object.keys(currentStep??{})[0] ?? '']?.selector,page:{url:location.href,title:document.title,summary:(document.body?.innerText??'').replace(/\s+/g,' ').slice(0,2000)}});
+ const execute=async(steps:any[]):Promise<RunResult|undefined>=>{ for(let i=input.resume&&steps===def.steps?input.resume.step:0;i<steps.length;i++){ if(++count>200)return fail(ErrorCode.ADAPTER_BROKEN,'Step limit exceeded'); current=i; currentStep=steps[i]; const [kind,payload]=Object.entries(currentStep).find(([k])=>k!=='save') as [string,any]; let out:any;
+ try { switch(kind){
+ case 'wait_for': {const until=Date.now()+(payload.timeout_ms??10000); while(!select(payload.selector??'')){if(Date.now()>until)throw Error('Timed out waiting for selector'); await new Promise(r=>setTimeout(r,100));} break;}
+ case 'exists': out=!!select(payload.selector); break;
+ case 'if_exists': {const r=await execute(select(payload.selector)?payload.then:payload.else??[]); if(r)return r; break;}
+ case 'extract': case 'extract_list': {const container=kind==='extract'?document:select(payload.container??'body'); if(!container)throw Error('Missing container'); const get=(el:Element,f:any)=>{if(!safe(el))return null; let v:any=f.text?el.textContent?.trim():f.attr?el.getAttribute(f.attr):f.selector?select(f.selector,el)?.textContent?.trim():el.getAttribute('href')?new URL(el.getAttribute('href')!,location.href).href:el.textContent?.trim(); if(f.pattern&&v){const m=new RegExp(f.pattern).exec(v);v=m?.[1]??undefined;} if(v===undefined||v===null||v==='') {if('default'in f)return f.default;throw Error('Missing extracted value');} if(f.as==='number')v=Number(v); if(f.as==='date')v=new Date(v).toISOString(); return v;}; if(kind==='extract'){const el=select(payload.selector);out=get(el!,payload);}else{const items=[...container.querySelectorAll(payload.item)].slice(0,payload.limit??Infinity);out=items.map(el=>Object.fromEntries(Object.entries(payload.fields).map(([k,f])=>{const field=f as any, child=select(field.selector,el); return [k,child?get(child,field):('default'in field?field.default:null)];})));} break;}
+ case 'scroll_until': {const el=select(payload.container) as HTMLElement|null;if(!el)throw Error('Missing scroll container');const found=new Map();const end=Date.now()+(payload.timeout_ms??20000);let last=Date.now();while(Date.now()<end&&Date.now()-last<(payload.idle_ms??1000)&&found.size<(payload.limit??Infinity)){for(const row of el.querySelectorAll(payload.item)){const v=Object.fromEntries(Object.entries(payload.fields).map(([k,f])=>{const ch=select((f as any).selector,row);return[k,ch?((f as any).attr?ch.getAttribute((f as any).attr):ch.textContent?.trim()):null]}));const key=path(v,payload.key);if(!found.has(key)){found.set(key,v);last=Date.now();}}if(found.size>=(payload.limit??Infinity))break;el.scrollTop+=el.clientHeight;el.dispatchEvent(new Event('scroll'));await new Promise(r=>setTimeout(r,100));}out=[...found.values()];break;}
+ case 'click': {const el=select(payload.selector) as HTMLElement|null;if(!el)throw Error('Missing click target');if(def.effect==='read'&&isSensitiveLabel([el.textContent,el.getAttribute('aria-label'),el.getAttribute('value'),el.getAttribute('title')].join(' ')))return fail(ErrorCode.READ_ONLY,'Sensitive action blocked');for(const t of ['pointerdown','mousedown','pointerup','mouseup'])el.dispatchEvent(new MouseEvent(t,{bubbles:true}));el.click();break;}
+ case 'navigate': {const url=new URL(render(payload.url,ctx()) as string,location.href).href;if(!matchesSites(url,adapter.sites))return fail(ErrorCode.DOMAIN_BLOCKED,'Navigation outside adapter sites');return {navigate:url,resume:{step:i+1,vars}};}
+ case 'request': {const u=new URL(render(payload.path,ctx()) as string,location.origin);for(const[k,v]of Object.entries(render(payload.query??{},ctx()) as any))u.searchParams.set(k,String(v));const res=await fetch(u,{method:payload.method,credentials:'same-origin',headers:payload.method==='POST'?{'content-type':'application/json'}:undefined,body:payload.method==='POST'?JSON.stringify(render(payload.json,ctx())):undefined});if(!res.ok)throw Error(`Request failed: ${res.status}`);out=await res.json();break;}
+  case 'filter': out=((vars[payload.from]??[]) as any[]).filter((v:any)=>!payload.if_param||args[payload.if_param]?Object.entries(payload.where).every(([k,ops]:any)=>Object.entries(ops).every(([op,x]:any)=>op==='eq'?path(v,k)===x:op==='ne'?path(v,k)!==x:op==='gt'?path(v,k)>x:op==='lt'?path(v,k)<x:op==='contains'?String(path(v,k)).includes(String(x)):true)):true);break;
+  case 'map': out=((vars[payload.from]??[]) as any[]).map((v:any)=>Object.fromEntries(Object.entries(payload.fields).map(([k,p])=>[k,path(v,p as string)])));break;
+  case 'pick':out=path(vars[payload.from],payload.path);break; case 'join':out=((vars[payload.from]??[]) as any[]).map((x:any)=>payload.field?path(x,payload.field):x).join(payload.sep??'');break;
+ case 'type': {const e=select(payload.selector) as HTMLInputElement|null;if(!e)throw Error('Missing input');e.focus();e.value=String(render(payload.text,ctx()));e.dispatchEvent(new Event('input',{bubbles:true}));break;}
+ case 'select': {const e=select(payload.selector) as HTMLSelectElement|null;if(!e)throw Error('Missing select');e.value=payload.value; e.dispatchEvent(new Event('change',{bubbles:true}));break;}
+ case 'press': {const e=select(payload.selector??'body')!;e.dispatchEvent(new KeyboardEvent('keydown',{key:payload.key,bubbles:true}));break;} case 'submit': {const e=select(payload.selector) as HTMLElement|null;if(!e)throw Error('Missing submit');if(e instanceof HTMLFormElement)e.requestSubmit();else e.click();break;}
+ case 'return': out=typeof payload==='string'?vars[payload]:Object.fromEntries(Object.entries(payload).map(([k,v])=>[k,vars[v as string]]));return {ok:true,value:out};
+ default:throw Error(`Unsupported step: ${kind}`);
+ }}catch(e){return bad(e instanceof Error?e.message:String(e));} if(currentStep.save)vars[currentStep.save]=out;
+ } return {ok:true,value:undefined};};
+ const timeout=def.timeout_ms??120000; const result=await Promise.race([execute(def.steps),new Promise<RunResult>(r=>setTimeout(()=>r(fail(ErrorCode.TIMEOUT,'Recipe timed out')),timeout))]);return result??{ok:true,value:undefined};
+}
