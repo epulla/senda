@@ -91,7 +91,8 @@ export async function runAdapter(input: {
           )
         : `Your AI wants to use ${input.tool} on ${adapter.name} (${host}).`;
       const taint = await taintItem.getValue();
-      await requestApproval({
+      const settings = await settingsItem.getValue();
+      if (settings.askBefore !== 'never' || taint) await requestApproval({
         kind: 'adapter',
         summary: text,
         host,

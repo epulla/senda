@@ -16,7 +16,7 @@ export const draftsItem = storage.defineItem<
 export type ApprovalCard = { id: string; kind: 'generic'|'adapter'; summary: string; host: string; url?: string; details?: [string, string][]; source?: string; allowAlways: boolean; created_at: string };
 export const approvalsItem = storage.defineItem<Record<string, ApprovalCard & { answer?: 'allow'|'deny'|'always' }>>('session:approvals', { fallback: {} });
 export const settingsItem = storage.defineItem<{
-  askBefore: 'destructive' | 'changes' | 'everything';
+  askBefore: 'never' | 'destructive' | 'changes' | 'everything';
   allowedDomains: string[];
   blockedDomains: string[];
   alwaysSites: string[];

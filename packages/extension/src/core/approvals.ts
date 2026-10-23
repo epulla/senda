@@ -8,7 +8,7 @@ export function needsApproval(input: {
   visitedHosts: string[];
   allowedDomains: string[];
   alwaysSites: string[];
-  askBefore: 'destructive' | 'changes' | 'everything';
+  askBefore: 'never' | 'destructive' | 'changes' | 'everything';
   tainted: boolean;
 }): string | null {
   let host = '';
@@ -16,12 +16,14 @@ export function needsApproval(input: {
     host = new URL(input.url).host;
   } catch {}
   const includes = (list: string[]) => list.some((d) => host === d || host.endsWith(`.${d}`));
+  if (input.askBefore === 'never' && !input.tainted) return null;
   if (!input.tainted && includes(input.alwaysSites)) return null;
-  if (input.askBefore === 'everything') return 'You asked to approve every browser action.';
+  const askBefore = input.askBefore === 'never' ? 'destructive' : input.askBefore;
+  if (askBefore === 'everything') return 'You asked to approve every browser action.';
   if (input.action === 'click' && input.label && isSensitiveLabel(input.label))
     return 'This click may send, change, or delete information.';
   if (input.action === 'type' && input.submit) return 'This will submit a form.';
-  if (input.askBefore === 'changes' && (input.action === 'click' || input.action === 'type'))
+  if (askBefore === 'changes' && (input.action === 'click' || input.action === 'type'))
     return 'You asked to approve changes.';
   if (input.action === 'navigate' && !input.visitedHosts.includes(host) && !includes(input.allowedDomains)) {
     try {

@@ -51,6 +51,9 @@ it.each([
   ],
   ['changes asks click', input({ action: 'click', askBefore: 'changes' }), true],
   ['changes asks type', input({ action: 'type', askBefore: 'changes' }), true],
+  ['never skips clean Send click', input({ action: 'click', label: 'Send', askBefore: 'never' }), false],
+  ['never asks after tainted Send click', input({ action: 'click', label: 'Send', askBefore: 'never', tainted: true }), true],
+  ['never skips tainted plain click', input({ action: 'click', label: 'Open', askBefore: 'never', tainted: true }), false],
   ['everything asks read', input({ action: 'read', askBefore: 'everything' }), true],
   ['everything asks navigate', input({ action: 'navigate', askBefore: 'everything' }), true],
 ])('%s', (_name, args, asks) => expect(Boolean(needsApproval(args))).toBe(asks));

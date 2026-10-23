@@ -3,7 +3,7 @@ import { detectCapabilities } from '../core/capabilities';
 import { detectBrowserName } from '../core/browser-name';
 import { nextDelay } from '../core/backoff';
 import { handle } from './router';
-import { adaptersItem, approvalsItem, draftsItem, instanceIdItem, panicItem, portItem, statusItem, tokenItem } from './state';
+import { adaptersItem, approvalsItem, draftsItem, instanceIdItem, panicItem, portItem, settingsItem, statusItem, tokenItem } from './state';
 import { summaries } from './adapters/store';
 
 let socket: WebSocket | undefined;
@@ -20,10 +20,13 @@ async function badge(status: 'connected' | 'disconnected' | 'invalid_token') {
   const pending = stoppedForToken ? 0 :
     Object.values(await approvalsItem.getValue()).filter((item) => !item.answer).length +
     Object.values(await draftsItem.getValue()).filter((item) => item.pending).length;
+  const never = pending === 0 && (await settingsItem.getValue()).askBefore === 'never';
   await browser.action.setBadgeBackgroundColor({
     color: pending
       ? '#d97706'
-      : status === 'connected'
+      : never
+        ? '#dc2626'
+        : status === 'connected'
         ? '#16a34a'
         : status === 'invalid_token'
           ? '#dc2626'
@@ -32,14 +35,12 @@ async function badge(status: 'connected' | 'disconnected' | 'invalid_token') {
   await browser.action.setBadgeText({
     text: pending ? String(pending) : status === 'connected' ? 'on' : status === 'invalid_token' ? '!' : 'off',
   });
-  await browser.action.setTitle({
-    title:
-      status === 'connected'
-        ? 'Senda: connected'
-        : status === 'invalid_token'
-          ? 'Senda: wrong token'
-          : 'Senda: server not running',
-  });
+  const title = status === 'connected'
+    ? 'Senda: connected'
+    : status === 'invalid_token'
+      ? 'Senda: wrong token'
+      : 'Senda: server not running';
+  await browser.action.setTitle({ title: never ? `${title} (never asks)` : title });
 }
 function schedule() {
   if (timer !== undefined || stoppedForToken) return;
@@ -181,6 +182,7 @@ export function startConnection() {
   });
   approvalsItem.watch(() => void statusItem.getValue().then(badge));
   draftsItem.watch(() => void statusItem.getValue().then(badge));
+  settingsItem.watch(() => void statusItem.getValue().then(badge));
   adaptersItem.watch(async () => {
     if (socket?.readyState === WebSocket.OPEN)
       socket.send(JSON.stringify({ event: 'adapters_changed', data: await summaries() }));
