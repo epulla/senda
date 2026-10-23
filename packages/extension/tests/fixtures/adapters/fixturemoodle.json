@@ -1,1 +1,70 @@
-{"id":"fixturemoodle","name":"Fixture Moodle","version":"1.0.0","engine":1,"source":"local","sites":["http://127.0.0.1:18766/moodle/*"],"start_url":"http://127.0.0.1:18766/moodle/my/","mode":"read","description":"Read fixture Moodle data","login_check":{"exists":"a[href*='logout.php']"},"read_endpoints":["/moodle/lib/ajax/service.php"],"tools":{"my_courses":{"description":"List courses","effect":"read","params":{},"steps":[{"extract":{"selector":"a[href*='logout.php']","attr":"href","pattern":"sesskey=([^&]+)"},"save":"sesskey"},{"request":{"method":"POST","path":"/moodle/lib/ajax/service.php","query":{"sesskey":"{{vars.sesskey}}","info":"core_course_get_enrolled_courses_by_timeline_classification"},"json":[{"index":0,"methodname":"core_course_get_enrolled_courses_by_timeline_classification","args":{}}]},"save":"response"},{"pick":{"from":"response","path":"0.data.courses"},"save":"courses"},{"return":"courses"}]},"upcoming_deadlines":{"description":"Get deadlines","effect":"read","params":{},"steps":[{"extract":{"selector":"a[href*='logout.php']","attr":"href","pattern":"sesskey=([^&]+)"},"save":"sesskey"},{"request":{"method":"POST","path":"/moodle/lib/ajax/service.php","query":{"sesskey":"{{vars.sesskey}}","info":"core_calendar_get_action_events_by_timesort"},"json":[{"index":0,"methodname":"core_calendar_get_action_events_by_timesort","args":{"timesortfrom":"{{now}}","limitnum":20}}]},"save":"response"},{"pick":{"from":"response","path":"0.data.events"},"save":"events"},{"return":"events"}]}}}
+{
+  "id": "fixturemoodle",
+  "name": "Fixture Moodle",
+  "version": "1.0.0",
+  "engine": 1,
+  "source": "local",
+  "sites": ["http://127.0.0.1:18766/moodle/*"],
+  "start_url": "http://127.0.0.1:18766/moodle/my/",
+  "mode": "read",
+  "description": "Read fixture Moodle data",
+  "login_check": { "exists": "a[href*='logout.php']" },
+  "read_endpoints": ["/moodle/lib/ajax/service.php"],
+  "tools": {
+    "my_courses": {
+      "description": "List courses",
+      "effect": "read",
+      "params": {},
+      "steps": [
+        {
+          "extract": { "selector": "a[href*='logout.php']", "attr": "href", "pattern": "sesskey=([^&]+)" },
+          "save": "sesskey"
+        },
+        {
+          "request": {
+            "method": "POST",
+            "path": "/moodle/lib/ajax/service.php",
+            "query": {
+              "sesskey": "{{vars.sesskey}}",
+              "info": "core_course_get_enrolled_courses_by_timeline_classification"
+            },
+            "json": [
+              { "index": 0, "methodname": "core_course_get_enrolled_courses_by_timeline_classification", "args": {} }
+            ]
+          },
+          "save": "response"
+        },
+        { "pick": { "from": "response", "path": "0.data.courses" }, "save": "courses" },
+        { "return": "courses" }
+      ]
+    },
+    "upcoming_deadlines": {
+      "description": "Get deadlines",
+      "effect": "read",
+      "params": {},
+      "steps": [
+        {
+          "extract": { "selector": "a[href*='logout.php']", "attr": "href", "pattern": "sesskey=([^&]+)" },
+          "save": "sesskey"
+        },
+        {
+          "request": {
+            "method": "POST",
+            "path": "/moodle/lib/ajax/service.php",
+            "query": { "sesskey": "{{vars.sesskey}}", "info": "core_calendar_get_action_events_by_timesort" },
+            "json": [
+              {
+                "index": 0,
+                "methodname": "core_calendar_get_action_events_by_timesort",
+                "args": { "timesortfrom": "{{now}}", "limitnum": 20 }
+              }
+            ]
+          },
+          "save": "response"
+        },
+        { "pick": { "from": "response", "path": "0.data.events" }, "save": "events" },
+        { "return": "events" }
+      ]
+    }
+  }
+}

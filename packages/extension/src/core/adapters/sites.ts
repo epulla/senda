@@ -1,6 +1,10 @@
 export function matchesSites(url: string, sites: string[]): boolean {
   let parsed: URL;
-  try { parsed = new URL(url); } catch { return false; }
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
   return sites.some((site) => {
     const match = /^(https?):\/\/([^/*?:#]+(?::\d+)?)\/(.*)$/.exec(site);

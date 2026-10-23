@@ -1,1 +1,52 @@
-{"id":"fixturechat","name":"Fixture Chat","version":"1.0.0","engine":1,"source":"local","sites":["http://127.0.0.1:18766/chat/*"],"mode":"read","description":"Read fixture chats","tools":{"list_chats":{"description":"List chats","effect":"read","params":{},"steps":[{"scroll_until":{"container":"#list","item":"[role=listitem]","key":"name","limit":30,"idle_ms":100,"fields":{"name":{"selector":"span[title]","attr":"title"},"last":{"selector":".last","text":true},"unread":{"selector":".unread","text":true}}},"save":"chats"},{"return":"chats"}]},"read_chat":{"description":"Read chat","effect":"read","params":{"chat":{"type":"string","required":true}},"steps":[{"click":{"selector":"text={{args.chat}}"}},{"extract_list":{"container":".messages","item":"p","fields":{"message":{"selector":"*","text":true}}},"save":"messages"},{"return":"messages"}]}}}
+{
+  "id": "fixturechat",
+  "name": "Fixture Chat",
+  "version": "1.0.0",
+  "engine": 1,
+  "source": "local",
+  "sites": ["http://127.0.0.1:18766/chat/*"],
+  "mode": "read",
+  "description": "Read fixture chats",
+  "tools": {
+    "list_chats": {
+      "description": "List chats",
+      "effect": "read",
+      "params": {},
+      "steps": [
+        {
+          "scroll_until": {
+            "container": "#list",
+            "item": "[role=listitem]",
+            "key": "name",
+            "limit": 30,
+            "idle_ms": 100,
+            "fields": {
+              "name": { "selector": "span[title]", "attr": "title" },
+              "last": { "selector": ".last", "text": true },
+              "unread": { "selector": ".unread", "text": true }
+            }
+          },
+          "save": "chats"
+        },
+        { "return": "chats" }
+      ]
+    },
+    "read_chat": {
+      "description": "Read chat",
+      "effect": "read",
+      "params": { "chat": { "type": "string", "required": true } },
+      "steps": [
+        { "click": { "selector": "text={{args.chat}}" } },
+        {
+          "extract_list": {
+            "container": ".messages",
+            "item": "p",
+            "fields": { "message": { "selector": "*", "text": true } }
+          },
+          "save": "messages"
+        },
+        { "return": "messages" }
+      ]
+    }
+  }
+}
