@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { ErrorCode } from '@senda/protocol';
+import { AdaptersChanged, ErrorCode } from '@senda/protocol';
 
 const navigate = vi.hoisted(() => vi.fn());
 vi.mock('../src/bg/commands/navigate', () => ({ default: navigate }));
@@ -47,6 +47,7 @@ describe('adapter background', () => {
     await saveDraft(recipe);
     expect(await approveDraft('example')).toBe(true);
     expect(await summaries()).toMatchObject([{ id: 'example', status: 'active', source: 'local' }]);
+    expect(AdaptersChanged.safeParse(await summaries()).success).toBe(true);
   });
 
   it('rejects runs for paused adapters', async () => {

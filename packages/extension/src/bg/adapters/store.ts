@@ -12,8 +12,19 @@ export async function summaries() {
     mode: adapter.mode,
     sites: adapter.sites,
     status,
-    tools: Object.entries(adapter.tools).map(([name, tool]) => ({ name, ...tool })),
+    tools: Object.entries(adapter.tools).map(([name, { description, effect, params }]) => ({
+      name,
+      description,
+      effect,
+      params,
+    })),
   }));
+}
+export async function saveTestResult(id: string, text: string) {
+  const drafts = await draftsItem.getValue();
+  if (!drafts[id]) return;
+  drafts[id] = { ...drafts[id], test: text };
+  await draftsItem.setValue(drafts);
 }
 export async function saveDraft(recipe: unknown) {
   const parsed = validateAdapter(recipe);

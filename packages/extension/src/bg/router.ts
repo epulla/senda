@@ -5,7 +5,7 @@ import click from './commands/click';
 import typeCommand from './commands/type';
 import scroll from './commands/scroll';
 import tabs from './commands/tabs';
-import { draft, list, remove, setStatus, submit } from './adapters/store';
+import { draft, list, remove, saveTestResult, setStatus, submit } from './adapters/store';
 import { runAdapter } from './adapters/run';
 import { CommandError } from './commands/shared';
 export { CommandError } from './commands/shared';
@@ -18,7 +18,16 @@ const commands: Record<string, (p: any) => Promise<unknown>> = {
   tabs,
   'adapter.list': list,
   'adapter.draft': draft,
-  'adapter.test': (p: any) => runAdapter({ adapter: p.id, tool: p.tool, args: p.args ?? {}, draft: true }),
+  'adapter.test': async (p: any) => {
+    try {
+      const text = await runAdapter({ adapter: p.id, tool: p.tool, args: p.args ?? {}, draft: true });
+      await saveTestResult(p.id, `${p.tool}: ${text}`);
+      return text;
+    } catch (error) {
+      await saveTestResult(p.id, `${p.tool} failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
+  },
   'adapter.run': (p: any) => runAdapter({ adapter: p.adapter, tool: p.tool, args: p.args ?? {} }),
   'adapter.submit': submit,
   'adapter.disable': (p: any) => setStatus(p.id, 'paused'),
