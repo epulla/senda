@@ -50,6 +50,17 @@ async function connect() {
     await badge('disconnected');
     return;
   }
+  // Chrome logs every refused WebSocket handshake as an extension error; a caught fetch stays quiet.
+  // Timeout counts as up: older servers never answer plain HTTP.
+  const up = await fetch(`http://127.0.0.1:${port}/`, { mode: 'no-cors', signal: AbortSignal.timeout(3000) }).then(
+    () => true,
+    (error: unknown) => error instanceof DOMException && error.name === 'TimeoutError',
+  );
+  if (!up) {
+    await badge('disconnected');
+    schedule();
+    return;
+  }
   if (socket && socketToken === token && socketPort === port && socket.readyState < WebSocket.CLOSING) return;
   clearSocket();
   const ws = new WebSocket(`ws://127.0.0.1:${port}`);

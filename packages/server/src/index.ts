@@ -119,7 +119,7 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
       pending.delete(id);
     }
   };
-  const http = createServer();
+  const http = createServer((_req, res) => res.writeHead(426).end());
   const wss = new WebSocketServer({ noServer: true });
   http.on('upgrade', (req, socket, head) => {
     // Browsers always send Origin, so only local processes can connect as peers (no Origin).

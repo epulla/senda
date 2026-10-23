@@ -40,6 +40,7 @@ describe('connection', () => {
     FakeSocket.instances = [];
     vi.stubGlobal('browser', fakeBrowser);
     vi.stubGlobal('WebSocket', FakeSocket);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response()));
     vi.spyOn(fakeBrowser.runtime, 'getManifest').mockReturnValue({ version: '1.0.0' } as ReturnType<
       typeof fakeBrowser.runtime.getManifest
     >);
@@ -93,6 +94,17 @@ describe('connection', () => {
     const firstHello = JSON.parse(FakeSocket.instances[0]!.sent[0]!);
     const secondHello = JSON.parse(latestSocket().sent[0]!);
     expect(secondHello.data.instanceId).toBe(firstHello.data.instanceId);
+    vi.useRealTimers();
+  });
+  it('skips the WebSocket while the server port refuses, then connects once it answers', async () => {
+    vi.useFakeTimers();
+    vi.mocked(fetch).mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    const { startConnection } = await import('../src/bg/connection');
+    startConnection();
+    await vi.waitFor(async () => expect(await statusItem.getValue()).toBe('disconnected'));
+    expect(FakeSocket.instances).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(FakeSocket.instances).toHaveLength(1);
     vi.useRealTimers();
   });
   it('sends adapters_changed when installed adapters change', async () => {

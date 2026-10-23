@@ -76,6 +76,12 @@ describe('Senda WebSocket relay', () => {
     const ws = connect(port, 'http://localhost');
     await expect(connected(ws)).rejects.toBeDefined();
   });
+  it('answers plain HTTP with an empty 426', async () => {
+    const { port } = await setup();
+    const res = await fetch(`http://127.0.0.1:${port}/`);
+    expect(res.status).toBe(426);
+    expect(await res.text()).toBe('');
+  });
   it('rejects extension hello on a no-origin peer socket', async () => {
     const { port } = await setup();
     const ws = connect(port);
