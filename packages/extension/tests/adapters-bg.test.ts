@@ -155,8 +155,9 @@ describe('adapter background', () => {
     vi.spyOn(fakeBrowser.scripting, 'executeScript').mockImplementation(async (details: any) =>
       details.files ? [] : [{ result: { ok: true, value: null } }],
     );
-    navigate.mockImplementation(async () => {
+    navigate.mockImplementationOnce(async () => {
       trackAgentTab(9);
+      return { tabId: 9 };
     });
     const { runAdapter } = await import('../src/bg/adapters/run');
     await runAdapter({ adapter: 'example', tool: 'search', args: {} });

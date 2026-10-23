@@ -31,8 +31,7 @@ export async function runAdapter(input: {
   const tab = matching.find((candidate) => candidate!.url?.startsWith(start)) ?? matching[0];
   let tabId = tab?.id;
   if (tabId === undefined) {
-    await navigate({ url: start, newTab: true, internal: true });
-    tabId = (await listAgentIds()).at(-1);
+    tabId = (await navigate({ url: start, newTab: true, internal: true }))?.tabId;
   } else if (adapter.start_url && !tab!.url?.startsWith(adapter.start_url)) {
     await navigate({ url: adapter.start_url, tabId, internal: true });
   }
