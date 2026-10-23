@@ -38,11 +38,20 @@ export async function runAdapter(input: {
   } else trackAgentTab(tabId);
   if (tabId === undefined) throw new CommandError(ErrorCode.TAB_GONE, 'Could not open agent tab.');
   if (adapter.login_check) {
-    const [{ result: loggedIn } = {}] = await browser.scripting.executeScript({
-      target: { tabId },
-      func: (selector: string) => !!document.querySelector(selector),
-      args: [adapter.login_check.exists],
-    });
+    const check = async () =>
+      (
+        await browser.scripting.executeScript({
+          target: { tabId: tabId! },
+          func: (selector: string) => !!document.querySelector(selector),
+          args: [adapter.login_check!.exists],
+        })
+      )[0]?.result;
+    // The current page may lack the marker (e.g. after a redirect); only the start page is authoritative.
+    let loggedIn = await check();
+    if (!loggedIn) {
+      await navigate({ url: start, tabId, internal: true });
+      loggedIn = await check();
+    }
     if (!loggedIn)
       throw new CommandError(
         ErrorCode.ADAPTER_NEEDS_LOGIN,

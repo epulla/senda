@@ -112,6 +112,29 @@ describe('adapter background', () => {
     else expect(navigate).not.toHaveBeenCalled();
   });
 
+  it('checks login on the start page when a write call ended elsewhere', async () => {
+    const { adaptersItem } = await import('../src/bg/state');
+    const { trackAgentTab } = await import('../src/bg/agent-tabs');
+    const adapter = { ...writeRecipe, login_check: { exists: 'a.logout' } };
+    await adaptersItem.setValue({ writer: { adapter: adapter as any, status: 'active', installed_at: '' } });
+    let page = 'https://example.com/course/view';
+    vi.spyOn(fakeBrowser.tabs, 'query').mockImplementation(async () => [{ id: 2, url: page }] as any);
+    trackAgentTab(2);
+    navigate.mockImplementation(async ({ url }: { url: string }) => {
+      page = url;
+    });
+    vi.spyOn(fakeBrowser.scripting, 'executeScript').mockImplementation(async (details: any) => {
+      if (details.files) return [];
+      if (details.args[0] === 'a.logout') return [{ result: page === 'https://example.com/' }];
+      page = 'https://example.com/course/view';
+      return [{ result: { ok: true, value: 'renamed' } }];
+    });
+    const { runAdapter } = await import('../src/bg/adapters/run');
+    for (let call = 0; call < 2; call++)
+      expect(await runAdapter({ adapter: 'writer', tool: 'write', args: {} })).toContain('renamed');
+    expect(navigate).toHaveBeenCalledTimes(2);
+  });
+
   it('opens a new agent tab when no matching agent tab exists', async () => {
     const { adaptersItem } = await import('../src/bg/state');
     const { trackAgentTab } = await import('../src/bg/agent-tabs');
