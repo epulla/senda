@@ -117,6 +117,36 @@ describe('adapter background', () => {
     expect(await runAdapter({ adapter: 'example', tool: 'search', args: {} })).toContain('null');
   });
 
+  it('waits for the page after a click step and resumes with saved vars', async () => {
+    const { adaptersItem } = await import('../src/bg/state');
+    const { trackAgentTab } = await import('../src/bg/agent-tabs');
+    await adaptersItem.setValue({ example: { adapter: recipe as any, status: 'active', installed_at: '' } });
+    vi.spyOn(fakeBrowser.tabs, 'query').mockResolvedValue([{ id: 2, url: 'https://example.com/agent' }] as any);
+    vi.spyOn(fakeBrowser.tabs, 'get').mockResolvedValue({ id: 2, status: 'complete' } as any);
+    trackAgentTab(2);
+    const results = [{ settle: { step: 3, vars: { title: 'old' } } }, { ok: true, value: 'done' }];
+    const run = vi
+      .spyOn(fakeBrowser.scripting, 'executeScript')
+      .mockImplementation(async (details: any) => (details.files ? [] : [{ result: results.shift() }]));
+    const { runAdapter } = await import('../src/bg/adapters/run');
+    expect(await runAdapter({ adapter: 'example', tool: 'search', args: {} })).toContain('done');
+    expect(run.mock.calls.at(-1)![0]).toMatchObject({ args: [{ resume: { step: 3, vars: { title: 'old' } } }] });
+  });
+
+  it('names the step when the page navigates away mid-run', async () => {
+    const { adaptersItem } = await import('../src/bg/state');
+    const { trackAgentTab } = await import('../src/bg/agent-tabs');
+    await adaptersItem.setValue({ example: { adapter: recipe as any, status: 'active', installed_at: '' } });
+    vi.spyOn(fakeBrowser.tabs, 'query').mockResolvedValue([{ id: 2, url: 'https://example.com/agent' }] as any);
+    trackAgentTab(2);
+    vi.spyOn(fakeBrowser.scripting, 'executeScript').mockResolvedValue([{}] as any);
+    const { runAdapter } = await import('../src/bg/adapters/run');
+    await expect(runAdapter({ adapter: 'example', tool: 'search', args: {} })).rejects.toMatchObject({
+      code: ErrorCode.ADAPTER_BROKEN,
+      message: 'Page navigated during step 0.',
+    });
+  });
+
   it('removes drafts and rejects unknown ids', async () => {
     const { saveDraft, removeAdapter, list } = await import('../src/bg/adapters/store');
     await saveDraft(recipe);

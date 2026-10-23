@@ -15,7 +15,8 @@ export type RunResult =
   | { ok: true; value: unknown }
   | { ok: false; code: string; message: string; data?: unknown }
   | { navigate: string; resume: { step: number; vars: Record<string, unknown> } }
-  | { confirm: { step: number; vars: Record<string, unknown> } };
+  | { confirm: { step: number; vars: Record<string, unknown> } }
+  | { settle: { step: number; vars: Record<string, unknown> } };
 const path = (o: any, p: string): any => p.split('.').reduce((v, k) => v?.[/^\d+$/.test(k) ? +k : k], o);
 const safe = (el: Element | null): boolean =>
   !el || !el.matches('input[type=password], [autocomplete~=cc-number], [autocomplete~=cc-csc], [autocomplete~=cc-exp]');
@@ -209,6 +210,8 @@ export async function runRecipe(input: Input): Promise<RunResult> {
             for (const t of ['pointerdown', 'mousedown', 'pointerup', 'mouseup'])
               el.dispatchEvent(new MouseEvent(t, { bubbles: true }));
             el.click();
+            // The click may load a new page and end this script; the background resumes after it settles.
+            if (steps === def.steps) return { settle: { step: i + 1, vars } };
             break;
           }
           case 'navigate': {
@@ -302,6 +305,7 @@ export async function runRecipe(input: Input): Promise<RunResult> {
             if (!e) throw Error('Missing submit');
             if (e instanceof HTMLFormElement) e.requestSubmit();
             else e.click();
+            if (steps === def.steps) return { settle: { step: i + 1, vars } };
             break;
           }
           case 'return': {

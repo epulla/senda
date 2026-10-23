@@ -35,7 +35,9 @@ describe('recipe runner', () => {
     const edit = await runRecipe({ adapter: a, tool: 'rename_course', args, resume: { step: 1, vars: {} } });
     expect(edit).toMatchObject({ confirm: { vars: { old_full: 'Fixture course', old_short: 'FIX1' } } });
     if (!('confirm' in edit)) throw new Error('Expected write confirmation');
-    const resumed = await runRecipe({ adapter: a, tool: 'rename_course', args, approved: true, resume: edit.confirm });
+    const submitted = await runRecipe({ adapter: a, tool: 'rename_course', args, approved: true, resume: edit.confirm });
+    if (!('settle' in submitted)) throw new Error('Expected settle after submit');
+    const resumed = await runRecipe({ adapter: a, tool: 'rename_course', args, approved: true, resume: submitted.settle });
     expect(resumed).toMatchObject({ ok: true, value: { fullname: 'Fixture course', shortname: 'FIX1' } });
   });
   it('renders raw values and interpolated strings', () =>
@@ -98,13 +100,15 @@ describe('recipe runner', () => {
     expect('ok' in result && result.ok ? result.value : null).toHaveLength(30);
     expect(new Set((result as any).value.map((x: any) => x.name)).size).toBe(30);
   });
-  it('renders click selector template and returns clicked chat message', async () => {
+  it('hands back after a click and continues on the next page', async () => {
     const a = Adapter.parse(chat);
-    document.body.innerHTML = '<button>Chat 003</button><div class="messages"><p>Chat 003 says hello</p></div>';
-    document
-      .querySelector('button')!
-      .addEventListener('click', () => document.querySelector('.messages')!.classList.add('open'));
-    const result = await runRecipe({ adapter: a, tool: 'read_chat', args: { chat: 'Chat 003' } });
+    const args = { chat: 'Chat 003' };
+    document.body.innerHTML = '<button>Chat 003</button>';
+    const first = await runRecipe({ adapter: a, tool: 'read_chat', args });
+    expect(first).toMatchObject({ settle: { step: 1 } });
+    if (!('settle' in first)) throw new Error('Expected settle');
+    document.body.innerHTML = '<div class="messages open"><p>Chat 003 says hello</p></div>';
+    const result = await runRecipe({ adapter: a, tool: 'read_chat', args, resume: first.settle });
     expect(result).toMatchObject({ ok: true, value: [{ message: 'Chat 003 says hello' }] });
   });
   it('calls Moodle endpoint with sesskey and methodname', async () => {

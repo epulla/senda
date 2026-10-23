@@ -48,7 +48,7 @@ export async function runAdapter(input: {
   const host = new URL(tab?.url ?? start).host;
   let resume: { step: number; vars: Record<string, unknown> } | undefined;
   let approved = false;
-  for (let hop = 0; hop <= 10; hop++) {
+  for (let hop = 0; hop <= 50; hop++) {
     await browser.scripting.executeScript({ target: { tabId }, files: ['/runner.js'] });
     const [{ result } = {}] = await browser.scripting.executeScript({
       target: { tabId },
@@ -56,9 +56,14 @@ export async function runAdapter(input: {
       args: [{ adapter, tool: input.tool, args: input.args, resume, approved }],
     });
     if (result && 'navigate' in result) {
-      if (hop === 10) throw new CommandError(ErrorCode.ADAPTER_BROKEN, 'Adapter exceeded navigation limit.');
+      if (hop === 50) throw new CommandError(ErrorCode.ADAPTER_BROKEN, 'Adapter exceeded navigation limit.');
       await navigate({ url: result.navigate, tabId, internal: true });
       resume = result.resume;
+      continue;
+    }
+    if (result && 'settle' in result) {
+      await settle(tabId);
+      resume = result.settle;
       continue;
     }
     if (result && 'confirm' in result) {
@@ -89,16 +94,26 @@ export async function runAdapter(input: {
       resume = { step: result.confirm.step, vars };
       continue;
     }
-    if (!result?.ok)
+    if (!result)
       throw new CommandError(
-        result?.code ?? ErrorCode.ADAPTER_BROKEN,
-        result?.message ?? 'Adapter failed.',
-        result?.data,
+        ErrorCode.ADAPTER_BROKEN,
+        `Page navigated during step ${resume?.step ?? 0}.`,
+        { step_index: resume?.step ?? 0 },
       );
+    if (!result.ok) throw new CommandError(result.code, result.message, result.data);
     const json = JSON.stringify(result.value ?? null, null, 2);
     if (definition.effect === 'write') await logActivity('adapter', `${adapter.name}: ${input.tool}`);
     await noteExternal(host, json);
     return wrapExternal(host, json);
   }
   throw new CommandError(ErrorCode.ADAPTER_BROKEN, 'Adapter exceeded navigation limit.');
+}
+
+async function settle(tabId: number) {
+  await new Promise((r) => setTimeout(r, 500));
+  const end = Date.now() + 25000;
+  while ((await browser.tabs.get(tabId)).status === 'loading') {
+    if (Date.now() > end) throw new CommandError(ErrorCode.TIMEOUT, 'Page load timed out.');
+    await new Promise((r) => setTimeout(r, 100));
+  }
 }
