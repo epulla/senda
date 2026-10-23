@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AdapterSummary } from '@senda/adapter-schema';
 
 export const PROTOCOL_VERSION = 1;
 export const EXTENSION_ID = 'ljggnmhahelgodcecefjnfijlgomcoce';
@@ -38,7 +39,7 @@ export const Hello = z.object({
   engineVersion: z.number(),
   browser: z.string(),
   capabilities: z.array(z.string()),
-  adapters: z.array(z.unknown()),
+  adapters: z.array(AdapterSummary),
   // Optional so older extensions still connect.
   instanceId: z.string().optional(),
   name: z.string().optional(),
@@ -56,4 +57,13 @@ export const methods = {
   tabs: z
     .object({ action: z.enum(['list', 'new', 'select', 'close']), tabId, url: z.string().url().optional() })
     .strict(),
+  'adapter.list': z.object({}).strict(),
+  'adapter.draft': z.object({ recipe: z.unknown() }).strict(),
+  'adapter.test': z.object({ id: z.string(), tool: z.string(), args: z.record(z.string(), z.unknown()).optional() }).strict(),
+  'adapter.submit': z.object({ id: z.string() }).strict(),
+  'adapter.disable': z.object({ id: z.string() }).strict(),
+  'adapter.remove': z.object({ id: z.string() }).strict(),
+  'adapter.run': z.object({ adapter: z.string(), tool: z.string(), args: z.record(z.string(), z.unknown()).optional() }).strict(),
 } as const;
+export const adapterMethods = methods;
+export const AdaptersChanged = z.array(AdapterSummary);

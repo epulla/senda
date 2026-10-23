@@ -72,6 +72,9 @@ importers:
 
   packages/protocol:
     dependencies:
+      '@senda/adapter-schema':
+        specifier: workspace:*
+        version: link:../adapter-schema
       zod:
         specifier: ^4.1.12
         version: 4.6.7
