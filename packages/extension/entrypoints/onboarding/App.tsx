@@ -21,13 +21,13 @@ export default function App() {
   }
 
   return (
-    <main className="mx-auto max-w-xl space-y-6 p-8 text-base">
+    <main className="card mx-auto my-8 max-w-xl space-y-6 !p-8 text-base">
       <h1 className="text-2xl font-semibold">Set up Senda</h1>
       <p>Senda lets your AI assistant read and use this browser. It only talks to the Senda app on this computer.</p>
       <ol className="list-decimal space-y-2 pl-6">
         <li>Add Senda to your AI app (for example Claude Code).</li>
         <li>
-          In a terminal, run <code className="rounded bg-gray-100 px-1">senda token</code> and copy the code it prints.
+          In a terminal, run <code>senda token</code> and copy the code it prints.
         </li>
         <li>Paste the code below and save.</li>
       </ol>
@@ -41,11 +41,11 @@ export default function App() {
             value={draft}
             disabled={!loaded}
             onChange={(e) => setDraft(e.target.value)}
-            className="mt-1 block w-full rounded border border-gray-300 px-2 py-1 font-mono"
+            className="font-mono"
           />
         </label>
         <details>
-          <summary className="cursor-pointer text-sm text-gray-600">Advanced</summary>
+          <summary className="text-sm text-muted">Advanced</summary>
           <label className="mt-2 block text-sm">
             <span>Port (change only if you set SENDA_PORT)</span>
             <input
@@ -54,11 +54,11 @@ export default function App() {
               max={65535}
               value={portDraft}
               onChange={(e) => setPortDraft(e.target.value)}
-              className="mt-1 block w-32 rounded border border-gray-300 px-2 py-1"
+              className="!w-32"
             />
           </label>
         </details>
-        <button type="submit" className="rounded bg-blue-700 px-4 py-1.5 font-medium text-white hover:bg-blue-800">
+        <button type="submit" className="btn btn-primary">
           Save
         </button>
       </form>
@@ -66,7 +66,7 @@ export default function App() {
         <span aria-hidden className={`size-2.5 shrink-0 rounded-full ${dot}`} />
         {label}
       </p>
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-muted">
         When your AI reads a page, email or chat, that content (including messages from other people) is sent to your
         AI provider.
       </p>

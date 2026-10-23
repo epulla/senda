@@ -34,15 +34,15 @@ function SiteList({
 }) {
   return (
     <div className="space-y-1">
-      <h3 className="font-medium">{title}</h3>
-      <p className="text-gray-600">{hint}</p>
+      <h3 className="font-semibold">{title}</h3>
+      <p className="text-muted">{hint}</p>
       {sites.map((site) => (
         <p key={site} className="flex items-center justify-between gap-2">
           <span>{site}</span>
           <button
             type="button"
             onClick={() => onChange(sites.filter((s) => s !== site))}
-            className="rounded border border-gray-300 px-2 py-0.5 hover:bg-gray-100"
+            className="btn btn-sm"
           >
             Remove
           </button>
@@ -66,9 +66,9 @@ function SiteList({
           name="site"
           aria-label={`Add to ${title.toLowerCase()}`}
           placeholder="example.com"
-          className="min-w-0 flex-1 rounded border border-gray-300 px-2 py-0.5"
+          className="!mt-0 min-w-0 flex-1"
         />
-        <button type="submit" className="rounded border border-gray-300 px-2 py-0.5 hover:bg-gray-100">
+        <button type="submit" className="btn btn-sm">
           Add
         </button>
       </form>
@@ -112,7 +112,6 @@ function AddSite() {
         <select
           value={choice}
           onChange={(event) => setChoice(event.target.value)}
-          className="mt-1 block w-full rounded border border-gray-300 px-2 py-0.5"
         >
           {templates.map((t) => (
             <option key={t.id} value={t.id}>
@@ -130,40 +129,38 @@ function AddSite() {
             required
             rows={3}
             placeholder="https://… or paste the recipe"
-            className="mt-1 block w-full rounded border border-gray-300 px-2 py-0.5 font-mono text-xs"
+            className="font-mono text-xs"
           />
         </label>
       )}
       <label className="block">
         <span className="font-medium">Site address</span>
-        {example && <span className="block text-gray-600">{example.description}</span>}
+        {example && <span className="block text-muted">{example.description}</span>}
         <input
           name="site"
           required
           type="url"
           placeholder={example?.example ?? 'https://example.com'}
-          className="mt-1 block w-full rounded border border-gray-300 px-2 py-0.5"
         />
       </label>
       <label className="block">
         <span className="font-medium">Short name (optional)</span>
-        <span className="block text-gray-600">Lowercase letters, numbers or _. Your AI sees it in tool names.</span>
+        <span className="block text-muted">Lowercase letters, numbers or _. Your AI sees it in tool names.</span>
         <input
           name="label"
           pattern="[a-z0-9_]{1,20}"
           placeholder="school"
-          className="mt-1 block w-full rounded border border-gray-300 px-2 py-0.5"
         />
       </label>
       {error && (
-        <p role="alert" className="text-red-700">
+        <p role="alert" className="text-error-text">
           {error}
         </p>
       )}
-      <button type="submit" className="rounded bg-blue-700 px-3 py-1 font-medium text-white hover:bg-blue-800">
+      <button type="submit" className="btn btn-primary">
         Add site
       </button>
-      <p className="text-gray-600">You'll review it above before it can be used.</p>
+      <p className="text-muted">You'll review it above before it can be used.</p>
     </form>
   );
 }
@@ -181,14 +178,14 @@ export default function App() {
   const adapters = Object.values(installed);
 
   return (
-    <main className="space-y-6 p-4 text-sm">
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="text-lg font-semibold">Senda</h1>
+    <main className="space-y-5 p-4 text-sm leading-relaxed">
+      <div className="flex items-center justify-between gap-2 border-b border-line pb-3">
+        <h1 className="text-lg font-bold tracking-tight text-primary-text">Senda</h1>
         {panic === 0 && (
           <button
             type="button"
             onClick={() => void requestPanic()}
-            className="rounded bg-red-700 px-3 py-1 font-medium text-white hover:bg-red-800"
+            className="btn btn-danger"
           >
             Stop everything
           </button>
@@ -196,14 +193,14 @@ export default function App() {
       </div>
 
       {panic > 0 && (
-        <section className="space-y-2 rounded border border-red-300 bg-red-50 p-3">
-          <p className="font-medium text-red-800">
+        <section className="card card-danger space-y-2">
+          <p className="font-semibold text-error-text">
             Senda is stopped. Your AI can't use the browser, its tabs were closed and all adapters are paused.
           </p>
           <button
             type="button"
             onClick={() => void resumeAfterPanic()}
-            className="rounded border border-gray-300 bg-white px-3 py-1 hover:bg-gray-100"
+            className="btn"
           >
             Reconnect
           </button>
@@ -211,12 +208,12 @@ export default function App() {
       )}
 
       {settings.askBefore === 'never' && (
-        <section role="alert" className="space-y-2 rounded border border-red-300 bg-red-50 p-3">
-          <p className="font-medium text-red-800">Senda won't ask before your AI acts.</p>
+        <section role="alert" className="card card-danger space-y-2">
+          <p className="font-semibold text-error-text">Senda won't ask before your AI acts.</p>
           <button
             type="button"
             onClick={() => void setSettings({ ...settings, askBefore: 'destructive' })}
-            className="rounded border border-gray-300 bg-white px-3 py-1 hover:bg-gray-100"
+            className="btn"
           >
             Turn off
           </button>
@@ -225,23 +222,23 @@ export default function App() {
 
       {waiting.length > 0 && (
         <section className="space-y-3">
-          <h2 className="font-semibold">Your AI is waiting for you</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Your AI is waiting for you</h2>
           {waiting.map((card) => (
-            <article key={card.id} className="space-y-2 rounded border border-amber-300 bg-amber-50 p-3">
+            <article key={card.id} className="card card-warn space-y-2">
               <p className="font-medium">{card.summary}</p>
-              {card.url && <p className="break-all text-gray-600">{card.url}</p>}
+              {card.url && <p className="break-all text-muted">{card.url}</p>}
               {card.details && card.details.length > 0 && (
                 <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
                   {card.details.map(([name, value]) => (
                     <div key={name} className="contents">
-                      <dt className="text-gray-600">{name}</dt>
+                      <dt className="text-muted">{name}</dt>
                       <dd className="break-words">{value}</dd>
                     </div>
                   ))}
                 </dl>
               )}
               {card.source && (
-                <p className="text-red-700">
+                <p className="text-error-text">
                   Your AI read content from {card.source} before asking. Websites can contain hidden instructions, so
                   check this is something you asked for.
                 </p>
@@ -250,14 +247,14 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => void answerApproval(card.id, 'allow')}
-                  className="rounded bg-blue-700 px-3 py-1 font-medium text-white hover:bg-blue-800"
+                  className="btn btn-primary"
                 >
                   Allow
                 </button>
                 <button
                   type="button"
                   onClick={() => void answerApproval(card.id, 'deny')}
-                  className="rounded border border-gray-300 px-3 py-1 hover:bg-gray-100"
+                  className="btn"
                 >
                   Deny
                 </button>
@@ -265,7 +262,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => void answerApproval(card.id, 'always')}
-                    className="rounded border border-gray-300 px-3 py-1 hover:bg-gray-100"
+                    className="btn"
                   >
                     Always on {card.host}
                   </button>
@@ -278,18 +275,18 @@ export default function App() {
 
       {pending.length > 0 && (
         <section className="space-y-3">
-          <h2 className="font-semibold">Adapters waiting for your approval</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Adapters waiting for your approval</h2>
           {pending.map(({ adapter, test, source }) => {
             const previous = installed[adapter.id]?.adapter;
             const more = previous ? permissionIncrease(previous, adapter) : [];
             return (
-              <article key={adapter.id} className="space-y-2 rounded border border-amber-300 bg-amber-50 p-3">
+              <article key={adapter.id} className="card card-warn space-y-2">
                 <p>
                   Request to {previous ? 'change' : 'add'} <strong>{adapter.name}</strong> ({modeLabel(adapter)}). It
                   will only work on {siteNames(adapter)}.
                 </p>
                 {source === 'community' && (
-                  <p className="font-medium text-red-700">
+                  <p className="font-medium text-error-text">
                     Not verified: this comes from outside Senda. Only approve it if you trust where it came from, and
                     check the full recipe below.
                   </p>
@@ -300,17 +297,17 @@ export default function App() {
                   ))}
                 </ul>
                 {more.length > 0 && (
-                  <p className="font-medium text-red-700">This asks for more access: {more.join(' ')}</p>
+                  <p className="font-medium text-error-text">This asks for more access: {more.join(' ')}</p>
                 )}
                 <details>
-                  <summary className="cursor-pointer text-gray-700">
+                  <summary className="text-muted">
                     {test ? 'Last test result' : 'Not tested yet'}
                   </summary>
-                  {test && <pre className="mt-1 max-h-48 overflow-auto rounded bg-white p-2 text-xs">{test}</pre>}
+                  {test && <pre className="mt-1 max-h-48 overflow-auto rounded-lg bg-base-200 p-2 text-xs">{test}</pre>}
                 </details>
                 <details>
-                  <summary className="cursor-pointer text-gray-700">Full recipe</summary>
-                  <pre className="mt-1 max-h-64 overflow-auto rounded bg-white p-2 text-xs">
+                  <summary className="text-muted">Full recipe</summary>
+                  <pre className="mt-1 max-h-64 overflow-auto rounded-lg bg-base-200 p-2 text-xs">
                     {JSON.stringify(adapter, null, 2)}
                   </pre>
                 </details>
@@ -318,14 +315,14 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => approveDraft(adapter.id)}
-                    className="rounded bg-blue-700 px-3 py-1 font-medium text-white hover:bg-blue-800"
+                    className="btn btn-primary"
                   >
                     Approve
                   </button>
                   <button
                     type="button"
                     onClick={() => rejectDraft(adapter.id)}
-                    className="rounded border border-gray-300 px-3 py-1 hover:bg-gray-100"
+                    className="btn"
                   >
                     Reject
                   </button>
@@ -337,17 +334,17 @@ export default function App() {
       )}
 
       <section className="space-y-3">
-        <h2 className="font-semibold">Installed adapters</h2>
-        {adapters.length === 0 && <p className="text-gray-600">No adapters yet. Ask your AI to make one for a site.</p>}
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Installed adapters</h2>
+        {adapters.length === 0 && <p className="text-muted">No adapters yet. Ask your AI to make one for a site.</p>}
         {adapters.map(({ adapter, status, override }) => (
-          <article key={adapter.id} className="space-y-1 rounded border border-gray-200 p-3">
+          <article key={adapter.id} className="card space-y-1">
             <p>
               <strong>{adapter.name}</strong> · {modeLabel(adapter)} · {siteNames(adapter)}
-              {status === 'paused' && <span className="ml-1 text-amber-700">(paused)</span>}
+              {status === 'paused' && <span className="ml-1 font-medium text-muted">(paused)</span>}
             </p>
-            <p className="text-gray-600">Can: {Object.keys(adapter.tools).join(', ')}</p>
+            <p className="text-muted">Can: {Object.keys(adapter.tools).join(', ')}</p>
             {override && Object.keys(override).length > 0 && (
-              <p className="text-gray-600">Fixed for this site: {Object.keys(override).join(', ')}</p>
+              <p className="text-muted">Fixed for this site: {Object.keys(override).join(', ')}</p>
             )}
             <div className="flex gap-2 pt-1">
               {override && Object.keys(override).length > 0 && (
@@ -357,7 +354,7 @@ export default function App() {
                     if (confirm(`Undo the fixes made for this site and use the standard ${adapter.name} again?`))
                       void resetToTemplate(adapter.id);
                   }}
-                  className="rounded border border-gray-300 px-3 py-1 hover:bg-gray-100"
+                  className="btn"
                 >
                   Reset to standard
                 </button>
@@ -365,7 +362,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setStatus(adapter.id, status === 'active' ? 'paused' : 'active')}
-                className="rounded border border-gray-300 px-3 py-1 hover:bg-gray-100"
+                className="btn"
               >
                 {status === 'active' ? 'Pause' : 'Resume'}
               </button>
@@ -375,7 +372,7 @@ export default function App() {
                   if (confirm(`Remove ${adapter.name}? Your AI will no longer be able to use it.`))
                     void removeAdapter(adapter.id);
                 }}
-                className="rounded border border-red-300 px-3 py-1 text-red-700 hover:bg-red-50"
+                className="btn btn-danger-text"
               >
                 Remove
               </button>
@@ -384,18 +381,18 @@ export default function App() {
         ))}
       </section>
 
-      <section className="space-y-2">
+      <section className="card">
         <details>
-          <summary className="cursor-pointer font-semibold">Add a site</summary>
-          <div className="mt-2">
+          <summary className="font-semibold">Add a site</summary>
+          <div className="mt-3">
             <AddSite />
           </div>
         </details>
       </section>
 
       {unsent.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="font-semibold">Drafts your AI is still working on</h2>
+        <section className="card space-y-2">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Drafts your AI is still working on</h2>
           {unsent.map(({ adapter }) => (
             <p key={adapter.id} className="flex items-center justify-between gap-2">
               <span>
@@ -404,7 +401,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => rejectDraft(adapter.id)}
-                className="rounded border border-gray-300 px-2 py-0.5 hover:bg-gray-100"
+                className="btn btn-sm"
               >
                 Delete
               </button>
@@ -413,10 +410,10 @@ export default function App() {
         </section>
       )}
 
-      <section className="space-y-3">
-        <h2 className="font-semibold">Settings</h2>
-        <fieldset className="space-y-1">
-          <legend className="font-medium">Ask me before</legend>
+      <section className="card space-y-4">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Settings</h2>
+        <fieldset className="space-y-2">
+          <legend className="mb-1 font-semibold">Ask me before</legend>
           {askOptions.map(([value, label]) => (
             <label key={value} className="flex items-start gap-2">
               <input
@@ -431,7 +428,7 @@ export default function App() {
               />
               <span>
                 {label}
-                {value === 'never' && <span className="block text-red-700">{neverWarning}</span>}
+                {value === 'never' && <span className="block text-error-text">{neverWarning}</span>}
               </span>
             </label>
           ))}
@@ -458,16 +455,16 @@ export default function App() {
         )}
       </section>
 
-      <section className="space-y-2">
+      <section className="card">
         <details>
-          <summary className="cursor-pointer font-semibold">Activity ({activity.length})</summary>
+          <summary className="font-semibold">Activity ({activity.length})</summary>
           <ul className="mt-2 space-y-1">
             {activity
               .slice(-50)
               .reverse()
               .map((row) => (
-                <li key={`${row.at}${row.text}`} className={row.kind === 'injection' ? 'text-red-700' : undefined}>
-                  <span className="text-gray-500">{new Date(row.at).toLocaleTimeString()}</span> {row.text}
+                <li key={`${row.at}${row.text}`} className={row.kind === 'injection' ? 'text-error-text' : undefined}>
+                  <span className="text-muted">{new Date(row.at).toLocaleTimeString()}</span> {row.text}
                 </li>
               ))}
           </ul>

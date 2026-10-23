@@ -25,21 +25,21 @@ export default function App() {
   const { label, dot } = STATUS[status];
   return (
     <main className="w-72 space-y-3 p-4 text-sm">
-      <h1 className="text-lg font-semibold">Senda</h1>
+      <h1 className="text-lg font-bold tracking-tight text-primary-text">Senda</h1>
       <p role="status" className="flex items-center gap-2">
         <span aria-hidden className={`size-2.5 shrink-0 rounded-full ${dot}`} />
         {status === 'connected'
           ? `Connected as ${detectBrowserName(navigator as never, import.meta.env.BROWSER)}`
           : label}
       </p>
-      {panic > 0 && <p className="font-medium text-red-700">Senda is stopped. Open the side panel to reconnect.</p>}
+      {panic > 0 && <p className="font-medium text-error-text">Senda is stopped. Open the side panel to reconnect.</p>}
       {settings.askBefore === 'never' && (
-        <p role="alert" className="flex items-center justify-between gap-2 rounded bg-red-50 p-2 font-medium text-red-800">
+        <p role="alert" className="card card-danger flex items-center justify-between gap-2 !p-2 text-xs font-semibold text-error-text">
           Senda won't ask before acting.
           <button
             type="button"
             onClick={() => void setSettings({ ...settings, askBefore: 'destructive' })}
-            className="rounded border border-gray-300 bg-white px-2 py-0.5 font-normal text-gray-900 hover:bg-gray-100"
+            className="btn btn-sm"
           >
             Turn off
           </button>
@@ -48,7 +48,7 @@ export default function App() {
       <button
         type="button"
         onClick={openAdapters}
-        className="block w-full rounded bg-blue-700 px-3 py-1.5 font-medium text-white hover:bg-blue-800"
+        className="btn btn-primary w-full"
       >
         {pending ? `Review ${pending} waiting for approval` : 'Open side panel'}
       </button>
@@ -56,12 +56,12 @@ export default function App() {
         <button
           type="button"
           onClick={() => void requestPanic()}
-          className="block w-full rounded border border-red-300 px-3 py-1.5 font-medium text-red-700 hover:bg-red-50"
+          className="btn btn-danger-text w-full"
         >
           Stop everything
         </button>
       )}
-      <a href="/onboarding.html" target="_blank" className="text-blue-700 underline">
+      <a href="/onboarding.html" target="_blank">
         {status === 'invalid_token' ? 'Paste the code' : 'Setup'}
       </a>
     </main>
