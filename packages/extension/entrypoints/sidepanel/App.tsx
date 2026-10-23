@@ -116,12 +116,26 @@ function AddSite() {
               {t.name}
             </option>
           ))}
-          <option value="import">Something else (paste a recipe or its link)</option>
+          <option value="import">Import an exported file, link or recipe</option>
         </select>
       </label>
       {choice === 'import' && (
         <label className="block">
-          <span className="font-medium">Recipe or link</span>
+          <span className="font-medium">Exported file</span>
+          <input
+            type="file"
+            accept=".json,application/json"
+            onChange={async (event) => {
+              const file = event.currentTarget.files?.[0];
+              const box = event.currentTarget.form?.elements.namedItem('import') as HTMLTextAreaElement | null;
+              if (file && box) box.value = await file.text();
+            }}
+          />
+        </label>
+      )}
+      {choice === 'import' && (
+        <label className="block">
+          <span className="font-medium">Or paste the recipe or its link</span>
           <textarea
             name="import"
             required
@@ -360,7 +374,7 @@ export default function App() {
 
       <section className="card">
         <details>
-          <summary className="font-semibold">Add a site</summary>
+          <summary className="font-semibold">Add a site or import an adapter</summary>
           <div className="mt-3">
             <AddSite />
           </div>
