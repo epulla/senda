@@ -99,6 +99,19 @@ describe('adapter background', () => {
     expect(navigate).toHaveBeenCalledWith({ url: 'https://example.com/', newTab: true });
   });
 
+  it('returns null when the run has no value', async () => {
+    const { adaptersItem } = await import('../src/bg/state');
+    const { trackAgentTab } = await import('../src/bg/agent-tabs');
+    await adaptersItem.setValue({ example: { adapter: recipe as any, status: 'active', installed_at: '' } });
+    vi.spyOn(fakeBrowser.tabs, 'query').mockResolvedValue([{ id: 2, url: 'https://example.com/agent' }] as any);
+    trackAgentTab(2);
+    vi.spyOn(fakeBrowser.scripting, 'executeScript').mockImplementation(async (details: any) =>
+      details.files ? [] : [{ result: { ok: true } }],
+    );
+    const { runAdapter } = await import('../src/bg/adapters/run');
+    expect(await runAdapter({ adapter: 'example', tool: 'search', args: {} })).toContain('null');
+  });
+
   it('blocks write tools', async () => {
     const { adaptersItem } = await import('../src/bg/state');
     await adaptersItem.setValue({ writer: { adapter: writeRecipe as any, status: 'active', installed_at: '' } });

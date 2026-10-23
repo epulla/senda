@@ -66,7 +66,7 @@ export async function runAdapter(input: {
         result?.message ?? 'Adapter failed.',
         result?.data,
       );
-    return wrapExternal(host, JSON.stringify(result.value, null, 2));
+    return wrapExternal(host, JSON.stringify(result.value ?? null, null, 2));
   }
   throw new CommandError(ErrorCode.ADAPTER_BROKEN, 'Adapter exceeded navigation limit.');
 }

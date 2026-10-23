@@ -66,6 +66,8 @@ export function validateAdapter(
         }
       });
     inspect(tool.steps as Record<string, any>[]);
+    if ((tool.steps.at(-1) as Record<string, unknown> | undefined)?.return === undefined)
+      errors.push(`tools.${name}.steps: last step must be "return"`);
   }
   return errors.length ? { ok: false, errors } : { ok: true, adapter };
 }

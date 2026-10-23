@@ -11,7 +11,7 @@ const fixture = (name: string) =>
 const valid = fixture('whatsapp') as Adapter;
 const withTool = (steps: unknown[], effect = 'read') => ({
   ...valid,
-  tools: { sample: { description: 'Sample', effect, params: {}, steps } },
+  tools: { sample: { description: 'Sample', effect, params: {}, steps: [...steps, { return: 'x' }] } },
 });
 
 describe('adapter policies', () => {
@@ -44,6 +44,14 @@ describe('adapter policies', () => {
       [{ if_exists: { selector: 'x', then: [{ type: { selector: 'input', text: 'x' } }] } }],
     ])
       expect(validateAdapter(withTool(steps)).ok).toBe(false);
+  });
+  it('rejects tools that do not end with return', () => {
+    const steps = [{ extract: { selector: 'h1' }, save: 'title' }];
+    const tool = { description: 'Sample', effect: 'read', params: {}, steps };
+    expect(validateAdapter({ ...valid, tools: { sample: tool } })).toMatchObject({
+      ok: false,
+      errors: ['tools.sample.steps: last step must be "return"'],
+    });
   });
   it('describes additions and selector changes', () => {
     expect(describeChanges(undefined, valid)[0]).toContain('WhatsApp');
