@@ -25,10 +25,11 @@ export const settingsItem = storage.defineItem<{
 export const activityItem = storage.defineItem<
   Array<{
     at: string;
-    kind: 'approval' | 'denied' | 'injection' | 'adapter' | 'panic';
+    kind: 'approval' | 'denied' | 'injection' | 'adapter' | 'panic' | 'tab';
     text: string;
   }>
 >('local:activity', { fallback: [] });
 export const visitedHostsItem = storage.defineItem<string[]>('session:visitedHosts', { fallback: [] });
 export const taintItem = storage.defineItem<string|null>('session:taint', { fallback: null });
 export const panicItem = storage.defineItem<number>('session:panic', { fallback: 0 });
+export const openedTabsItem = storage.defineItem<number[]>('session:openedTabs', { fallback: [] });

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { stubBrowserWithoutTabGroups } from './no-tab-groups';
 import { AdaptersChanged, ErrorCode } from '@senda/protocol';
 
 const navigate = vi.hoisted(() => vi.fn());
@@ -29,7 +30,7 @@ describe('adapter background', () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.clearAllMocks();
-    vi.stubGlobal('browser', fakeBrowser);
+    stubBrowserWithoutTabGroups();
     const { adaptersItem, draftsItem } = await import('../src/bg/state');
     await adaptersItem.setValue({});
     await draftsItem.setValue({});

@@ -1,10 +1,9 @@
 import { ErrorCode } from '@senda/protocol';
-import { detectCapabilities } from '../../core/capabilities';
-import { trackAgentTab } from '../agent-tabs';
+import { addAgentTab } from '../agent-tabs';
 import { CommandError, target } from './shared';
 import { needsApproval } from '../../core/approvals';
 import { requestApproval } from '../approvals';
-import { settingsItem, visitedHostsItem, taintItem } from '../state';
+import { settingsItem, visitedHostsItem, taintItem, openedTabsItem } from '../state';
 export default async function navigate(p: { url: string; tabId?: number; newTab?: boolean; internal?: boolean }) {
   const host = new URL(p.url).host;
   const settings = await settingsItem.getValue();
@@ -58,15 +57,9 @@ export default async function navigate(p: { url: string; tabId?: number; newTab?
       const tab = created ? await browser.tabs.create({ url: p.url }) : await browser.tabs.update(id, { url: p.url });
       if (!tab?.id) throw new CommandError(ErrorCode.TAB_GONE, 'Could not open tab.');
       tabId = tab.id;
-      trackAgentTab(tab.id);
+      await addAgentTab(tab.id);
       if (completed.has(tab.id)) finish();
-      if (created) {
-        if (detectCapabilities(browser).includes('tabGroups'))
-          try {
-            const groupId = await browser.tabs.group({ tabIds: [tab.id] });
-            await browser.tabGroups.update(groupId, { title: '🤖 MCP' });
-          } catch {}
-      }
+      if (created) await openedTabsItem.setValue([...new Set([...(await openedTabsItem.getValue()), tab.id])]);
     })().catch(finish);
   });
   await loaded;

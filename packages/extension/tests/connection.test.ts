@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { stubBrowserWithoutTabGroups } from './no-tab-groups';
 import { CLOSE_INVALID_TOKEN, PROTOCOL_VERSION } from '@senda/protocol';
 import { tokenItem, statusItem, adaptersItem, panicItem } from '../src/bg/state';
 
@@ -38,7 +39,7 @@ describe('connection', () => {
   beforeEach(async () => {
     vi.resetModules();
     FakeSocket.instances = [];
-    vi.stubGlobal('browser', fakeBrowser);
+    stubBrowserWithoutTabGroups();
     vi.stubGlobal('WebSocket', FakeSocket);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response()));
     vi.spyOn(fakeBrowser.runtime, 'getManifest').mockReturnValue({ version: '1.0.0' } as ReturnType<

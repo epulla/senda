@@ -1,5 +1,5 @@
 import { ErrorCode } from '@senda/protocol';
-import { listAgentIds, untrackAgentTab } from '../agent-tabs';
+import { isAgentTab, listAgentIds, untrackAgentTab } from '../agent-tabs';
 export class CommandError extends Error {
   constructor(
     public code: ErrorCode,
@@ -13,12 +13,14 @@ export async function target(tabId?: number, create = false): Promise<number> {
   if (tabId !== undefined) {
     try {
       await browser.tabs.get(tabId);
-      return tabId;
     } catch {
       throw new CommandError(ErrorCode.TAB_GONE, `Tab ${tabId} is closed.`);
     }
+    if (!(await isAgentTab(tabId)))
+      throw new CommandError(ErrorCode.DENIED_BY_USER, 'Senda can only use tabs in the 🤖 MCP group. Move the tab into that group first.');
+    return tabId;
   }
-  for (const id of listAgentIds().reverse()) {
+  for (const id of (await listAgentIds()).reverse()) {
     try {
       await browser.tabs.get(id);
       return id;

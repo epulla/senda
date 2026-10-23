@@ -5,12 +5,13 @@ import { CommandError } from './shared';
 export default async function tabs(p: { action: 'list' | 'new' | 'select' | 'close'; tabId?: number; url?: string }) {
   if (p.action === 'list') {
     const all = await browser.tabs.query({});
+    const owned = await Promise.all(all.map(async (t) => t.id !== undefined && await isAgentTab(t.id)));
     return all
-      .filter((t) => t.id !== undefined && isAgentTab(t.id))
+      .filter((_, i) => owned[i])
       .map((t) => ({ id: t.id, title: t.title, url: t.url, active: !!t.active }));
   }
   if (p.action === 'new') return navigate({ url: p.url ?? 'about:blank', newTab: true });
-  if (p.tabId === undefined || !isAgentTab(p.tabId))
+  if (p.tabId === undefined || !(await isAgentTab(p.tabId)))
     throw new CommandError(ErrorCode.DENIED_BY_USER, 'Can only select or close agent tabs.');
   if (p.action === 'select') {
     await browser.tabs.update(p.tabId, { active: true });

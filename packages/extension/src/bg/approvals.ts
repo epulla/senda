@@ -6,6 +6,7 @@ import {
   panicItem,
   settingsItem,
   taintItem,
+  openedTabsItem,
   type ApprovalCard,
 } from './state';
 import { CommandError } from './commands/shared';
@@ -13,7 +14,7 @@ import { listAgentIds } from './agent-tabs';
 import { stopConnection } from './connection';
 import { looksLikeInjection } from '../core/injection';
 
-export async function logActivity(kind: 'approval' | 'denied' | 'injection' | 'adapter' | 'panic', text: string) {
+export async function logActivity(kind: 'approval' | 'denied' | 'injection' | 'adapter' | 'panic' | 'tab', text: string) {
   const rows = await activityItem.getValue();
   await activityItem.setValue([...rows, { at: new Date().toISOString(), kind, text }].slice(-200));
 }
@@ -87,7 +88,12 @@ export function watchPanic() {
     await adaptersItem.setValue(
       Object.fromEntries(Object.entries(adapters).map(([id, a]) => [id, { ...a, status: 'paused' as const }])),
     );
-    await Promise.all(listAgentIds().map((id) => browser.tabs.remove(id).catch(() => undefined)));
+    const opened = new Set(await openedTabsItem.getValue());
+    for (const id of await listAgentIds()) {
+      if (opened.has(id)) await browser.tabs.remove(id).catch(() => undefined);
+      else if ('tabGroups' in browser) await browser.tabs.ungroup(id).catch(() => undefined);
+    }
+    await openedTabsItem.setValue([]);
     stopConnection();
     await logActivity('panic', 'Panic switch activated.');
   });

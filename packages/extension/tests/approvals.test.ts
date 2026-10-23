@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { stubBrowserWithoutTabGroups } from './no-tab-groups';
 import { ErrorCode } from '@senda/protocol';
 import { needsApproval } from '../src/core/approvals';
 
@@ -63,7 +64,7 @@ describe('approval background', () => {
     vi.resetModules();
     vi.clearAllMocks();
     vi.useRealTimers();
-    vi.stubGlobal('browser', fakeBrowser);
+    stubBrowserWithoutTabGroups();
     const state = await import('../src/bg/state');
     await state.approvalsItem.setValue({});
     await state.settingsItem.setValue({
@@ -85,6 +86,7 @@ describe('approval background', () => {
     vi.spyOn(fakeBrowser.scripting, 'executeScript').mockImplementation(async (d: any) =>
       d.func.name ? [{ result: d.func.name === 'clickRef' ? true : 'Send' }] : [{ result: 'Send' }],
     );
+    (await import('../src/bg/agent-tabs')).trackAgentTab(4);
     const { default: click } = await import('../src/bg/commands/click');
     const pending = click({ ref: 'senda-1', tabId: 4 });
     const { approvalsItem } = await import('../src/bg/state');
@@ -176,6 +178,7 @@ describe('approval background', () => {
     await vi.waitFor(async () => expect(Object.keys(await approvalsItem.getValue())).toHaveLength(1));
     const { trackAgentTab } = await import('../src/bg/agent-tabs');
     trackAgentTab(98);
+    await (await import('../src/bg/state')).openedTabsItem.setValue([98]);
     vi.spyOn(fakeBrowser.tabs, 'remove').mockResolvedValue(undefined);
     const { requestPanic } = await import('../src/bg/approvals');
     await requestPanic();
