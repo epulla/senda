@@ -1,18 +1,15 @@
-import type { Adapter } from '@senda/adapter-schema';
 import { activityItem, adaptersItem, approvalsItem, draftsItem, panicItem, settingsItem } from '@/src/bg/state';
 import { answerApproval, requestPanic } from '@/src/bg/approvals';
 import { resumeAfterPanic } from '@/src/bg/connection';
 import { useState } from 'react';
-import { approveDraft, installTemplate, rejectDraft, removeAdapter, resetToTemplate, setStatus } from '@/src/bg/adapters/store';
+import { approveDraft, installTemplate, rejectDraft } from '@/src/bg/adapters/store';
 import { bundledTemplates } from '@/src/bg/adapters/templates';
 import { describeChanges } from '@/src/core/adapters/diff';
 import { permissionIncrease } from '@/src/core/adapters/permissions';
+import { ModeBadge, modeLabel, siteNames } from '@/src/ui/adapterLabels';
 import { ThemeToggle } from '@/src/ui/ThemeToggle';
 import { useItem } from '@/src/ui/useItem';
 
-const siteNames = (adapter: Adapter) =>
-  adapter.sites.map((site) => site.replace(/^https?:\/\//, '').replace(/\/\*$/, '')).join(', ');
-const modeLabel = (adapter: Adapter) => (adapter.mode === 'read' ? 'read only' : 'can make changes');
 const askOptions = [
   ['destructive', 'Sending, paying or deleting things, or sharing data with a new site (recommended)'],
   ['changes', 'Any click or typing'],
@@ -92,7 +89,7 @@ function AddSite() {
         const site = value('site');
         let label = value('label');
         try {
-          if (!label) label = new URL(site).hostname.split('.')[0]!.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20);
+          if (!label && site) label = new URL(site).hostname.split('.')[0]!.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20);
           const source =
             choice !== 'import'
               ? { template: choice }
@@ -135,11 +132,11 @@ function AddSite() {
         </label>
       )}
       <label className="block">
-        <span className="font-medium">Site address</span>
+        <span className="font-medium">Site address{choice === 'import' && ' (only if the recipe asks for one)'}</span>
         {example && <span className="block text-muted">{example.description}</span>}
         <input
           name="site"
-          required
+          required={choice !== 'import'}
           type="url"
           placeholder={example?.example ?? 'https://example.com'}
         />
@@ -336,49 +333,29 @@ export default function App() {
       <section className="space-y-3">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Installed adapters</h2>
         {adapters.length === 0 && <p className="text-muted">No adapters yet. Ask your AI to make one for a site.</p>}
-        {adapters.map(({ adapter, status, override }) => (
-          <article key={adapter.id} className="card space-y-1">
-            <p>
-              <strong>{adapter.name}</strong> · {modeLabel(adapter)} · {siteNames(adapter)}
-              {status === 'paused' && <span className="ml-1 font-medium text-muted">(paused)</span>}
-            </p>
-            <p className="text-muted">Can: {Object.keys(adapter.tools).join(', ')}</p>
-            {override && Object.keys(override).length > 0 && (
-              <p className="text-muted">Fixed for this site: {Object.keys(override).join(', ')}</p>
-            )}
-            <div className="flex gap-2 pt-1">
-              {override && Object.keys(override).length > 0 && (
+        {adapters.length > 0 && (
+          <ul className="card divide-y divide-line overflow-hidden !p-0">
+            {adapters.map(({ adapter, status }) => (
+              <li key={adapter.id}>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (confirm(`Undo the fixes made for this site and use the standard ${adapter.name} again?`))
-                      void resetToTemplate(adapter.id);
-                  }}
-                  className="btn"
+                  onClick={() => void browser.tabs.create({ url: browser.runtime.getURL(`/adapter.html?id=${adapter.id}`) })}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-base-200"
                 >
-                  Reset to standard
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{adapter.name}</span>
+                    <span className="block truncate text-xs text-muted">
+                      {status === 'paused' ? 'Paused · ' : ''}
+                      {siteNames(adapter)}
+                    </span>
+                  </span>
+                  <ModeBadge mode={adapter.mode} />
+                  <span aria-hidden className="text-muted">›</span>
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setStatus(adapter.id, status === 'active' ? 'paused' : 'active')}
-                className="btn"
-              >
-                {status === 'active' ? 'Pause' : 'Resume'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (confirm(`Remove ${adapter.name}? Your AI will no longer be able to use it.`))
-                    void removeAdapter(adapter.id);
-                }}
-                className="btn btn-danger-text"
-              >
-                Remove
-              </button>
-            </div>
-          </article>
-        ))}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="card">
