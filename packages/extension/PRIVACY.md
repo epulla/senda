@@ -2,6 +2,8 @@
 
 Senda sends no data outside your machine except to the local Senda server on `127.0.0.1`, which your AI client runs. Page content read by the AI is sent by that client to your chosen AI provider. Senda stores its pairing token, random browser id, installed adapters, and adapter drafts in extension local storage; the id is sent only to the local server. Recipes stay on the device.
 
+When the user or AI asks to import a template by URL, Senda fetches that URL only.
+
 Approval cards and visited hosts use session storage; approval preferences and activity history use local storage; taint source and panic timestamp use session storage.
 
 ## Permissions

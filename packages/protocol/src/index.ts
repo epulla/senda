@@ -58,6 +58,7 @@ export const methods = {
     .object({ action: z.enum(['list', 'new', 'select', 'close']), tabId, url: z.string().url().optional() })
     .strict(),
   'adapter.list': z.object({}).strict(),
+  'adapter.install': z.object({ template: z.string().optional(), recipe: z.unknown().optional(), url: z.string().url().optional(), site: z.string(), label: z.string() }).strict(),
   'adapter.draft': z.object({ recipe: z.unknown() }).strict(),
   'adapter.test': z
     .object({ id: z.string(), tool: z.string(), args: z.record(z.string(), z.unknown()).optional() })

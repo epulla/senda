@@ -495,6 +495,7 @@ async function main() {
       },
     );
   registerAdapter('adapter_list', 'List installed adapters and saved drafts.', {}, 'adapter.list');
+  registerAdapter('adapter_install', 'Install a site template as a draft for approval. Use a bundled template id from adapter_list.templates, recipe JSON, or HTTPS URL; site is base URL, label is short lowercase name. User approves in Senda side panel.', { template: z.string().optional(), recipe: z.unknown().optional(), url: z.string().url().optional(), site: z.string(), label: z.string() }, 'adapter.install');
   mcp.registerTool(
     'adapter_schema',
     { description: 'Show recipe schema and concise authoring guidance.', inputSchema: {} },

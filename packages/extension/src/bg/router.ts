@@ -5,7 +5,7 @@ import click from './commands/click';
 import typeCommand from './commands/type';
 import scroll from './commands/scroll';
 import tabs from './commands/tabs';
-import { list, removeAdapter, saveDraft, saveTestResult, setStatus, submitDraft } from './adapters/store';
+import { installTemplate, list, removeAdapter, saveDraft, saveTestResult, setStatus, submitDraft } from './adapters/store';
 import { runAdapter } from './adapters/run';
 import { CommandError } from './commands/shared';
 export { CommandError } from './commands/shared';
@@ -17,6 +17,7 @@ const commands: Record<string, (p: any) => Promise<unknown>> = {
   scroll,
   tabs,
   'adapter.list': list,
+  'adapter.install': installTemplate,
   'adapter.draft': (p: any) => saveDraft(p.recipe),
   'adapter.test': async (p: any) => {
     try {

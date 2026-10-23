@@ -8,10 +8,10 @@ export const portItem = storage.defineItem<number>('local:port', { fallback: DEF
 export const statusItem = storage.defineItem<ConnectionStatus>('session:status', { fallback: 'disconnected' });
 export const instanceIdItem = storage.defineItem<string>('local:instanceId', { init: () => crypto.randomUUID() });
 export const adaptersItem = storage.defineItem<
-  Record<string, { adapter: Adapter; status: 'active' | 'paused'; installed_at: string }>
+  Record<string, { adapter: Adapter; status: 'active' | 'paused'; installed_at: string; from?: { template: string; version: string; site: string; label: string; source: 'official' | 'community'; recipe?: unknown }; override?: Record<string, Adapter['tools'][string]> }>
 >('local:adapters', { fallback: {} });
 export const draftsItem = storage.defineItem<
-  Record<string, { adapter: Adapter; updated_at: string; pending: boolean; test?: string }>
+  Record<string, { adapter: Adapter; updated_at: string; pending: boolean; test?: string; from?: { template: string; version: string; site: string; label: string; source: 'official' | 'community'; recipe?: unknown }; source?: Adapter['source'] }>
 >('local:drafts', { fallback: {} });
 export type ApprovalCard = { id: string; kind: 'generic'|'adapter'; summary: string; host: string; url?: string; details?: [string, string][]; source?: string; allowAlways: boolean; created_at: string };
 export const approvalsItem = storage.defineItem<Record<string, ApprovalCard & { answer?: 'allow'|'deny'|'always' }>>('session:approvals', { fallback: {} });

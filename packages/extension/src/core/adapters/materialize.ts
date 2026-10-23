@@ -1,6 +1,23 @@
 import { Adapter, type Adapter as AdapterType } from '@senda/adapter-schema';
 import { validateAdapter } from './validate';
 
+export function applyOverride(adapter: AdapterType, override?: Record<string, unknown>): AdapterType {
+  return override ? { ...adapter, tools: { ...adapter.tools, ...override } } as AdapterType : adapter;
+}
+
+export function computeOverride(materialized: AdapterType, edited: AdapterType): { override: Record<string, unknown> } | null {
+  const { tools: before, ...a } = materialized;
+  const { tools: after, ...b } = edited;
+  if (JSON.stringify(a) !== JSON.stringify(b)) return null;
+  const override: Record<string, unknown> = {};
+  for (const name of new Set([...Object.keys(before), ...Object.keys(after)]))
+    if (JSON.stringify(before[name]) !== JSON.stringify(after[name])) {
+      if (!(name in after)) return null;
+      override[name] = after[name];
+    }
+  return { override };
+}
+
 export function materialize(
   template: unknown,
   site: string,

@@ -5,7 +5,7 @@ import { validateAdapter } from '../src/core/adapters/validate';
 import { matchesSites } from '../src/core/adapters/sites';
 import { describeChanges } from '../src/core/adapters/diff';
 import { permissionIncrease } from '../src/core/adapters/permissions';
-import { materialize } from '../src/core/adapters/materialize';
+import { materialize, applyOverride, computeOverride } from '../src/core/adapters/materialize';
 import moodle from './fixtures/adapters/fixturemoodle.json';
 
 const moodleTemplate = () => {
@@ -25,6 +25,15 @@ const withTool = (steps: unknown[], effect = 'read') => ({
 });
 
 describe('adapter policies', () => {
+  it('tracks tool-only overrides but rejects non-tool changes', () => {
+    const base = materialize(moodleTemplate(), 'https://moodle.example.edu', 'work');
+    expect(base.ok).toBe(true);
+    if (!base.ok) return;
+    const edited = { ...base.adapter, tools: { ...base.adapter.tools, changed: base.adapter.tools['get_courses']! } };
+    expect(computeOverride(base.adapter, edited)?.override).toHaveProperty('changed');
+    expect(applyOverride(base.adapter, { changed: edited.tools.changed }).tools).toHaveProperty('changed');
+    expect(computeOverride(base.adapter, { ...edited, sites: [] } as Adapter)).toBeNull();
+  });
   it.each([
     ['http://127.0.0.1:18766/moodle', 'local', ['http://127.0.0.1:18766/moodle/*'], '/moodle/lib/ajax/service.php'],
     ['https://moodle.example.edu', 'root', ['https://moodle.example.edu/*'], '/lib/ajax/service.php'],
