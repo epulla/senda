@@ -3,7 +3,8 @@ import { adaptersItem } from '@/src/bg/state';
 import { removeAdapter, resetToTemplate, setStatus } from '@/src/bg/adapters/store';
 import { bundledTemplates } from '@/src/bg/adapters/templates';
 import { exportRecipe } from '@/src/core/adapters/export';
-import { ModeBadge, siteNames, sourceLabel } from '@/src/ui/adapterLabels';
+import { ModeBadge, siteNames } from '@/src/ui/adapterLabels';
+import { useText } from '@/src/ui/i18n';
 import { LanguageToggle } from '@/src/ui/LanguageToggle';
 import { ThemeToggle } from '@/src/ui/ThemeToggle';
 import { useItem } from '@/src/ui/useItem';
@@ -11,6 +12,8 @@ import { useItem } from '@/src/ui/useItem';
 const id = new URLSearchParams(location.search).get('id') ?? '';
 
 export default function App() {
+  const text = useText();
+  const t = text.adapter;
   const [installed, , loaded] = useItem(adaptersItem);
   const [copied, setCopied] = useState(false);
   const entry = installed[id];
@@ -18,7 +21,7 @@ export default function App() {
   if (!entry)
     return (
       <main className="mx-auto max-w-3xl space-y-3 p-6 text-sm">
-        <p>{loaded ? 'This adapter was removed or doesn’t exist.' : 'Loading…'}</p>
+        <p>{loaded ? t.missing : t.loading}</p>
       </main>
     );
 
@@ -44,8 +47,8 @@ export default function App() {
           <h1 className="text-xl font-bold tracking-tight">{adapter.name}</h1>
           <p className="flex flex-wrap items-center gap-2 text-muted">
             <ModeBadge mode={adapter.mode} />
-            {status === 'paused' && <span className="font-medium">Paused</span>}
-            <span>Works on {siteNames(adapter)}</span>
+            {status === 'paused' && <span className="font-medium">{text.common.paused}</span>}
+            <span>{t.worksOn(siteNames(adapter))}</span>
           </p>
         </div>
         <div className="flex items-center gap-1">
@@ -57,21 +60,21 @@ export default function App() {
       <section className="card space-y-3">
         <p>{adapter.description}</p>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-          <dt className="text-muted">Version</dt>
+          <dt className="text-muted">{t.version}</dt>
           <dd>{adapter.version}</dd>
-          <dt className="text-muted">Where it came from</dt>
-          <dd>{sourceLabel[adapter.source]}</dd>
+          <dt className="text-muted">{t.origin}</dt>
+          <dd>{text.labels.source[adapter.source]}</dd>
           {from && (
             <>
-              <dt className="text-muted">Based on</dt>
+              <dt className="text-muted">{t.basedOn}</dt>
               <dd>
-                {bundledTemplates()[from.template]?.name ?? from.template} for {from.site}
+                {t.templateFor(bundledTemplates()[from.template]?.name ?? from.template, from.site)}
               </dd>
             </>
           )}
           {fixed.length > 0 && (
             <>
-              <dt className="text-muted">Fixed for this site</dt>
+              <dt className="text-muted">{t.fixed}</dt>
               <dd>{fixed.join(', ')}</dd>
             </>
           )}
@@ -82,40 +85,40 @@ export default function App() {
             onClick={() => setStatus(adapter.id, status === 'active' ? 'paused' : 'active')}
             className="btn"
           >
-            {status === 'active' ? 'Pause' : 'Resume'}
+            {status === 'active' ? t.pause : t.resume}
           </button>
           {fixed.length > 0 && (
             <button
               type="button"
               onClick={() => {
-                if (confirm(`Undo the fixes made for this site and use the standard ${adapter.name} again?`))
+                if (confirm(t.confirmReset(adapter.name)))
                   void resetToTemplate(adapter.id);
               }}
               className="btn"
             >
-              Reset to standard
+              {t.reset}
             </button>
           )}
           <button type="button" onClick={download} className="btn">
-            Export
+            {t.export}
           </button>
           <button
             type="button"
             onClick={async () => {
-              if (!confirm(`Remove ${adapter.name}? Your AI will no longer be able to use it.`)) return;
+              if (!confirm(t.confirmRemove(adapter.name))) return;
               await removeAdapter(adapter.id);
               window.close();
             }}
             className="btn btn-danger-text"
           >
-            Remove
+            {text.common.remove}
           </button>
         </div>
       </section>
 
       <section className="space-y-3">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
-          What your AI can do ({Object.keys(adapter.tools).length})
+          {t.tools(Object.keys(adapter.tools).length)}
         </h2>
         {Object.entries(adapter.tools).map(([name, tool]) => {
           const inputs = Object.entries(tool.params);
@@ -126,18 +129,18 @@ export default function App() {
                 <ModeBadge mode={tool.effect} />
               </div>
               <p className="text-xs text-muted">
-                Your AI calls it <code>{name}</code>
-                {fixed.includes(name) && ' · fixed for this site'}
+                {t.calls} <code>{name}</code>
+                {fixed.includes(name) && t.fixedTool}
               </p>
               {inputs.length > 0 && (
                 <div>
-                  <p className="text-muted">Needs</p>
+                  <p className="text-muted">{t.needs}</p>
                   <ul className="list-disc pl-5">
                     {inputs.map(([param, info]) => (
                       <li key={param}>
                         <strong>{param}</strong>
                         {info.description && `: ${info.description}`}
-                        {!info.required && <span className="text-muted"> (optional)</span>}
+                        {!info.required && <span className="text-muted">{t.optional}</span>}
                       </li>
                     ))}
                   </ul>
@@ -145,9 +148,9 @@ export default function App() {
               )}
               {tool.effect === 'write' && (
                 <p>
-                  <span className="text-muted">You'll be asked: </span>
+                  <span className="text-muted">{t.asked}</span>
                   {tool.confirm?.replace(/\{\{\s*(?:args|vars)\.(\w+)\s*\}\}/g, '[$1]') ??
-                    `Your AI wants to use ${name} on ${adapter.name}.`}
+                    text.approval.useTool(name, adapter.name)}
                 </p>
               )}
             </article>
@@ -157,7 +160,7 @@ export default function App() {
 
       <section className="card">
         <details>
-          <summary className="font-semibold">Full recipe</summary>
+          <summary className="font-semibold">{text.common.fullRecipe}</summary>
           <div className="mt-2 space-y-2">
             <button
               type="button"
@@ -167,7 +170,7 @@ export default function App() {
               }}
               className="btn btn-sm"
             >
-              {copied ? 'Copied' : 'Copy'}
+              {copied ? t.copied : t.copy}
             </button>
             <pre className="max-h-[32rem] overflow-auto rounded-lg bg-base-200 p-3 text-xs">{recipe}</pre>
           </div>

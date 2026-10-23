@@ -6,19 +6,13 @@ import { approveDraft, installTemplate, rejectDraft } from '@/src/bg/adapters/st
 import { bundledTemplates, fetchTemplate } from '@/src/bg/adapters/templates';
 import { describeChanges } from '@/src/core/adapters/diff';
 import { permissionIncrease } from '@/src/core/adapters/permissions';
-import { ModeBadge, modeLabel, siteNames } from '@/src/ui/adapterLabels';
+import { ModeBadge, siteNames } from '@/src/ui/adapterLabels';
+import { useText } from '@/src/ui/i18n';
 import { LanguageToggle } from '@/src/ui/LanguageToggle';
 import { ThemeToggle } from '@/src/ui/ThemeToggle';
 import { useItem } from '@/src/ui/useItem';
 
-const askOptions = [
-  ['destructive', 'Sending, paying or deleting things, or sharing data with a new site (recommended)'],
-  ['changes', 'Any click or typing'],
-  ['everything', 'Everything, including opening and reading pages'],
-  ['never', 'Never ask (not recommended)'],
-] as const;
-const neverWarning =
-  'Your AI will send, delete, pay, change things and share data with other sites without asking you. Senda only asks again after your AI reads pages or messages that could contain hidden instructions.';
+const askOptions = ['destructive', 'changes', 'everything', 'never'] as const;
 
 function SiteList({
   title,
@@ -31,6 +25,7 @@ function SiteList({
   sites: string[];
   onChange: (sites: string[]) => void;
 }) {
+  const text = useText();
   return (
     <div className="space-y-1">
       <h3 className="font-semibold">{title}</h3>
@@ -43,7 +38,7 @@ function SiteList({
             onClick={() => onChange(sites.filter((s) => s !== site))}
             className="btn btn-sm"
           >
-            Remove
+            {text.common.remove}
           </button>
         </p>
       ))}
@@ -63,12 +58,12 @@ function SiteList({
       >
         <input
           name="site"
-          aria-label={`Add to ${title.toLowerCase()}`}
+          aria-label={text.sidepanel.addTo(title.toLowerCase())}
           placeholder="example.com"
           className="!mt-0 min-w-0 flex-1"
         />
         <button type="submit" className="btn btn-sm">
-          Add
+          {text.sidepanel.add}
         </button>
       </form>
     </div>
@@ -84,19 +79,20 @@ const errorText = (e: unknown) => {
 type Source = { template: string } | { recipe: unknown } | { url: string };
 
 function SiteFields({ hint, example }: { hint?: string; example?: string }) {
+  const t = useText().sidepanel;
   return (
     <>
       <label className="block">
-        <span className="font-medium">Site address</span>
+        <span className="font-medium">{t.siteAddress}</span>
         {hint && <span className="block text-muted">{hint}</span>}
         <input name="site" required type="url" placeholder={example ?? 'https://example.com'} />
       </label>
       <details>
-        <summary className="text-muted">More options</summary>
+        <summary className="text-muted">{t.moreOptions}</summary>
         <label className="mt-2 block">
-          <span className="font-medium">Short name</span>
-          <span className="block text-muted">Lowercase letters, numbers or _. Your AI sees it in tool names.</span>
-          <input name="label" pattern="[a-z0-9_]{1,20}" placeholder="school" />
+          <span className="font-medium">{t.shortName}</span>
+          <span className="block text-muted">{t.shortNameHint}</span>
+          <input name="label" pattern="[a-z0-9_]{1,20}" placeholder={t.shortNameExample} />
         </label>
       </details>
     </>
@@ -122,6 +118,7 @@ function AddPanel({
   onClose: () => void;
   children?: ReactNode;
 }) {
+  const text = useText();
   const [error, setError] = useState('');
   return (
     <form
@@ -146,7 +143,7 @@ function AddPanel({
     >
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-semibold">{title}</h3>
-        <button type="button" onClick={onClose} className="btn btn-ghost btn-sm" aria-label="Close">
+        <button type="button" onClick={onClose} className="btn btn-ghost btn-sm" aria-label={text.common.close}>
           ✕
         </button>
       </div>
@@ -160,9 +157,9 @@ function AddPanel({
       )}
       <div className="flex items-center gap-2">
         <button type="submit" className="btn btn-primary">
-          Continue
+          {text.sidepanel.continue}
         </button>
-        <span className="text-muted">You'll review it before it can be used.</span>
+        <span className="text-muted">{text.sidepanel.reviewFirst}</span>
       </div>
     </form>
   );
@@ -172,9 +169,10 @@ function AddSite({ onClose }: { onClose: () => void }) {
   const templates = Object.values(bundledTemplates());
   const [choice, setChoice] = useState(templates[0]?.id ?? '');
   const site = templates.find((t) => t.id === choice)?.template?.site;
+  const text = useText();
   return (
     <AddPanel
-      title="Add a site"
+      title={text.sidepanel.addSite}
       source={{ template: choice }}
       needsSite
       hint={site?.description}
@@ -182,7 +180,7 @@ function AddSite({ onClose }: { onClose: () => void }) {
       onClose={onClose}
     >
       <fieldset className="grid grid-cols-2 gap-2">
-        <legend className="mb-1 font-medium">What kind of site?</legend>
+        <legend className="mb-1 font-medium">{text.sidepanel.siteKind}</legend>
         {templates.map((t) => (
           <label
             key={t.id}
@@ -199,13 +197,15 @@ function AddSite({ onClose }: { onClose: () => void }) {
 }
 
 function ImportAdapter({ initial, onClose }: { initial: any; onClose: () => void }) {
+  const text = useText();
+  const t = text.sidepanel;
   const [recipe, setRecipe] = useState<any>(initial);
   const [error, setError] = useState('');
   if (recipe)
     return (
       <AddPanel
-        title={`Import ${recipe.name ?? 'adapter'}`}
-        intro={recipe.template ? 'This adapter works on any site of its kind. Which site should it use?' : undefined}
+        title={t.importNamed(recipe.name ?? t.adapter)}
+        intro={recipe.template ? t.whichSite : undefined}
         source={{ recipe }}
         needsSite={!!recipe.template}
         hint={recipe.template?.site?.description}
@@ -222,30 +222,32 @@ function ImportAdapter({ initial, onClose }: { initial: any; onClose: () => void
         try {
           setRecipe(/^https?:\/\//.test(text) ? await fetchTemplate(text) : JSON.parse(text));
         } catch (e) {
-          setError(e instanceof SyntaxError ? 'That is not a valid recipe.' : errorText(e));
+          setError(e instanceof SyntaxError ? t.notRecipe : errorText(e));
         }
       }}
     >
       <div className="flex items-center justify-between gap-2">
-        <h3 className="font-semibold">Import from a link or text</h3>
-        <button type="button" onClick={onClose} className="btn btn-ghost btn-sm" aria-label="Close">
+        <h3 className="font-semibold">{t.importLink}</h3>
+        <button type="button" onClick={onClose} className="btn btn-ghost btn-sm" aria-label={text.common.close}>
           ✕
         </button>
       </div>
-      <textarea name="import" required rows={4} aria-label="Link or recipe" placeholder="https://… or paste the recipe" className="font-mono text-xs" />
+      <textarea name="import" required rows={4} aria-label={t.linkOrRecipe} placeholder={t.linkPlaceholder} className="font-mono text-xs" />
       {error && (
         <p role="alert" className="card card-danger !p-2 text-error-text">
           {error}
         </p>
       )}
       <button type="submit" className="btn btn-primary">
-        Continue
+        {t.continue}
       </button>
     </form>
   );
 }
 
 export default function App() {
+  const text = useText();
+  const t = text.sidepanel;
   const [installed] = useItem(adaptersItem);
   const [drafts] = useItem(draftsItem);
   const [approvals] = useItem(approvalsItem);
@@ -268,7 +270,7 @@ export default function App() {
           <ThemeToggle />
           {panic === 0 && (
             <button type="button" onClick={() => void requestPanic()} className="btn btn-danger">
-              Stop everything
+              {text.common.stopEverything}
             </button>
           )}
         </div>
@@ -277,34 +279,34 @@ export default function App() {
       {panic > 0 && (
         <section className="card card-danger space-y-2">
           <p className="font-semibold text-error-text">
-            Senda is stopped. Your AI can't use the browser, its tabs were closed and all adapters are paused.
+            {t.stopped}
           </p>
           <button
             type="button"
             onClick={() => void resumeAfterPanic()}
             className="btn"
           >
-            Reconnect
+            {t.reconnect}
           </button>
         </section>
       )}
 
       {settings.askBefore === 'never' && (
         <section role="alert" className="card card-danger space-y-2">
-          <p className="font-semibold text-error-text">Senda won't ask before your AI acts.</p>
+          <p className="font-semibold text-error-text">{t.neverAsk}</p>
           <button
             type="button"
             onClick={() => void setSettings({ ...settings, askBefore: 'destructive' })}
             className="btn"
           >
-            Turn off
+            {text.common.turnOff}
           </button>
         </section>
       )}
 
       {waiting.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Your AI is waiting for you</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{t.waiting}</h2>
           {waiting.map((card) => (
             <article key={card.id} className="card card-warn space-y-2">
               <p className="font-medium">{card.summary}</p>
@@ -321,8 +323,7 @@ export default function App() {
               )}
               {card.source && (
                 <p className="text-error-text">
-                  Your AI read content from {card.source} before asking. Websites can contain hidden instructions, so
-                  check this is something you asked for.
+                  {t.readFrom(card.source)}
                 </p>
               )}
               <div className="flex flex-wrap gap-2">
@@ -331,14 +332,14 @@ export default function App() {
                   onClick={() => void answerApproval(card.id, 'allow')}
                   className="btn btn-primary"
                 >
-                  Allow
+                  {t.allow}
                 </button>
                 <button
                   type="button"
                   onClick={() => void answerApproval(card.id, 'deny')}
                   className="btn"
                 >
-                  Deny
+                  {t.deny}
                 </button>
                 {card.allowAlways && !card.source && (
                   <button
@@ -346,7 +347,7 @@ export default function App() {
                     onClick={() => void answerApproval(card.id, 'always')}
                     className="btn"
                   >
-                    Always on {card.host}
+                    {t.alwaysOn(card.host)}
                   </button>
                 )}
               </div>
@@ -357,20 +358,19 @@ export default function App() {
 
       {pending.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Adapters waiting for your approval</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{t.adaptersWaiting}</h2>
           {pending.map(({ adapter, test, source }) => {
             const previous = installed[adapter.id]?.adapter;
             const more = previous ? permissionIncrease(previous, adapter) : [];
             return (
               <article key={adapter.id} className="card card-warn space-y-2">
                 <p>
-                  Request to {previous ? 'change' : 'add'} <strong>{adapter.name}</strong> ({modeLabel(adapter)}). It
-                  will only work on {siteNames(adapter)}.
+                  {previous ? t.requestChange : t.requestAdd} <strong>{adapter.name}</strong> ({text.labels.mode[adapter.mode]}).{' '}
+                  {t.onlyOn(siteNames(adapter))}
                 </p>
                 {source === 'community' && (
                   <p className="font-medium text-error-text">
-                    Not verified: this comes from outside Senda. Only approve it if you trust where it came from, and
-                    check the full recipe below.
+                    {t.notVerified}
                   </p>
                 )}
                 <ul className="list-disc space-y-1 pl-5">
@@ -379,16 +379,16 @@ export default function App() {
                   ))}
                 </ul>
                 {more.length > 0 && (
-                  <p className="font-medium text-error-text">This asks for more access: {more.join(' ')}</p>
+                  <p className="font-medium text-error-text">{t.moreAccess} {more.join(' ')}</p>
                 )}
                 <details>
                   <summary className="text-muted">
-                    {test ? 'Last test result' : 'Not tested yet'}
+                    {test ? t.lastTest : t.notTested}
                   </summary>
                   {test && <pre className="mt-1 max-h-48 overflow-auto rounded-lg bg-base-200 p-2 text-xs">{test}</pre>}
                 </details>
                 <details>
-                  <summary className="text-muted">Full recipe</summary>
+                  <summary className="text-muted">{text.common.fullRecipe}</summary>
                   <pre className="mt-1 max-h-64 overflow-auto rounded-lg bg-base-200 p-2 text-xs">
                     {JSON.stringify(adapter, null, 2)}
                   </pre>
@@ -399,14 +399,14 @@ export default function App() {
                     onClick={() => approveDraft(adapter.id)}
                     className="btn btn-primary"
                   >
-                    Approve
+                    {t.approve}
                   </button>
                   <button
                     type="button"
                     onClick={() => rejectDraft(adapter.id)}
                     className="btn"
                   >
-                    Reject
+                    {t.reject}
                   </button>
                 </div>
               </article>
@@ -417,13 +417,13 @@ export default function App() {
 
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Installed adapters</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{t.installed}</h2>
           <div className="flex gap-1">
             <button type="button" onClick={() => setAdding('site')} className="btn btn-sm">
-              + Add a site
+              {t.addSiteButton}
             </button>
             <button type="button" onClick={() => fileInput.current?.click()} className="btn btn-sm">
-              Import
+              {t.import}
             </button>
             <input
               ref={fileInput}
@@ -437,7 +437,7 @@ export default function App() {
                 try {
                   setAdding({ recipe: JSON.parse(await file.text()) });
                 } catch {
-                  alert('That file is not a Senda adapter.');
+                  alert(t.notAdapter);
                 }
               }}
             />
@@ -452,7 +452,7 @@ export default function App() {
           />
         )}
         {adapters.length === 0 && adding === null && (
-          <p className="text-muted">No adapters yet. Add a site, import a file, or ask your AI to make one.</p>
+          <p className="text-muted">{t.empty}</p>
         )}
         {adapters.length > 0 && (
           <ul className="card divide-y divide-line overflow-hidden !p-0">
@@ -466,7 +466,7 @@ export default function App() {
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">{adapter.name}</span>
                     <span className="block truncate text-xs text-muted">
-                      {status === 'paused' ? 'Paused · ' : ''}
+                      {status === 'paused' ? `${text.common.paused} · ` : ''}
                       {siteNames(adapter)}
                     </span>
                   </span>
@@ -479,7 +479,7 @@ export default function App() {
         )}
         {adding === null && (
           <button type="button" onClick={() => setAdding('paste')} className="text-xs text-primary-text underline">
-            Have a link or recipe text instead? Paste it
+            {t.paste}
           </button>
         )}
       </section>
@@ -487,7 +487,7 @@ export default function App() {
 
       {unsent.length > 0 && (
         <section className="card space-y-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Drafts your AI is still working on</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{t.drafts}</h2>
           {unsent.map(({ adapter }) => (
             <p key={adapter.id} className="flex items-center justify-between gap-2">
               <span>
@@ -498,7 +498,7 @@ export default function App() {
                 onClick={() => rejectDraft(adapter.id)}
                 className="btn btn-sm"
               >
-                Delete
+                {t.delete}
               </button>
             </p>
           ))}
@@ -506,44 +506,44 @@ export default function App() {
       )}
 
       <section className="card space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Settings</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{t.settings}</h2>
         <fieldset className="space-y-2">
-          <legend className="mb-1 font-semibold">Ask me before</legend>
-          {askOptions.map(([value, label]) => (
+          <legend className="mb-1 font-semibold">{t.askBefore}</legend>
+          {askOptions.map((value) => (
             <label key={value} className="flex items-start gap-2">
               <input
                 type="radio"
                 name="askBefore"
                 checked={settings.askBefore === value}
                 onChange={() => {
-                  if (value === 'never' && !confirm(`${neverWarning}\n\nStop asking?`)) return;
+                  if (value === 'never' && !confirm(`${t.neverWarning}\n\n${t.stopAsking}`)) return;
                   void setSettings({ ...settings, askBefore: value });
                 }}
                 className="mt-0.5"
               />
               <span>
-                {label}
-                {value === 'never' && <span className="block text-error-text">{neverWarning}</span>}
+                {t.ask[value]}
+                {value === 'never' && <span className="block text-error-text">{t.neverWarning}</span>}
               </span>
             </label>
           ))}
         </fieldset>
         <SiteList
-          title="Trusted sites"
-          hint="Your AI can open these sites with data in the address without asking."
+          title={t.trusted}
+          hint={t.trustedHint}
           sites={settings.allowedDomains}
           onChange={(allowedDomains) => void setSettings({ ...settings, allowedDomains })}
         />
         <SiteList
-          title="Blocked sites"
-          hint="Your AI can never open these sites, and no adapter can use them."
+          title={t.blocked}
+          hint={t.blockedHint}
           sites={settings.blockedDomains}
           onChange={(blockedDomains) => void setSettings({ ...settings, blockedDomains })}
         />
         {settings.alwaysSites.length > 0 && (
           <SiteList
-            title="Always allowed"
-            hint="You chose “Always” for these sites. Remove one to be asked again."
+            title={t.always}
+            hint={t.alwaysHint}
             sites={settings.alwaysSites}
             onChange={(alwaysSites) => void setSettings({ ...settings, alwaysSites })}
           />
@@ -552,7 +552,7 @@ export default function App() {
 
       <section className="card">
         <details>
-          <summary className="font-semibold">Activity ({activity.length})</summary>
+          <summary className="font-semibold">{t.activity(activity.length)}</summary>
           <ul className="mt-2 space-y-1">
             {activity
               .slice(-50)
