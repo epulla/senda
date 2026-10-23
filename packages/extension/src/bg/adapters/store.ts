@@ -1,4 +1,6 @@
 import type { Adapter } from '@senda/adapter-schema';
+import { ErrorCode } from '@senda/protocol';
+import { CommandError } from '../commands/shared';
 import { adaptersItem, draftsItem } from '../state';
 import { validateAdapter } from '../../core/adapters/validate';
 import { describeChanges } from '../../core/adapters/diff';
@@ -28,7 +30,7 @@ export async function saveTestResult(id: string, text: string) {
 }
 export async function saveDraft(recipe: unknown) {
   const parsed = validateAdapter(recipe);
-  if (!parsed.ok) return { ok: false as const, errors: parsed.errors };
+  if (!parsed.ok) throw new CommandError(ErrorCode.ADAPTER_BROKEN, 'Adapter validation failed.', parsed.errors);
   const adapter = { ...parsed.adapter, source: 'local' as const };
   const installed = (await adaptersItem.getValue())[adapter.id]?.adapter;
   const drafts = await draftsItem.getValue();

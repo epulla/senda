@@ -35,7 +35,11 @@ describe('adapter background', () => {
 
   it('rejects invalid drafts and stores valid recipes as local with changes', async () => {
     const { saveDraft } = await import('../src/bg/adapters/store');
-    expect(await saveDraft({ nope: true })).toMatchObject({ ok: false, errors: expect.any(Array) });
+    const nested = { ...recipe, tools: { search: { ...recipe.tools.search, steps: [{ extract: { selector: 'title', save: 'x' } }] } } };
+    await expect(saveDraft(nested)).rejects.toMatchObject({
+      code: ErrorCode.ADAPTER_BROKEN,
+      data: ['tools.search.steps.0.extract: Unrecognized key: "save"'],
+    });
     const saved = await saveDraft(recipe);
     expect(saved).toMatchObject({ ok: true, changes: expect.any(Array) });
     const { draftsItem } = await import('../src/bg/state');
