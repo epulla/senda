@@ -52,7 +52,7 @@ export const es: Text = {
   sidepanel: {
     ask: {
       destructive: 'Enviar, pagar o borrar cosas, o compartir datos con un sitio nuevo (recomendado)',
-      changes: 'Cualquier clic o escritura',
+      changes: 'Cualquier clic o texto escrito',
       everything: 'Todo, incluso abrir y leer páginas',
       never: 'Nunca preguntar (no recomendado)',
     },
@@ -72,7 +72,7 @@ export const es: Text = {
     siteKind: '¿Qué tipo de sitio es?',
     importNamed: (name: string) => `Importar ${name}`,
     adapter: 'adaptador',
-    whichSite: 'Este adaptador funciona en cualquier sitio de su tipo. ¿Qué sitio debe usar?',
+    whichSite: 'Este adaptador funciona en cualquier sitio de ese tipo. ¿Qué sitio debe usar?',
     notRecipe: 'Eso no es una receta válida.',
     importLink: 'Importar desde un enlace o texto',
     linkOrRecipe: 'Enlace o receta',
