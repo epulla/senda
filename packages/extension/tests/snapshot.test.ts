@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { snapshotPage } from '../src/injected/snapshot';
 import { clickRef, typeRef } from '../src/injected/actions';
+import { looksLikeInjection } from '../src/core/injection';
 const fixture = (name: string) => readFileSync(`tests/fixtures/${name}`, 'utf8');
 beforeEach(() => {
   document.body.innerHTML = fixture('login-form.html');
@@ -33,6 +34,11 @@ describe('snapshot refs and actions', () => {
     snapshotPage();
     expect(clickRef('5')).toBe(true);
     expect(clicked).toBe(true);
+  });
+  it('flags injection in snapshot-formatted text', () => {
+    expect(looksLikeInjection(snapshotPage())).toBe(false);
+    document.body.innerHTML = fixture('site/injection.html');
+    expect(looksLikeInjection(snapshotPage())).toBe(true);
   });
   it('reports missing refs', () => {
     expect(clickRef('999')).toBe(false);
