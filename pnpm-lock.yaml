@@ -91,6 +91,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.32.1
         version: 1.32.1(supports-color@7.2.0)(zod@4.6.7)
+      '@senda/adapter-schema':
+        specifier: workspace:*
+        version: link:../adapter-schema
       '@senda/protocol':
         specifier: workspace:*
         version: link:../protocol

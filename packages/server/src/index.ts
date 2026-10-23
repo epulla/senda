@@ -13,11 +13,13 @@ import {
   ErrorCode,
   Hello,
   methods,
+  AdaptersChanged,
   PeerHello,
   PROTOCOL_VERSION,
   type Request,
   type Response,
 } from '@senda/protocol';
+import { adapterJsonSchema, STEP_KINDS, ENGINE_VERSION, type AdapterSummary } from '@senda/adapter-schema';
 
 export async function loadToken(dir = join(homedir(), '.senda')) {
   await mkdir(dir, { recursive: true, mode: 0o700 });
@@ -40,7 +42,11 @@ export async function loadToken(dir = join(homedir(), '.senda')) {
 }
 
 export function createRelay(token: string, port = Number(process.env.SENDA_PORT ?? DEFAULT_PORT), helloTimeout = 5000) {
-  const clients = new Map<string, { ws: WebSocket; name: string }>();
+  const clients = new Map<string, { ws: WebSocket; name: string; adapters: AdapterSummary[] }>();
+  const peers = new Set<WebSocket>();
+  const adapterListeners = new Set<(adapters: AdapterSummary[]) => void>();
+  const adapters = () => [...new Map([...clients.values()].flatMap(c => c.adapters).map(a => [a.id, a])).values()];
+  const notifyAdapters = () => { const value = adapters(); for (const fn of adapterListeners) fn(value); for (const peer of peers) if (peer.readyState === WebSocket.OPEN) peer.send(JSON.stringify({ event: 'adapters_changed', data: value })); };
   // Set while another server owns the port; calls go through it.
   let leader: WebSocket | undefined;
   let closed = false;
@@ -105,14 +111,17 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
         }
         authenticated = true;
         clearTimeout(timer);
-        if (isPeer) return;
+        if (isPeer) { peers.add(ws); ws.send(JSON.stringify({ id: 'list_adapters:init', result: adapters() })); return; }
         const id = msg.data.instanceId ?? randomUUID();
         const old = clients.get(id);
         if (old && old.ws !== ws) old.ws.close();
-        clients.set(id, { ws, name: msg.data.name ?? msg.data.browser });
+        clients.set(id, { ws, name: msg.data.name ?? msg.data.browser, adapters: msg.data.adapters });
+        notifyAdapters();
         return;
       }
       if (isPeer) {
+        if (msg?.event === 'adapters_changed' && AdaptersChanged.safeParse(msg.data).success) { adapterListeners.forEach(fn => fn(msg.data)); return; }
+        if (msg?.event === 'adapters_changed' && AdaptersChanged.safeParse(msg.data).success) { adapterListeners.forEach(fn => fn(msg.data)); return; }
         const send = (response: Response) => {
           if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ ...response, id: msg?.id }));
         };
@@ -129,9 +138,11 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
       for (const [id, client] of clients)
         if (client.ws === ws) {
           clients.delete(id);
+          notifyAdapters();
           rejectPending(id);
           break;
         }
+      peers.delete(ws);
     });
   });
   // Several MCP clients can each start a server; extra ones follow the one on the port and take over when it exits.
@@ -161,7 +172,7 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
   });
   http.listen(port, '127.0.0.1');
   const relay = {
-    call(method: string, params: unknown, pick: { browser?: string; prefer?: string } = {}): Promise<Response> {
+    call(method: string, params: unknown, pick: { browser?: string; prefer?: string } = {}, timeout = 30000): Promise<Response> {
       if (!portBusy && method === 'list_browsers')
         return Promise.resolve({
           id: randomUUID(),
@@ -201,7 +212,7 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
         const timer = setTimeout(() => {
           pending.delete(id);
           reject(new Error(`${ErrorCode.TIMEOUT}: Request timed out.`));
-        }, 30000);
+        }, timeout);
         pending.set(id, {
           resolve: (response) => {
             if (!portBusy && targetId)
@@ -221,6 +232,8 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
         }
       });
     },
+    adapters,
+    onAdaptersChanged(fn: (value: AdapterSummary[]) => void) { adapterListeners.add(fn); return () => adapterListeners.delete(fn); },
     close: () => {
       closed = true;
       clearTimeout(retry);
