@@ -27,8 +27,9 @@ export async function installTemplate(p: { template?: string; recipe?: unknown; 
 function templateFor(from: NonNullable<Awaited<ReturnType<typeof adaptersItem.getValue>>[string]['from']>) {
   return from.recipe ?? bundledTemplates()[from.template];
 }
-export function materializeFrom(from: NonNullable<Awaited<ReturnType<typeof adaptersItem.getValue>>[string]['from']>) {
-  return materialize(templateFor(from), from.site, from.label);
+export async function materializeFrom(from: NonNullable<Awaited<ReturnType<typeof adaptersItem.getValue>>[string]['from']>) {
+  const result = materialize(templateFor(from), from.site, from.label, { blockedDomains: (await settingsItem.getValue()).blockedDomains });
+  return result.ok ? { ...result, adapter: { ...result.adapter, source: from.source } } : result;
 }
 
 export async function summaries() {
@@ -84,10 +85,12 @@ export async function approveDraft(id: string) {
   let from = item.from, override: Record<string, Adapter['tools'][string]> | undefined;
   let source = item.source ?? item.adapter.source ?? 'local';
   if (!from && prior?.from) {
-    const base = materializeFrom(prior.from);
-    const diff = base.ok ? computeOverride(base.adapter, parsed.adapter) : null;
+    const base = await materializeFrom(prior.from);
+    const diff = base.ok ? computeOverride(base.adapter, { ...parsed.adapter, source: prior.from.source }) : null;
     if (diff) { from = prior.from; override = diff.override as typeof override; source = prior.from.source; }
     else source = 'local';
+  } else if (from && prior?.from && prior.override) {
+    override = prior.override;
   }
   installed[id] = {
     adapter: { ...parsed.adapter, source },
@@ -137,7 +140,7 @@ export async function list() {
 export async function resetToTemplate(id: string) {
   const installed = await adaptersItem.getValue(), item = installed[id];
   if (!item?.from) throw new CommandError(ErrorCode.ADAPTER_NOT_FOUND, 'Template instance not found.');
-  const result = materializeFrom(item.from);
+  const result = await materializeFrom(item.from);
   if (!result.ok) throw new CommandError(ErrorCode.ADAPTER_BROKEN, 'Adapter validation failed.', result.errors);
   installed[id] = { ...item, adapter: { ...result.adapter, source: item.from.source }, override: undefined, status: 'active' };
   await adaptersItem.setValue(installed);
@@ -149,7 +152,7 @@ export async function syncBundledTemplates() {
     const from = item.from;
     if (!from || from.source !== 'official' || !templates[from.template] || templates[from.template].version === from.version) continue;
     const nextFrom = { ...from, version: templates[from.template].version };
-    const base = materializeFrom(nextFrom);
+    const base = await materializeFrom(nextFrom);
     if (!base.ok) continue;
     const next = applyOverride(base.adapter, item.override);
     if (permissionIncrease(item.adapter, next).length) drafts[id] = { adapter: { ...next, source: from.source }, updated_at: new Date().toISOString(), pending: true, source: from.source, from: nextFrom };

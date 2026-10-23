@@ -3,7 +3,9 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { AdaptersChanged, ErrorCode } from '@senda/protocol';
 
 const navigate = vi.hoisted(() => vi.fn());
+const bundled = vi.hoisted(() => ({ current: {} as Record<string, any> }));
 vi.mock('../src/bg/commands/navigate', () => ({ default: navigate }));
+vi.mock('../src/bg/adapters/templates', () => ({ bundledTemplates: () => bundled.current, fetchTemplate: vi.fn() }));
 
 const recipe = {
   id: 'example',
@@ -254,5 +256,50 @@ describe('adapter background', () => {
       alwaysSites: [],
     });
     await expect(saveDraft(recipe)).rejects.toMatchObject({ code: ErrorCode.ADAPTER_BROKEN });
+  });
+
+  it('installs, repairs, updates, approves permission increases, and resets template instances independently', async () => {
+    const template = (version: string, descriptionA: string, write = false) => ({
+      ...recipe, id: 'catalog', name: 'Catalog', version, source: 'official', sites: ['{{site}}/*'],
+      template: { site: { description: 'Catalog site', example: 'https://example.com' } },
+      mode: write ? 'write' : 'read',
+      tools: {
+        tool_a: { ...recipe.tools.search, description: descriptionA },
+        tool_b: { ...recipe.tools.search, description: 'Original B' },
+      },
+    });
+    bundled.current = { catalog: template('1.0.0', 'A v1') };
+    const { adaptersItem, draftsItem, settingsItem } = await import('../src/bg/state');
+    await settingsItem.setValue({ askBefore: 'destructive', allowedDomains: [], blockedDomains: [], alwaysSites: [] });
+    const { installTemplate, approveDraft, saveDraft, syncBundledTemplates, resetToTemplate } = await import('../src/bg/adapters/store');
+    const communityRecipe = { ...template('1.0.0', 'A v1'), id: 'community' };
+    const first = await installTemplate({ recipe: communityRecipe, site: 'https://example.com', label: 'one' });
+    expect(first).toMatchObject({ status: 'pending', id: 'community_one' });
+    expect(await draftsItem.getValue()).toMatchObject({ community_one: { pending: true, source: 'community', from: { template: 'community', source: 'community' } } });
+    await approveDraft('community_one');
+    await installTemplate({ template: 'catalog', site: 'https://example.com', label: 'first' });
+    await approveDraft('catalog_first');
+    await installTemplate({ template: 'catalog', site: 'https://example.com', label: 'second' });
+    await approveDraft('catalog_second');
+
+    const active = (await adaptersItem.getValue()).catalog_first!.adapter;
+    await saveDraft({ ...active, tools: { ...active.tools, tool_b: { ...active.tools.tool_b!, description: 'Repaired B' } } });
+    await approveDraft('catalog_first');
+    expect((await adaptersItem.getValue()).catalog_first).toMatchObject({ from: { source: 'official' }, override: { tool_b: { description: 'Repaired B' } } });
+
+    bundled.current = { catalog: template('1.1.0', 'A v1.1') };
+    await syncBundledTemplates();
+    expect((await adaptersItem.getValue()).catalog_first).toMatchObject({ adapter: { tools: { tool_a: { description: 'A v1.1' }, tool_b: { description: 'Repaired B' } } }, override: { tool_b: { description: 'Repaired B' } } });
+    expect((await adaptersItem.getValue()).catalog_second!.adapter.tools.tool_b?.description).toBe('Original B');
+
+    bundled.current = { catalog: template('1.2.0', 'A v1.2', true) };
+    await syncBundledTemplates();
+    expect((await draftsItem.getValue()).catalog_first).toMatchObject({ pending: true, from: { version: '1.2.0' } });
+    await approveDraft('catalog_first');
+    expect((await adaptersItem.getValue()).catalog_first).toMatchObject({ from: { version: '1.2.0' }, override: { tool_b: { description: 'Repaired B' } } });
+    await resetToTemplate('catalog_first');
+    expect((await adaptersItem.getValue()).catalog_first).toMatchObject({ adapter: { tools: { tool_a: { description: 'A v1.2' }, tool_b: { description: 'Original B' } } } });
+    expect((await adaptersItem.getValue()).catalog_first!.override).toBeUndefined();
+    expect((await adaptersItem.getValue()).catalog_second!.adapter.tools.tool_b?.description).toBe('Original B');
   });
 });
