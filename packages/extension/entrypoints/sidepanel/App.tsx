@@ -2,7 +2,9 @@ import type { Adapter } from '@senda/adapter-schema';
 import { activityItem, adaptersItem, approvalsItem, draftsItem, panicItem, settingsItem } from '@/src/bg/state';
 import { answerApproval, requestPanic } from '@/src/bg/approvals';
 import { resumeAfterPanic } from '@/src/bg/connection';
-import { approveDraft, rejectDraft, removeAdapter, setStatus } from '@/src/bg/adapters/store';
+import { useState } from 'react';
+import { approveDraft, installTemplate, rejectDraft, removeAdapter, resetToTemplate, setStatus } from '@/src/bg/adapters/store';
+import { bundledTemplates } from '@/src/bg/adapters/templates';
 import { describeChanges } from '@/src/core/adapters/diff';
 import { permissionIncrease } from '@/src/core/adapters/permissions';
 import { useItem } from '@/src/ui/useItem';
@@ -68,6 +70,98 @@ function SiteList({
         </button>
       </form>
     </div>
+  );
+}
+
+function AddSite() {
+  const templates = Object.values(bundledTemplates());
+  const [choice, setChoice] = useState(templates[0]?.id ?? 'import');
+  const [error, setError] = useState('');
+  const example = templates.find((t) => t.id === choice)?.template?.site;
+  return (
+    <form
+      className="space-y-2"
+      onSubmit={async (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const value = (name: string) => (form.elements.namedItem(name) as HTMLInputElement | null)?.value.trim() ?? '';
+        const site = value('site');
+        let label = value('label');
+        try {
+          if (!label) label = new URL(site).hostname.split('.')[0]!.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20);
+          const source =
+            choice !== 'import'
+              ? { template: choice }
+              : /^https?:\/\//.test(value('import'))
+                ? { url: value('import') }
+                : { recipe: JSON.parse(value('import')) };
+          await installTemplate({ ...source, site, label });
+          setError('');
+          form.reset();
+        } catch (e) {
+          const data = (e as { data?: unknown }).data;
+          setError([(e as Error).message, ...(Array.isArray(data) ? data : [])].join(' '));
+        }
+      }}
+    >
+      <label className="block">
+        <span className="font-medium">Kind of site</span>
+        <select
+          value={choice}
+          onChange={(event) => setChoice(event.target.value)}
+          className="mt-1 block w-full rounded border border-gray-300 px-2 py-0.5"
+        >
+          {templates.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+          <option value="import">Something else (paste a recipe or its link)</option>
+        </select>
+      </label>
+      {choice === 'import' && (
+        <label className="block">
+          <span className="font-medium">Recipe or link</span>
+          <textarea
+            name="import"
+            required
+            rows={3}
+            placeholder="https://… or paste the recipe"
+            className="mt-1 block w-full rounded border border-gray-300 px-2 py-0.5 font-mono text-xs"
+          />
+        </label>
+      )}
+      <label className="block">
+        <span className="font-medium">Site address</span>
+        {example && <span className="block text-gray-600">{example.description}</span>}
+        <input
+          name="site"
+          required
+          type="url"
+          placeholder={example?.example ?? 'https://example.com'}
+          className="mt-1 block w-full rounded border border-gray-300 px-2 py-0.5"
+        />
+      </label>
+      <label className="block">
+        <span className="font-medium">Short name (optional)</span>
+        <span className="block text-gray-600">Lowercase letters, numbers or _. Your AI sees it in tool names.</span>
+        <input
+          name="label"
+          pattern="[a-z0-9_]{1,20}"
+          placeholder="school"
+          className="mt-1 block w-full rounded border border-gray-300 px-2 py-0.5"
+        />
+      </label>
+      {error && (
+        <p role="alert" className="text-red-700">
+          {error}
+        </p>
+      )}
+      <button type="submit" className="rounded bg-blue-700 px-3 py-1 font-medium text-white hover:bg-blue-800">
+        Add site
+      </button>
+      <p className="text-gray-600">You'll review it above before it can be used.</p>
+    </form>
   );
 }
 
@@ -169,15 +263,21 @@ export default function App() {
       {pending.length > 0 && (
         <section className="space-y-3">
           <h2 className="font-semibold">Adapters waiting for your approval</h2>
-          {pending.map(({ adapter, test }) => {
+          {pending.map(({ adapter, test, source }) => {
             const previous = installed[adapter.id]?.adapter;
             const more = previous ? permissionIncrease(previous, adapter) : [];
             return (
               <article key={adapter.id} className="space-y-2 rounded border border-amber-300 bg-amber-50 p-3">
                 <p>
-                  Your AI wants to {previous ? 'change' : 'add'} <strong>{adapter.name}</strong> ({modeLabel(adapter)}).
-                  It will only work on {siteNames(adapter)}.
+                  Request to {previous ? 'change' : 'add'} <strong>{adapter.name}</strong> ({modeLabel(adapter)}). It
+                  will only work on {siteNames(adapter)}.
                 </p>
+                {source === 'community' && (
+                  <p className="font-medium text-red-700">
+                    Not verified: this comes from outside Senda. Only approve it if you trust where it came from, and
+                    check the full recipe below.
+                  </p>
+                )}
                 <ul className="list-disc space-y-1 pl-5">
                   {describeChanges(previous, adapter).map((line) => (
                     <li key={line}>{line}</li>
@@ -223,14 +323,29 @@ export default function App() {
       <section className="space-y-3">
         <h2 className="font-semibold">Installed adapters</h2>
         {adapters.length === 0 && <p className="text-gray-600">No adapters yet. Ask your AI to make one for a site.</p>}
-        {adapters.map(({ adapter, status }) => (
+        {adapters.map(({ adapter, status, override }) => (
           <article key={adapter.id} className="space-y-1 rounded border border-gray-200 p-3">
             <p>
               <strong>{adapter.name}</strong> · {modeLabel(adapter)} · {siteNames(adapter)}
               {status === 'paused' && <span className="ml-1 text-amber-700">(paused)</span>}
             </p>
             <p className="text-gray-600">Can: {Object.keys(adapter.tools).join(', ')}</p>
+            {override && Object.keys(override).length > 0 && (
+              <p className="text-gray-600">Fixed for this site: {Object.keys(override).join(', ')}</p>
+            )}
             <div className="flex gap-2 pt-1">
+              {override && Object.keys(override).length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm(`Undo the fixes made for this site and use the standard ${adapter.name} again?`))
+                      void resetToTemplate(adapter.id);
+                  }}
+                  className="rounded border border-gray-300 px-3 py-1 hover:bg-gray-100"
+                >
+                  Reset to standard
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setStatus(adapter.id, status === 'active' ? 'paused' : 'active')}
@@ -251,6 +366,15 @@ export default function App() {
             </div>
           </article>
         ))}
+      </section>
+
+      <section className="space-y-2">
+        <details>
+          <summary className="cursor-pointer font-semibold">Add a site</summary>
+          <div className="mt-2">
+            <AddSite />
+          </div>
+        </details>
       </section>
 
       {unsent.length > 0 && (
