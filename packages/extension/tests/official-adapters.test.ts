@@ -48,7 +48,6 @@ describe('official adapters', () => {
   });
 
   it('validates and pauses rename_course before writes', async () => {
-    expect(materialize(source, 'https://moodle.example.edu', 'test').ok).toBe(true);
     const ready = materialize(source, 'https://moodle.example.edu', 'test');
     expect(ready.ok).toBe(true);
     if (!ready.ok) return;
