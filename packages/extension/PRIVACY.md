@@ -8,5 +8,6 @@ Senda sends no data outside your machine except to the local Senda server on `12
 - **scripting**: read and interact with pages when requested.
 - **storage**: store the local pairing token.
 - **alarms**: schedule local keepalive checks.
-- **tabGroups** (Chromium only): work with tab groups.
+- **tabGroups** (Chromium only): keep the tabs your AI uses in one "🤖 MCP" group.
+- **sidePanel** (Chromium only): show your adapters and approval requests in the side panel.
 - **All websites**: access pages only to provide browser capabilities requested by your AI.

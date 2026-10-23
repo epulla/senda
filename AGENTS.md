@@ -27,6 +27,11 @@ Before finishing a change, run `pnpm compile && pnpm test` (extension, server, a
 - `packages/extension/entrypoints/background.ts`: browser extension background entry.
 - `packages/extension/entrypoints/popup/`: compact extension popup.
 - `packages/extension/entrypoints/onboarding/`: setup page.
+- `packages/extension/entrypoints/sidepanel/`: adapter list and approvals.
+- `packages/extension/entrypoints/runner.ts` + `src/injected/runner.ts`: recipe runner injected into agent tabs.
+- `packages/extension/src/core/adapters/`: recipe validation, diff, permissions, templates (pure).
+- `packages/extension/src/bg/adapters/`: adapter storage and execution.
+- `packages/extension/tests/fixtures/server.mjs`: local fixture site (`pnpm fixtures`, 127.0.0.1:18766) with a chat page and a fake Moodle.
 - `packages/extension/src/core/`: pure logic; no browser API calls.
 - `packages/extension/src/bg/`: browser-facing logic; every storage item lives in `state.ts`.
 - `packages/extension/PRIVACY.md`: update when adding a permission, storage item, or network call.
@@ -38,6 +43,7 @@ Before finishing a change, run `pnpm compile && pnpm test` (extension, server, a
 - Every Chromium-only function goes through `src/core/capabilities.ts`.
 - The runner never evaluates strings as code (no `eval`, `new Function`, `setTimeout(string)`).
 - Every recipe passes `validate.ts` before saving or running.
+- Adapters run only in agent tabs (the "🤖 MCP" group), never in the user's own tabs.
 - Any request for more permissions (new domain, write mode, new endpoint) always requires approval even for official adapters.
 - Before finishing a change run `pnpm compile && pnpm test` (extension, server, adapter-schema).
 - Update `PRIVACY.md` when adding a permission, storage item or network call.
@@ -50,5 +56,5 @@ Before finishing a change, run `pnpm compile && pnpm test` (extension, server, a
 
 ## Git
 
-- Phase 1 commits go straight to `main`.
+- Commits go straight to `main`.
 - Use Conventional Commits, scoped when relevant, e.g. `feat(protocol): ...`.
