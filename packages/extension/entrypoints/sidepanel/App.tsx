@@ -16,7 +16,10 @@ const askOptions = [
   ['destructive', 'Sending, paying or deleting things, or sharing data with a new site (recommended)'],
   ['changes', 'Any click or typing'],
   ['everything', 'Everything, including opening and reading pages'],
+  ['never', 'Never ask (not recommended)'],
 ] as const;
+const neverWarning =
+  'Your AI will send, delete, pay, change things and share data with other sites without asking you. Senda only asks again after your AI reads pages or messages that could contain hidden instructions.';
 
 function SiteList({
   title,
@@ -203,6 +206,19 @@ export default function App() {
             className="rounded border border-gray-300 bg-white px-3 py-1 hover:bg-gray-100"
           >
             Reconnect
+          </button>
+        </section>
+      )}
+
+      {settings.askBefore === 'never' && (
+        <section role="alert" className="space-y-2 rounded border border-red-300 bg-red-50 p-3">
+          <p className="font-medium text-red-800">Senda won't ask before your AI acts.</p>
+          <button
+            type="button"
+            onClick={() => void setSettings({ ...settings, askBefore: 'destructive' })}
+            className="rounded border border-gray-300 bg-white px-3 py-1 hover:bg-gray-100"
+          >
+            Turn off
           </button>
         </section>
       )}
@@ -407,10 +423,16 @@ export default function App() {
                 type="radio"
                 name="askBefore"
                 checked={settings.askBefore === value}
-                onChange={() => void setSettings({ ...settings, askBefore: value })}
+                onChange={() => {
+                  if (value === 'never' && !confirm(`${neverWarning}\n\nStop asking?`)) return;
+                  void setSettings({ ...settings, askBefore: value });
+                }}
                 className="mt-0.5"
               />
-              {label}
+              <span>
+                {label}
+                {value === 'never' && <span className="block text-red-700">{neverWarning}</span>}
+              </span>
             </label>
           ))}
         </fieldset>

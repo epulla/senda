@@ -27,4 +27,4 @@ Pages, emails and chats your AI reads (including other people's messages) are se
 
 # Security
 
-Senda pauses protected actions for approval in its side panel. Suspected prompt injection is marked ⚠️ and logged; pages can taint a site and trigger extra approval. Other MCP servers connected to your AI client (such as Slack or email) are outside Senda's protection. Keep client approvals enabled for outbound tools.
+Senda pauses protected actions for approval in its side panel. Suspected prompt injection is marked ⚠️ and logged; pages can taint a site and trigger extra approval. "Never ask" (side panel → Ask me before) skips every approval, including adapter changes, until your AI reads untrusted content; it is not recommended and shows a red badge while on. Other MCP servers connected to your AI client (such as Slack or email) are outside Senda's protection. Keep client approvals enabled for outbound tools.

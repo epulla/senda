@@ -1,4 +1,4 @@
-import { approvalsItem, draftsItem, panicItem, statusItem } from '@/src/bg/state';
+import { approvalsItem, draftsItem, panicItem, settingsItem, statusItem } from '@/src/bg/state';
 import { requestPanic } from '@/src/bg/approvals';
 import { detectBrowserName } from '@/src/core/browser-name';
 import { detectCapabilities } from '@/src/core/capabilities';
@@ -18,6 +18,7 @@ export default function App() {
   const [drafts] = useItem(draftsItem);
   const [approvals] = useItem(approvalsItem);
   const [panic] = useItem(panicItem);
+  const [settings, setSettings] = useItem(settingsItem);
   const pending =
     Object.values(drafts).filter((draft) => draft.pending).length +
     Object.values(approvals).filter((item) => !item.answer).length;
@@ -32,6 +33,18 @@ export default function App() {
           : label}
       </p>
       {panic > 0 && <p className="font-medium text-red-700">Senda is stopped. Open the side panel to reconnect.</p>}
+      {settings.askBefore === 'never' && (
+        <p role="alert" className="flex items-center justify-between gap-2 rounded bg-red-50 p-2 font-medium text-red-800">
+          Senda won't ask before acting.
+          <button
+            type="button"
+            onClick={() => void setSettings({ ...settings, askBefore: 'destructive' })}
+            className="rounded border border-gray-300 bg-white px-2 py-0.5 font-normal text-gray-900 hover:bg-gray-100"
+          >
+            Turn off
+          </button>
+        </p>
+      )}
       <button
         type="button"
         onClick={openAdapters}
