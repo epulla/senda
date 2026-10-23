@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { CLOSE_INVALID_TOKEN, PROTOCOL_VERSION } from '@senda/protocol';
-import { tokenItem, statusItem } from '../src/bg/state';
+import { tokenItem, statusItem, adaptersItem } from '../src/bg/state';
 
 class FakeSocket {
   static instances: FakeSocket[] = [];
@@ -94,5 +94,32 @@ describe('connection', () => {
     const secondHello = JSON.parse(latestSocket().sent[0]!);
     expect(secondHello.data.instanceId).toBe(firstHello.data.instanceId);
     vi.useRealTimers();
+  });
+  it('sends adapters_changed when installed adapters change', async () => {
+    const { startConnection } = await import('../src/bg/connection');
+    startConnection();
+    await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
+    const ws = latestSocket();
+    ws.open();
+    await vi.waitFor(() => expect(ws.sent).toHaveLength(1));
+    await adaptersItem.setValue({
+      demo: {
+        adapter: {
+          id: 'demo',
+          name: 'Demo',
+          version: '1.0.0',
+          source: 'local',
+          mode: 'read',
+          sites: ['https://example.com/*'],
+          tools: {},
+          engine: 1,
+          description: '',
+        },
+        status: 'active',
+        installed_at: 'now',
+      },
+    });
+    await vi.waitFor(() => expect(ws.sent).toHaveLength(2));
+    expect(JSON.parse(ws.sent[1]!).event).toBe('adapters_changed');
   });
 });
