@@ -1,0 +1,5 @@
+{
+  "core_course_get_enrolled_courses_by_timeline_classification": [{"error":false,"data":{"courses":[{"id":2,"fullname":"Fixture course","shortname":"FIX1","viewurl":"/course/view.php?id=2","coursecategory":"Fixture category"}]}}],
+  "core_course_search_courses": [{"error":false,"data":{"courses":[{"id":2,"fullname":"Fixture course","displayname":"Fixture course","shortname":"FIX1","categoryname":"Fixture category"}]}}],
+  "core_calendar_get_action_events_by_timesort": [{"error":false,"data":{"events":[{"name":"Fixture deadline","timesort":1900000000,"url":"/mod/assign/view.php?id=3","course":{"fullname":"Fixture course"}}]}}]
+}
