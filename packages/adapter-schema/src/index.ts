@@ -22,7 +22,13 @@ const stepPayloads = {
     .strict(),
   extract: field,
   extract_list: z
-    .object({ container: selector.optional(), item: selector, fields, limit: z.number().int().optional() })
+    .object({
+      container: selector.optional(),
+      item: selector,
+      fields,
+      limit: z.number().int().optional(),
+      allow_empty: z.boolean().optional(),
+    })
     .strict(),
   scroll_until: z
     .object({
@@ -33,6 +39,7 @@ const stepPayloads = {
       limit: z.number().int().optional(),
       idle_ms: z.number().int().optional(),
       timeout_ms: z.number().int().optional(),
+      allow_empty: z.boolean().optional(),
     })
     .strict(),
   click: z.object({ selector }).strict(),

@@ -502,7 +502,7 @@ async function main() {
             steps: STEP_KINDS,
             engine: ENGINE_VERSION,
             notes:
-              'Tool names <id>__<tool>. Sites use URL patterns. Read-only by default. Selectors: CSS, text=, role=. Templates: {{args.x}}, {{vars.x}}, {{now}}. request uses same-origin path; POST requires read_endpoints. scroll_until supports virtualized lists. Use "save" as a sibling of the step key, and end every tool with {"return": "<saved name>"}. Flow: draft → test → submit → user approves in Senda side panel.',
+              'Tool names <id>__<tool>. Sites use URL patterns. Read-only by default. Selectors: CSS, text=, role=. Templates: {{args.x}}, {{vars.x}}, {{now}}. request uses same-origin path; POST requires read_endpoints. scroll_until supports virtualized lists. extract_list/scroll_until fail when item matches nothing; set allow_empty: true when an empty list is valid. Use "save" as a sibling of the step key, and end every tool with {"return": "<saved name>"}. Flow: draft → test → submit → user approves in Senda side panel.',
           }),
         },
       ],

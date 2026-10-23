@@ -81,18 +81,20 @@ export async function runRecipe(input: Input): Promise<RunResult> {
     return v;
   };
   const fail = (code: string, message: string, data?: unknown): RunResult => ({ ok: false, code, message, data });
-  const bad = (message: string): RunResult =>
-    fail(ErrorCode.ADAPTER_BROKEN, message, {
+  const bad = (message: string): RunResult => {
+    const body = currentStep?.[Object.keys(currentStep ?? {}).find((k) => k !== 'save') ?? ''];
+    return fail(ErrorCode.ADAPTER_BROKEN, message, {
       tool,
       step_index: current,
       step: currentStep,
-      selector: currentStep?.[Object.keys(currentStep ?? {})[0] ?? '']?.selector,
+      selector: body?.selector ?? body?.item,
       page: {
         url: location.href,
         title: document.title,
         summary: (document.body?.innerText ?? '').replace(/\s+/g, ' ').slice(0, 2000),
       },
     });
+  };
   const execute = async (steps: any[]): Promise<RunResult | undefined> => {
     for (let i = input.resume && steps === def.steps ? input.resume.step : 0; i < steps.length; i++) {
       if (++count > 200) return fail(ErrorCode.ADAPTER_BROKEN, 'Step limit exceeded');
@@ -131,6 +133,7 @@ export async function runRecipe(input: Input): Promise<RunResult> {
                 0,
                 payload.limit ?? Infinity,
               );
+              if (!items.length && !payload.allow_empty) throw Error(`No items match ${payload.item}`);
               out = items.map((el) =>
                 Object.fromEntries(
                   Object.entries(payload.fields).map(([k, f]) => {
@@ -174,6 +177,7 @@ export async function runRecipe(input: Input): Promise<RunResult> {
               el.dispatchEvent(new Event('scroll'));
               await new Promise((r) => setTimeout(r, 100));
             }
+            if (!found.size && !payload.allow_empty) throw Error(`No items match ${payload.item}`);
             out = [...found.values()];
             break;
           }

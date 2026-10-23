@@ -183,6 +183,27 @@ describe('recipe runner', () => {
       data: { step_index: 0, step: { return: 'x' } },
     });
   });
+  it.each([
+    [undefined, { ok: false, code: 'ADAPTER_BROKEN', data: { selector: '.row' } }],
+    [true, { ok: true, value: [] }],
+  ])('empty list with allow_empty=%s', async (allow_empty, expected) => {
+    const a = Adapter.parse({
+      ...chat,
+      tools: {
+        rows: {
+          description: 'rows',
+          effect: 'read',
+          params: {},
+          steps: [
+            { extract_list: { item: '.row', fields: { name: { selector: ':scope' } }, allow_empty }, save: 'rows' },
+            { return: 'rows' },
+          ],
+        },
+      },
+    });
+    document.body.innerHTML = '<main></main>';
+    expect(await runRecipe({ adapter: a, tool: 'rows', args: {} })).toMatchObject(expected);
+  });
   it('enforces 200-step limit', async () => {
     const steps = Array.from({ length: 201 }, () => ({ exists: { selector: 'body' } }));
     const a = Adapter.parse({ ...chat, tools: { many: { description: 'many', effect: 'read', params: {}, steps } } });
