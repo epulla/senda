@@ -1,9 +1,9 @@
 import { activityItem, adaptersItem, approvalsItem, draftsItem, panicItem, settingsItem } from '@/src/bg/state';
 import { answerApproval, requestPanic } from '@/src/bg/approvals';
 import { resumeAfterPanic } from '@/src/bg/connection';
-import { useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { approveDraft, installTemplate, rejectDraft } from '@/src/bg/adapters/store';
-import { bundledTemplates } from '@/src/bg/adapters/templates';
+import { bundledTemplates, fetchTemplate } from '@/src/bg/adapters/templates';
 import { describeChanges } from '@/src/core/adapters/diff';
 import { permissionIncrease } from '@/src/core/adapters/permissions';
 import { ModeBadge, modeLabel, siteNames } from '@/src/ui/adapterLabels';
@@ -74,105 +74,172 @@ function SiteList({
   );
 }
 
-function AddSite() {
-  const templates = Object.values(bundledTemplates());
-  const [choice, setChoice] = useState(templates[0]?.id ?? 'import');
+const labelFor = (site: string) =>
+  new URL(site).hostname.split('.')[0]!.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20);
+const errorText = (e: unknown) => {
+  const data = (e as { data?: unknown }).data;
+  return [(e as Error).message, ...(Array.isArray(data) ? data : [])].join(' ');
+};
+type Source = { template: string } | { recipe: unknown } | { url: string };
+
+function SiteFields({ hint, example }: { hint?: string; example?: string }) {
+  return (
+    <>
+      <label className="block">
+        <span className="font-medium">Site address</span>
+        {hint && <span className="block text-muted">{hint}</span>}
+        <input name="site" required type="url" placeholder={example ?? 'https://example.com'} />
+      </label>
+      <details>
+        <summary className="text-muted">More options</summary>
+        <label className="mt-2 block">
+          <span className="font-medium">Short name</span>
+          <span className="block text-muted">Lowercase letters, numbers or _. Your AI sees it in tool names.</span>
+          <input name="label" pattern="[a-z0-9_]{1,20}" placeholder="school" />
+        </label>
+      </details>
+    </>
+  );
+}
+
+function AddPanel({
+  title,
+  intro,
+  source,
+  needsSite,
+  hint,
+  example,
+  onClose,
+  children,
+}: {
+  title: string;
+  intro?: string;
+  source?: Source;
+  needsSite: boolean;
+  hint?: string;
+  example?: string;
+  onClose: () => void;
+  children?: ReactNode;
+}) {
   const [error, setError] = useState('');
-  const example = templates.find((t) => t.id === choice)?.template?.site;
   return (
     <form
-      className="space-y-2"
+      className="card space-y-3"
       onSubmit={async (event) => {
         event.preventDefault();
         const form = event.currentTarget;
         const value = (name: string) => (form.elements.namedItem(name) as HTMLInputElement | null)?.value.trim() ?? '';
-        const site = value('site');
-        let label = value('label');
         try {
-          if (!label && site) label = new URL(site).hostname.split('.')[0]!.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20);
-          const source =
-            choice !== 'import'
-              ? { template: choice }
-              : /^https?:\/\//.test(value('import'))
-                ? { url: value('import') }
-                : { recipe: JSON.parse(value('import')) };
-          await installTemplate({ ...source, site, label });
-          setError('');
-          form.reset();
+          let chosen = source;
+          if (!chosen) {
+            const text = value('import');
+            chosen = /^https?:\/\//.test(text) ? { url: text } : { recipe: JSON.parse(text) };
+          }
+          const site = value('site');
+          await installTemplate({ ...chosen, ...(site ? { site, label: value('label') || labelFor(site) } : {}) });
+          onClose();
         } catch (e) {
-          const data = (e as { data?: unknown }).data;
-          setError([(e as Error).message, ...(Array.isArray(data) ? data : [])].join(' '));
+          setError(errorText(e));
         }
       }}
     >
-      <label className="block">
-        <span className="font-medium">Kind of site</span>
-        <select
-          value={choice}
-          onChange={(event) => setChoice(event.target.value)}
-        >
-          {templates.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-          <option value="import">Import an exported file, link or recipe</option>
-        </select>
-      </label>
-      {choice === 'import' && (
-        <label className="block">
-          <span className="font-medium">Exported file</span>
-          <input
-            type="file"
-            accept=".json,application/json"
-            onChange={async (event) => {
-              const file = event.currentTarget.files?.[0];
-              const box = event.currentTarget.form?.elements.namedItem('import') as HTMLTextAreaElement | null;
-              if (file && box) box.value = await file.text();
-            }}
-          />
-        </label>
-      )}
-      {choice === 'import' && (
-        <label className="block">
-          <span className="font-medium">Or paste the recipe or its link</span>
-          <textarea
-            name="import"
-            required
-            rows={3}
-            placeholder="https://… or paste the recipe"
-            className="font-mono text-xs"
-          />
-        </label>
-      )}
-      <label className="block">
-        <span className="font-medium">Site address{choice === 'import' && ' (only if the recipe asks for one)'}</span>
-        {example && <span className="block text-muted">{example.description}</span>}
-        <input
-          name="site"
-          required={choice !== 'import'}
-          type="url"
-          placeholder={example?.example ?? 'https://example.com'}
-        />
-      </label>
-      <label className="block">
-        <span className="font-medium">Short name (optional)</span>
-        <span className="block text-muted">Lowercase letters, numbers or _. Your AI sees it in tool names.</span>
-        <input
-          name="label"
-          pattern="[a-z0-9_]{1,20}"
-          placeholder="school"
-        />
-      </label>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="font-semibold">{title}</h3>
+        <button type="button" onClick={onClose} className="btn btn-ghost btn-sm" aria-label="Close">
+          ✕
+        </button>
+      </div>
+      {intro && <p className="text-muted">{intro}</p>}
+      {children}
+      {needsSite && <SiteFields hint={hint} example={example} />}
       {error && (
-        <p role="alert" className="text-error-text">
+        <p role="alert" className="card card-danger !p-2 text-error-text">
+          {error}
+        </p>
+      )}
+      <div className="flex items-center gap-2">
+        <button type="submit" className="btn btn-primary">
+          Continue
+        </button>
+        <span className="text-muted">You'll review it before it can be used.</span>
+      </div>
+    </form>
+  );
+}
+
+function AddSite({ onClose }: { onClose: () => void }) {
+  const templates = Object.values(bundledTemplates());
+  const [choice, setChoice] = useState(templates[0]?.id ?? '');
+  const site = templates.find((t) => t.id === choice)?.template?.site;
+  return (
+    <AddPanel
+      title="Add a site"
+      source={{ template: choice }}
+      needsSite
+      hint={site?.description}
+      example={site?.example}
+      onClose={onClose}
+    >
+      <fieldset className="grid grid-cols-2 gap-2">
+        <legend className="mb-1 font-medium">What kind of site?</legend>
+        {templates.map((t) => (
+          <label
+            key={t.id}
+            className={`card cursor-pointer !p-2 ${choice === t.id ? 'outline-2 outline-primary' : ''}`}
+          >
+            <input type="radio" name="kind" className="sr-only" checked={choice === t.id} onChange={() => setChoice(t.id)} />
+            <span className="block font-semibold">{t.name}</span>
+            <span className="block text-xs text-muted">{t.description}</span>
+          </label>
+        ))}
+      </fieldset>
+    </AddPanel>
+  );
+}
+
+function ImportAdapter({ initial, onClose }: { initial: any; onClose: () => void }) {
+  const [recipe, setRecipe] = useState<any>(initial);
+  const [error, setError] = useState('');
+  if (recipe)
+    return (
+      <AddPanel
+        title={`Import ${recipe.name ?? 'adapter'}`}
+        intro={recipe.template ? 'This adapter works on any site of its kind. Which site should it use?' : undefined}
+        source={{ recipe }}
+        needsSite={!!recipe.template}
+        hint={recipe.template?.site?.description}
+        example={recipe.template?.site?.example}
+        onClose={onClose}
+      />
+    );
+  return (
+    <form
+      className="card space-y-3"
+      onSubmit={async (event) => {
+        event.preventDefault();
+        const text = (event.currentTarget.elements.namedItem('import') as HTMLTextAreaElement).value.trim();
+        try {
+          setRecipe(/^https?:\/\//.test(text) ? await fetchTemplate(text) : JSON.parse(text));
+        } catch (e) {
+          setError(e instanceof SyntaxError ? 'That is not a valid recipe.' : errorText(e));
+        }
+      }}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="font-semibold">Import from a link or text</h3>
+        <button type="button" onClick={onClose} className="btn btn-ghost btn-sm" aria-label="Close">
+          ✕
+        </button>
+      </div>
+      <textarea name="import" required rows={4} aria-label="Link or recipe" placeholder="https://… or paste the recipe" className="font-mono text-xs" />
+      {error && (
+        <p role="alert" className="card card-danger !p-2 text-error-text">
           {error}
         </p>
       )}
       <button type="submit" className="btn btn-primary">
-        Add site
+        Continue
       </button>
-      <p className="text-muted">You'll review it above before it can be used.</p>
     </form>
   );
 }
@@ -184,6 +251,8 @@ export default function App() {
   const [settings, setSettings] = useItem(settingsItem);
   const [activity] = useItem(activityItem);
   const [panic] = useItem(panicItem);
+  const [adding, setAdding] = useState<null | 'site' | 'paste' | { recipe: unknown }>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
   const waiting = Object.values(approvals).filter((item) => !item.answer);
   const pending = Object.values(drafts).filter((draft) => draft.pending);
   const unsent = Object.values(drafts).filter((draft) => !draft.pending);
@@ -345,8 +414,44 @@ export default function App() {
       )}
 
       <section className="space-y-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Installed adapters</h2>
-        {adapters.length === 0 && <p className="text-muted">No adapters yet. Ask your AI to make one for a site.</p>}
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Installed adapters</h2>
+          <div className="flex gap-1">
+            <button type="button" onClick={() => setAdding('site')} className="btn btn-sm">
+              + Add a site
+            </button>
+            <button type="button" onClick={() => fileInput.current?.click()} className="btn btn-sm">
+              Import
+            </button>
+            <input
+              ref={fileInput}
+              type="file"
+              accept=".json,application/json"
+              className="hidden"
+              onChange={async (event) => {
+                const file = event.currentTarget.files?.[0];
+                event.currentTarget.value = '';
+                if (!file) return;
+                try {
+                  setAdding({ recipe: JSON.parse(await file.text()) });
+                } catch {
+                  alert('That file is not a Senda adapter.');
+                }
+              }}
+            />
+          </div>
+        </div>
+        {adding === 'site' && <AddSite onClose={() => setAdding(null)} />}
+        {adding !== null && adding !== 'site' && (
+          <ImportAdapter
+            key={adding === 'paste' ? 'paste' : 'file'}
+            initial={adding === 'paste' ? null : adding.recipe}
+            onClose={() => setAdding(null)}
+          />
+        )}
+        {adapters.length === 0 && adding === null && (
+          <p className="text-muted">No adapters yet. Add a site, import a file, or ask your AI to make one.</p>
+        )}
         {adapters.length > 0 && (
           <ul className="card divide-y divide-line overflow-hidden !p-0">
             {adapters.map(({ adapter, status }) => (
@@ -370,16 +475,13 @@ export default function App() {
             ))}
           </ul>
         )}
+        {adding === null && (
+          <button type="button" onClick={() => setAdding('paste')} className="text-xs text-primary-text underline">
+            Have a link or recipe text instead? Paste it
+          </button>
+        )}
       </section>
 
-      <section className="card">
-        <details>
-          <summary className="font-semibold">Add a site or import an adapter</summary>
-          <div className="mt-3">
-            <AddSite />
-          </div>
-        </details>
-      </section>
 
       {unsent.length > 0 && (
         <section className="card space-y-2">
