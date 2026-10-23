@@ -59,11 +59,15 @@ export const methods = {
     .strict(),
   'adapter.list': z.object({}).strict(),
   'adapter.draft': z.object({ recipe: z.unknown() }).strict(),
-  'adapter.test': z.object({ id: z.string(), tool: z.string(), args: z.record(z.string(), z.unknown()).optional() }).strict(),
+  'adapter.test': z
+    .object({ id: z.string(), tool: z.string(), args: z.record(z.string(), z.unknown()).optional() })
+    .strict(),
   'adapter.submit': z.object({ id: z.string() }).strict(),
   'adapter.disable': z.object({ id: z.string() }).strict(),
   'adapter.remove': z.object({ id: z.string() }).strict(),
-  'adapter.run': z.object({ adapter: z.string(), tool: z.string(), args: z.record(z.string(), z.unknown()).optional() }).strict(),
+  'adapter.run': z
+    .object({ adapter: z.string(), tool: z.string(), args: z.record(z.string(), z.unknown()).optional() })
+    .strict(),
 } as const;
 export const adapterMethods = methods;
 export const AdaptersChanged = z.array(AdapterSummary);
