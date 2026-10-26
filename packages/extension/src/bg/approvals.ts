@@ -11,7 +11,7 @@ import {
 } from './state';
 import { CommandError } from './commands/shared';
 import { listAgentIds } from './agent-tabs';
-import { stopConnection } from './connection';
+import { stopConnection, waitForReplies } from './connection';
 import { looksLikeInjection } from '../core/injection';
 import { bgText } from './text';
 
@@ -95,6 +95,7 @@ export function watchPanic() {
       else if ('tabGroups' in browser) await browser.tabs.ungroup(id).catch(() => undefined);
     }
     await openedTabsItem.setValue([]);
+    await waitForReplies();
     stopConnection();
     await logActivity('panic', (await bgText()).activity.panic);
   });

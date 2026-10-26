@@ -20,7 +20,7 @@ test('Stop everything denies approvals, closes Senda tabs, pauses adapters and d
   await expect(panel.getByRole('button', { name: 'Allow', exact: true })).toBeVisible();
 
   await panel.getByRole('button', { name: 'Stop everything' }).click();
-  expect((await click).isError).toBe(true);
+  expect(JSON.stringify(await click)).toContain('DENIED_BY_USER');
   await expect.poll(() => context.pages().some((page) => page.url().endsWith('/site/mail.html'))).toBe(false);
   const [worker] = context.serviceWorkers();
   const adapters = await worker!.evaluate(async () => (await (globalThis as any).chrome.storage.local.get('adapters')).adapters);

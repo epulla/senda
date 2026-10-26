@@ -14,6 +14,7 @@ let stoppedForToken = false;
 let started = false;
 let socketToken: string | undefined;
 let socketPort: number | undefined;
+let inFlight = 0;
 
 async function badge(status: 'connected' | 'disconnected' | 'invalid_token') {
   await statusItem.setValue(status);
@@ -112,6 +113,7 @@ async function connect() {
       return;
     }
     if (typeof request.id !== 'string' || typeof request.method !== 'string') return;
+    inFlight++;
     try {
       ws.send(JSON.stringify({ id: request.id, result: await handle(request.method, request.params) }));
     } catch (error) {
@@ -131,6 +133,8 @@ async function connect() {
           },
         }),
       );
+    } finally {
+      inFlight--;
     }
   };
   ws.onclose = ({ code }) => {
@@ -169,6 +173,11 @@ export function stopConnection() {
   }
   void badge('disconnected');
 }
+// Lets denied calls reach the AI before the link closes.
+export async function waitForReplies(ms = 2000) {
+  const end = Date.now() + ms;
+  while (inFlight > 0 && Date.now() < end) await new Promise((resolve) => setTimeout(resolve, 20));
+}
 export async function resumeAfterPanic() {
   await panicItem.setValue(0);
 }
@@ -176,9 +185,9 @@ export function startConnection() {
   if (started) return;
   started = true;
   tokenItem.watch(reconnect);
+  // watchPanic stops the link once denied calls have replied.
   panicItem.watch((value) => {
-    if (value) stopConnection();
-    else if (stoppedForToken) reconnect();
+    if (!value && stoppedForToken) reconnect();
   });
   approvalsItem.watch(() => void statusItem.getValue().then(badge));
   draftsItem.watch(() => void statusItem.getValue().then(badge));
