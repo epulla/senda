@@ -89,7 +89,7 @@ describe('approval background', () => {
       url: 'https://mail.example.com',
     } as any);
     vi.spyOn(fakeBrowser.scripting, 'executeScript').mockImplementation(async (d: any) =>
-      d.func.name ? [{ result: d.func.name === 'clickRef' ? true : 'Send' }] : [{ result: 'Send' }],
+      d.func?.name ? [{ result: d.func.name === 'clickRef' ? true : 'Send' }] : [{ result: 'Send' }],
     );
     (await import('../src/bg/agent-tabs')).trackAgentTab(4);
     const { default: click } = await import('../src/bg/commands/click');

@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { snapshotPage } from '../src/injected/snapshot';
 import { clickRef, typeRef } from '../src/injected/actions';
+import { pressKey, realClick, typeText } from '../src/injected/input';
+(globalThis as any).__sendaInput = { realClick, typeText, pressKey };
 import { looksLikeInjection } from '../src/core/injection';
 const fixture = (name: string) => readFileSync(`tests/fixtures/${name}`, 'utf8');
 beforeEach(() => {

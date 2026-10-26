@@ -35,6 +35,7 @@ export default async function type(p: { ref: string; text: string; submit?: bool
       source: taint || undefined,
       allowAlways: true,
     });
+  await browser.scripting.executeScript({ target: { tabId }, files: ['/runner.js'] });
   const [{ result } = {}] = await browser.scripting.executeScript({
     target: { tabId },
     func: typeRef,

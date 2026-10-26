@@ -3,6 +3,7 @@ import { ErrorCode } from '@senda/protocol';
 import { matchesSites } from '../core/adapters/sites';
 import { render } from '../core/adapters/template';
 import { isSensitiveLabel } from '../core/sensitive';
+import { pressKey, realClick, typeText } from './input';
 
 type Input = {
   adapter: Adapter;
@@ -208,9 +209,7 @@ export async function runRecipe(input: Input): Promise<RunResult> {
               if (def.effect === 'read') return fail(ErrorCode.READ_ONLY, 'Sensitive action blocked');
               if (!input.approved) return { confirm: { step: i, vars } };
             }
-            for (const t of ['pointerdown', 'mousedown', 'pointerup', 'mouseup'])
-              el.dispatchEvent(new MouseEvent(t, { bubbles: true }));
-            el.click();
+            realClick(el);
             // The click may load a new page and end this script; the background resumes after it settles.
             if (steps === def.steps) return { settle: { step: i + 1, vars } };
             break;
@@ -282,11 +281,9 @@ export async function runRecipe(input: Input): Promise<RunResult> {
               .join(payload.sep ?? '');
             break;
           case 'type': {
-            const e = sel(payload.selector) as HTMLInputElement | null;
+            const e = sel(payload.selector) as HTMLElement | null;
             if (!e) throw Error('Missing input');
-            e.focus();
-            e.value = String(render(payload.text, ctx()));
-            e.dispatchEvent(new Event('input', { bubbles: true }));
+            typeText(e, String(render(payload.text, ctx())));
             break;
           }
           case 'select': {
@@ -297,15 +294,14 @@ export async function runRecipe(input: Input): Promise<RunResult> {
             break;
           }
           case 'press': {
-            const e = sel(payload.selector ?? 'body')!;
-            e.dispatchEvent(new KeyboardEvent('keydown', { key: payload.key, bubbles: true }));
+            pressKey(sel(payload.selector ?? 'body')!, payload.key);
             break;
           }
           case 'submit': {
             const e = sel(payload.selector) as HTMLElement | null;
             if (!e) throw Error('Missing submit');
             if (e instanceof HTMLFormElement) e.requestSubmit();
-            else e.click();
+            else realClick(e);
             if (steps === def.steps) return { settle: { step: i + 1, vars } };
             break;
           }
