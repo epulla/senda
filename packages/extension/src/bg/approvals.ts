@@ -76,7 +76,8 @@ export async function requestApproval(card: Omit<ApprovalCard, 'id' | 'created_a
     void browser.tabs
       .update(card.tabId, { active: true })
       .then(async (tab) => {
-        if (tab?.windowId !== undefined) await browser.windows.update(tab.windowId, { focused: true });
+        // drawAttention bounces the Dock icon (macOS) / flashes the taskbar when the user is in another app.
+        if (tab?.windowId !== undefined) await browser.windows.update(tab.windowId, { focused: true, drawAttention: true });
       })
       .catch(() => undefined);
   const reshow = (tabId: number, info: { status?: string }) => {
