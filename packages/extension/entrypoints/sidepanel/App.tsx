@@ -108,7 +108,9 @@ function AddPanel({
   example,
   onClose,
   children,
+  ready = true,
 }: {
+  ready?: boolean;
   title: string;
   intro?: string;
   source?: Source;
@@ -155,45 +157,71 @@ function AddPanel({
           {error}
         </p>
       )}
-      <div className="flex items-center gap-2">
-        <button type="submit" className="btn btn-primary">
-          {text.sidepanel.continue}
-        </button>
-        <span className="text-muted">{text.sidepanel.reviewFirst}</span>
-      </div>
+      {ready && (
+        <div className="flex items-center gap-2">
+          <button type="submit" className="btn btn-primary">
+            {text.sidepanel.continue}
+          </button>
+          <span className="text-muted">{text.sidepanel.reviewFirst}</span>
+        </div>
+      )}
     </form>
   );
 }
 
-function AddSite({ onClose }: { onClose: () => void }) {
-  const templates = Object.values(bundledTemplates());
-  const [choice, setChoice] = useState(templates[0]?.id ?? '');
+function AddSite({ onClose, onAskAi }: { onClose: () => void; onAskAi: () => void }) {
+  const [query, setQuery] = useState('');
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const templates = Object.values(bundledTemplates()).filter((t) => {
+    const haystack = [t.name, t.description, ...Object.values(t.tools as Record<string, { description: string }>).map((tool) => tool.description)]
+      .join(' ')
+      .toLowerCase();
+    return words.every((word) => haystack.includes(word));
+  });
+  const [picked, setChoice] = useState('');
+  const choice = templates.some((t) => t.id === picked) ? picked : '';
   const site = templates.find((t) => t.id === choice)?.template?.site;
   const text = useText();
   return (
     <AddPanel
       title={text.sidepanel.addSite}
-      intro={text.sidepanel.readyMadeHint}
+      intro={text.sidepanel.pickTemplate}
       source={{ template: choice }}
-      needsSite
+      needsSite={!!choice}
+      ready={!!choice}
       hint={site?.description}
       example={site?.example}
       onClose={onClose}
     >
-      <fieldset className="grid grid-cols-2 gap-2">
-        <legend className="mb-1 font-medium">{text.sidepanel.siteKind}</legend>
+      <input
+        type="search"
+        value={query}
+        onChange={(event) => setQuery(event.currentTarget.value)}
+        onKeyDown={(event) => event.key === 'Enter' && event.preventDefault()}
+        placeholder={text.sidepanel.searchTemplates}
+        aria-label={text.sidepanel.searchTemplates}
+      />
+      <fieldset className="space-y-2">
+        <legend className="sr-only">{text.sidepanel.siteKind}</legend>
+        {templates.length === 0 && <p className="text-muted">{text.sidepanel.noTemplates}</p>}
         {templates.map((t) => (
-          <label
-            key={t.id}
-            className={`card cursor-pointer !p-2 ${choice === t.id ? 'outline-2 outline-primary' : ''}`}
-          >
+          <label key={t.id} className={`card block cursor-pointer !p-3 ${choice === t.id ? 'outline-2 outline-primary' : ''}`}>
             <input type="radio" name="kind" className="sr-only" checked={choice === t.id} onChange={() => setChoice(t.id)} />
-            <span className="block font-semibold">{t.name}</span>
-            <span className="block text-xs text-primary-text">{text.sidepanel.builtIn}</span>
-            <span className="block text-xs text-muted">{t.description}</span>
+            <span className="flex items-center justify-between gap-2">
+              <span className="font-semibold">{t.name}</span>
+              <ModeBadge mode={t.mode} />
+            </span>
+            <span className="mt-1 block text-xs text-muted">
+              {Object.values(t.tools as Record<string, { description: string }>)
+                .map((tool) => tool.description.replace(/\.$/, ''))
+                .join(' · ')}
+            </span>
           </label>
         ))}
       </fieldset>
+      <button type="button" onClick={onAskAi} className="text-xs text-primary-text underline">
+        {text.sidepanel.notInList}
+      </button>
     </AddPanel>
   );
 }
@@ -213,7 +241,7 @@ function CardHeader({ title, onClose }: { title: string; onClose: () => void }) 
 function ChooseHow({ onPick, onClose }: { onPick: (how: 'site' | 'ai' | 'import') => void; onClose: () => void }) {
   const t = useText().sidepanel;
   const choices = [
-    ['site', t.addSite, t.readyMadeHint],
+    ['site', t.useTemplate, t.readyMadeHint],
     ['ai', t.askAi, t.askAiHint],
     ['import', t.importLink, t.sharedHint],
   ] as const;
@@ -494,7 +522,7 @@ export default function App() {
         </div>
         <p className="text-xs text-muted">{t.installedHint}</p>
         {adding === 'choose' && <ChooseHow onPick={setAdding} onClose={() => setAdding(null)} />}
-        {adding === 'site' && <AddSite onClose={() => setAdding(null)} />}
+        {adding === 'site' && <AddSite onClose={() => setAdding(null)} onAskAi={() => setAdding('ai')} />}
         {adding === 'ai' && <AskAi onClose={() => setAdding(null)} />}
         {adding === 'import' && <ImportAdapter onClose={() => setAdding(null)} />}
         {adapters.length === 0 && adding === null && (

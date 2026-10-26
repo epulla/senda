@@ -57,13 +57,17 @@ test('Import also accepts pasted shortcut text and lands it as a not verified dr
   await expect(panel.getByText('Not verified: this comes from outside Senda.', { exact: false })).toBeVisible();
 });
 
-test('Add a shortcut offers ready-made, ask-your-AI and shared choices', async ({ openSidepanel }) => {
+test('Add a shortcut offers Senda templates (search, pick, then address), ask-your-AI and shared choices', async ({ openSidepanel }) => {
   const panel = await openSidepanel();
   await panel.getByRole('button', { name: '+ Add a shortcut' }).click();
-  await panel.getByRole('button', { name: /Ready-made by Senda/ }).click();
-  await expect(panel.getByText('Built into Senda', { exact: true })).toBeVisible();
-  await panel.getByRole('button', { name: 'Close' }).click();
-  await panel.getByRole('button', { name: '+ Add a shortcut' }).click();
-  await panel.getByRole('button', { name: /Ask your AI to make one/ }).click();
+  await panel.getByRole('button', { name: /Use a Senda template/ }).click();
+  await expect(panel.getByRole('heading', { name: 'Senda templates' })).toBeVisible();
+  await expect(panel.getByRole('textbox', { name: /Site address/ })).toHaveCount(0);
+  await panel.getByRole('searchbox', { name: 'Search templates' }).fill('whatsapp');
+  await expect(panel.getByText('No template matches.')).toBeVisible();
+  await panel.getByRole('searchbox', { name: 'Search templates' }).fill('deadlines');
+  await panel.getByText('Moodle', { exact: true }).click();
+  await expect(panel.getByRole('textbox', { name: /Site address/ })).toBeVisible();
+  await panel.getByRole('button', { name: /Not in the list/ }).click();
   await expect(panel.getByText('Make a Senda site shortcut for https://example.com')).toBeVisible();
 });
