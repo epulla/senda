@@ -15,6 +15,10 @@ pnpm test
 pnpm build
 ```
 
+## Testing
+
+`pnpm test` runs the unit tests. `pnpm e2e` builds the extension and server, then drives them end to end with Playwright: its own Chromium loads the extension, a temporary Senda server and the fixture site run on free ports, and the side panel opens as a normal page. Your real `~/.senda` token and running servers are untouched. First time only: `pnpm --filter @senda/extension exec playwright install chromium`.
+
 ## Try it (Chrome, Brave, Edge)
 
 1. `pnpm build`, then load `packages/extension/.output/chrome-mv3` as an unpacked extension (`chrome://extensions` → Developer mode → Load unpacked).
