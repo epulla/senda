@@ -6,7 +6,7 @@
   <div id="side" style="width: 320px; display: flex; flex-direction: column">
     <!-- Like WhatsApp: no name of its own (the hint is a separate element shown only while empty). -->
     <input type="text" role="textbox" data-tab="3" id="_r_d_" />
-    <div id="pane-side" style="overflow: auto; flex: 1"><div role="grid" aria-label="Chat list"></div></div>
+    <div id="pane-side" style="overflow: auto; height: 240px"><div role="grid" aria-label="Chat list"></div></div>
   </div>
   <div id="slot" style="flex: 1"></div>
 </div>
@@ -15,6 +15,7 @@
     { name: 'Ana', time: '3:13 p.m.', unread: 2, messages: [['3:10 p.m.', 'Ana', 'Are you coming?'], ['3:11 p.m.', 'Ana', null], ['3:13 p.m.', 'Ana', 'See you at 4']] },
     { name: "Ana's group", time: 'Yesterday', unread: 5, messages: [['9:00 a.m.', 'Luis', 'Morning all']] },
     { name: 'Book club 📚', time: '2:59 p.m.', unread: 0, messages: [['2:59 p.m.', 'You', 'Chapter 3 done']] },
+    ...Array.from({ length: 15 }, (_, i) => ({ name: `Contact ${i + 1}`, time: 'Monday', unread: 0, messages: [['8:00 a.m.', `Contact ${i + 1}`, `Hi ${i + 1}`]] })),
   ];
   const grid = document.querySelector('[role=grid]');
   let current;
@@ -25,16 +26,21 @@
     node.append(...kids);
     return node;
   };
+  // Like WhatsApp: only rows in view exist in the page (60px each); scrolling replaces them.
+  const pane = document.querySelector('#pane-side');
+  pane.addEventListener('scroll', () => renderList());
   function renderList() {
     const q = search.value.toLowerCase();
+    const matches = chats.filter((c) => c.name.toLowerCase().includes(q));
+    const first = Math.floor(pane.scrollTop / 60);
+    const spacer = (rows) => el('div', { style: `height:${rows * 60}px` });
     grid.replaceChildren(
-      ...chats
-        .filter((c) => c.name.toLowerCase().includes(q))
-        .map((c) => {
+      spacer(first),
+      ...matches.slice(first, first + 5).map((c) => {
           const last = c.messages.at(-1);
           const row = el(
             'div',
-            { role: 'row', 'aria-selected': String(c === current) },
+            { role: 'row', 'aria-selected': String(c === current), style: 'height:60px;overflow:hidden' },
             el(
               'div',
               { role: 'gridcell', 'aria-colindex': '2' },
@@ -51,6 +57,7 @@
           row.addEventListener('mousedown', (e) => e.clientX > 0 && open(c));
           return row;
         }),
+      spacer(Math.max(0, matches.length - first - 5)),
     );
   }
   function open(c) {

@@ -44,6 +44,10 @@ test('WhatsApp template lists, searches, reads, marks read and sends only after 
   expect((await call(mcp, 'read_chat', { chat: 'Book club 📚', limit: 1 })).messages).toEqual([
     { from: 'You', time: '2:59 p.m.', date: '26/10/2026', text: 'Chapter 3 done' },
   ]);
+  // Many matches (Contact 1, Contact 10–15): the exact one must still be found without scrolling it away.
+  expect((await call(mcp, 'read_chat', { chat: 'Contact 1', limit: 1 })).messages).toEqual([
+    { from: 'Contact 1', time: '8:00 a.m.', date: '26/10/2026', text: 'Hi 1' },
+  ]);
   expect(await call(mcp, 'mark_as_read', { chat: "Ana's group" })).toEqual({ chat: "Ana's group" });
   expect((await call(mcp, 'list_chats')).find((c: { name: string }) => c.name === "Ana's group").unread).toBe(0);
 

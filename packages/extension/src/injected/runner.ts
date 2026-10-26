@@ -177,6 +177,12 @@ export async function runRecipe(input: Input): Promise<RunResult> {
           case 'scroll_until': {
             const el = sel(payload.container) as HTMLElement | null;
             if (!el) throw Error('Missing scroll container');
+            // Always collect from the top: an earlier call may have left the list scrolled down.
+            if (el.scrollTop > 0) {
+              el.scrollTop = 0;
+              el.dispatchEvent(new Event('scroll'));
+              await new Promise((r) => setTimeout(r, 100));
+            }
             const found = new Map();
             const end = Date.now() + (payload.timeout_ms ?? 20000);
             let last = Date.now();

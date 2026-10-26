@@ -1,7 +1,7 @@
 {
   "id": "whatsapp",
   "name": "WhatsApp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "engine": 1,
   "source": "official",
   "sites": [
@@ -143,12 +143,10 @@
           }
         },
         {
-          "scroll_until": {
+          "extract_list": {
             "container": "#pane-side",
-            "item": "[role=row]",
-            "key": "name",
+            "item": "[role=row]:has(span[dir=auto][title])",
             "limit": 15,
-            "idle_ms": 800,
             "allow_empty": true,
             "fields": {
               "name": {
@@ -265,12 +263,10 @@
           }
         },
         {
-          "scroll_until": {
+          "extract_list": {
             "container": "#pane-side",
-            "item": "[role=row]",
-            "key": "name",
+            "item": "[role=row]:has(span[dir=auto][title])",
             "limit": 15,
-            "idle_ms": 800,
             "allow_empty": true,
             "fields": {
               "name": {
@@ -356,12 +352,10 @@
           }
         },
         {
-          "scroll_until": {
+          "extract_list": {
             "container": "#pane-side",
-            "item": "[role=row]",
-            "key": "name",
+            "item": "[role=row]:has(span[dir=auto][title])",
             "limit": 15,
-            "idle_ms": 800,
             "allow_empty": true,
             "fields": {
               "name": {
