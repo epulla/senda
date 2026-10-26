@@ -28,6 +28,7 @@ test('adapter compact row opens detail with tools, export, import, and removal',
   expect(exported.id).toBe('fixturemoodle');
   expect(Object.keys(exported.tools)).toHaveLength(3);
 
+  await panel.getByRole('button', { name: 'Import', exact: true }).click();
   const input = panel.locator('input[type="file"]');
   await input.setInputFiles({ name: 'fixturemoodle.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(exported)) });
   await expect(panel.getByRole('heading', { name: 'Import Fixture Moodle' })).toBeVisible();
@@ -39,4 +40,17 @@ test('adapter compact row opens detail with tools, export, import, and removal',
   await detail.getByRole('button', { name: 'Remove', exact: true }).click();
   await closed;
   await expect(panel.getByRole('button', { name: /Fixture Moodle/ })).toHaveCount(0);
+});
+
+test('Import also accepts pasted shortcut text and lands it as a not verified draft', async ({ fixtureUrl, openSidepanel }) => {
+  const file = new URL('../tests/fixtures/adapters/fixturemoodle.json', import.meta.url);
+  const recipe = (await readFile(file, 'utf8')).replaceAll('http://127.0.0.1:18766', fixtureUrl);
+  const panel = await openSidepanel();
+  await expect(panel.getByText('Let your AI use a site in one step instead of clicking around.')).toBeVisible();
+  await panel.getByRole('button', { name: 'Import', exact: true }).click();
+  await panel.getByRole('textbox', { name: 'Link or shortcut text' }).fill(recipe);
+  await panel.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(panel.getByRole('heading', { name: 'Import Fixture Moodle' })).toBeVisible();
+  await panel.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(panel.getByText('Not verified: this comes from outside Senda.', { exact: false })).toBeVisible();
 });

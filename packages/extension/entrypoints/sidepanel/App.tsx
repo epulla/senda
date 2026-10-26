@@ -173,6 +173,7 @@ function AddSite({ onClose }: { onClose: () => void }) {
   return (
     <AddPanel
       title={text.sidepanel.addSite}
+      intro={text.sidepanel.addSiteHint}
       source={{ template: choice }}
       needsSite
       hint={site?.description}
@@ -196,11 +197,12 @@ function AddSite({ onClose }: { onClose: () => void }) {
   );
 }
 
-function ImportAdapter({ initial, onClose }: { initial: any; onClose: () => void }) {
+function ImportAdapter({ onClose }: { onClose: () => void }) {
   const text = useText();
   const t = text.sidepanel;
-  const [recipe, setRecipe] = useState<any>(initial);
+  const [recipe, setRecipe] = useState<any>(null);
   const [error, setError] = useState('');
+  const fileInput = useRef<HTMLInputElement>(null);
   if (recipe)
     return (
       <AddPanel
@@ -232,6 +234,26 @@ function ImportAdapter({ initial, onClose }: { initial: any; onClose: () => void
           ✕
         </button>
       </div>
+      <button type="button" onClick={() => fileInput.current?.click()} className="btn w-full">
+        {t.chooseFile}
+      </button>
+      <input
+        ref={fileInput}
+        type="file"
+        accept=".json,application/json"
+        className="hidden"
+        onChange={async (event) => {
+          const file = event.currentTarget.files?.[0];
+          event.currentTarget.value = '';
+          if (!file) return;
+          try {
+            setRecipe(JSON.parse(await file.text()));
+          } catch {
+            setError(t.notAdapter);
+          }
+        }}
+      />
+      <p className="text-muted">{t.orPaste}</p>
       <textarea name="import" required rows={4} aria-label={t.linkOrRecipe} placeholder={t.linkPlaceholder} className="font-mono text-xs" />
       {error && (
         <p role="alert" className="card card-danger !p-2 text-error-text">
@@ -254,8 +276,7 @@ export default function App() {
   const [settings, setSettings] = useItem(settingsItem);
   const [activity] = useItem(activityItem);
   const [panic] = useItem(panicItem);
-  const [adding, setAdding] = useState<null | 'site' | 'paste' | { recipe: unknown }>(null);
-  const fileInput = useRef<HTMLInputElement>(null);
+  const [adding, setAdding] = useState<null | 'site' | 'import'>(null);
   const waiting = Object.values(approvals).filter((item) => !item.answer);
   const pending = Object.values(drafts).filter((draft) => draft.pending);
   const unsent = Object.values(drafts).filter((draft) => !draft.pending);
@@ -419,38 +440,17 @@ export default function App() {
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{t.installed}</h2>
           <div className="flex gap-1">
-            <button type="button" onClick={() => setAdding('site')} className="btn btn-sm">
+            <button type="button" onClick={() => setAdding('site')} title={t.addSiteHint} className="btn btn-sm">
               {t.addSiteButton}
             </button>
-            <button type="button" onClick={() => fileInput.current?.click()} className="btn btn-sm">
+            <button type="button" onClick={() => setAdding('import')} className="btn btn-sm">
               {t.import}
             </button>
-            <input
-              ref={fileInput}
-              type="file"
-              accept=".json,application/json"
-              className="hidden"
-              onChange={async (event) => {
-                const file = event.currentTarget.files?.[0];
-                event.currentTarget.value = '';
-                if (!file) return;
-                try {
-                  setAdding({ recipe: JSON.parse(await file.text()) });
-                } catch {
-                  alert(t.notAdapter);
-                }
-              }}
-            />
           </div>
         </div>
+        <p className="text-xs text-muted">{t.installedHint}</p>
         {adding === 'site' && <AddSite onClose={() => setAdding(null)} />}
-        {adding !== null && adding !== 'site' && (
-          <ImportAdapter
-            key={adding === 'paste' ? 'paste' : 'file'}
-            initial={adding === 'paste' ? null : adding.recipe}
-            onClose={() => setAdding(null)}
-          />
-        )}
+        {adding === 'import' && <ImportAdapter onClose={() => setAdding(null)} />}
         {adapters.length === 0 && adding === null && (
           <p className="text-muted">{t.empty}</p>
         )}
@@ -476,11 +476,6 @@ export default function App() {
               </li>
             ))}
           </ul>
-        )}
-        {adding === null && (
-          <button type="button" onClick={() => setAdding('paste')} className="text-xs text-primary-text underline">
-            {t.paste}
-          </button>
         )}
       </section>
 
