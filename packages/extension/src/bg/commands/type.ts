@@ -38,7 +38,7 @@ export default async function type(p: { ref: string; text: string; submit?: bool
   const [{ result } = {}] = await browser.scripting.executeScript({
     target: { tabId },
     func: typeRef,
-    args: [p.ref, p.text, p.submit],
+    args: [p.ref, p.text, p.submit ?? false],
   });
   if (!result) throw new CommandError(ErrorCode.REF_NOT_FOUND, `Ref ${p.ref} not found; take a new snapshot.`);
   return { tabId };
