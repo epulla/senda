@@ -1,7 +1,7 @@
 {
   "id": "whatsapp",
   "name": "WhatsApp",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "engine": 1,
   "source": "official",
   "sites": [
@@ -419,13 +419,13 @@
         },
         {
           "wait_for": {
-            "selector": "#main footer [data-icon*=\"send\"]",
+            "selector": "#main footer button[aria-label=\"Enviar\"], #main footer button[aria-label=\"Send\"], #main footer [data-icon*=\"send\"]",
             "timeout_ms": 5000
           }
         },
         {
           "click": {
-            "selector": "#main footer [data-icon*=\"send\"]"
+            "selector": "#main footer button[aria-label=\"Enviar\"], #main footer button[aria-label=\"Send\"], #main footer [data-icon*=\"send\"]"
           }
         },
         {

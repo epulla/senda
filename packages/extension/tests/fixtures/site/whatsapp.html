@@ -78,7 +78,8 @@
     draw();
     const box = el('div', { contenteditable: 'true', role: 'textbox', 'data-tab': '10', 'aria-label': 'Type a message' });
     // Like WhatsApp: the send button only exists while the box has text.
-    const send = el('button', { 'aria-label': 'Send' }, el('span', { 'data-icon': 'send' }, '➤'));
+    // Like current WhatsApp: found by its label, the icon has no recognizable name.
+    const send = el('button', { 'aria-label': 'Send' }, el('span', { 'data-icon': 'wds-ic-paper-plane' }, '➤'));
     box.addEventListener('input', () => (box.textContent.trim() ? footer.append(send) : send.remove()));
     send.addEventListener('click', () => {
       c.messages.push(['3:20 p.m.', 'You', box.textContent]);

@@ -28,6 +28,8 @@ export function typeText(el: HTMLElement, text: string): void {
     const selection = window.getSelection()!;
     selection.removeAllRanges();
     selection.addRange(range);
+    // Editors that manage their own selection (WhatsApp's) only honor the browser's select-all command.
+    document.execCommand('selectAll');
     if (!document.execCommand('insertText', false, text)) {
       const data = new DataTransfer();
       data.setData('text/plain', text);
