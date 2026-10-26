@@ -4,7 +4,9 @@
 <!-- Made-up chats. Mirrors the hooks the WhatsApp template relies on (no CSS classes). -->
 <div id="app" style="display: flex; height: 100vh; font: 14px sans-serif">
   <div id="side" style="width: 320px; display: flex; flex-direction: column">
-    <input data-tab="3" aria-label="Search or start a new chat" />
+    <!-- Like WhatsApp: named through a linked element, not its own attributes. -->
+    <span id="search-label" hidden>Search or start a new chat</span>
+    <input type="text" role="textbox" data-tab="3" aria-labelledby="search-label" />
     <div id="pane-side" style="overflow: auto; flex: 1"><div role="grid" aria-label="Chat list"></div></div>
   </div>
   <div id="slot" style="flex: 1"></div>
@@ -77,6 +79,7 @@
       el('div', { id: 'main' }, el('header', {}, el('span', { dir: 'auto' }, c.name)), rows, footer),
     );
   }
-  search.addEventListener('input', renderList);
+  // Like WhatsApp: results update a moment after typing.
+  search.addEventListener('input', () => setTimeout(renderList, 300));
   renderList();
 </script>

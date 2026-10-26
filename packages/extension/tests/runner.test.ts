@@ -58,6 +58,9 @@ describe('recipe runner', () => {
     expect((document.querySelector('#s') as HTMLInputElement).value).toBe('mami');
     expect(await runRecipe({ adapter: tool('#m'), tool: 'find', args: { query: 'hola' } })).toMatchObject({ ok: false, code: 'READ_ONLY' });
     expect(document.querySelector('#m')!.textContent).toBe('');
+    document.body.innerHTML = '<span id="lbl">Buscar un chat</span><input id="s" type="text" aria-labelledby="lbl">';
+    await runRecipe({ adapter: tool('#s'), tool: 'find', args: { query: 'ana' } });
+    expect((document.querySelector('#s') as HTMLInputElement).value).toBe('ana');
   });
   it('takes the last N items, filters by arguments ignoring case, and escapes inserted names', async () => {
     const a = Adapter.parse({

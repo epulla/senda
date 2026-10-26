@@ -292,9 +292,12 @@ export async function runRecipe(input: Input): Promise<RunResult> {
           case 'search': {
             const e = sel(payload.selector) as HTMLElement | null;
             if (!e) throw Error('Missing search box');
-            const hints = ['aria-label', 'placeholder', 'title', 'name', 'id', 'aria-placeholder']
-              .map((a) => e.getAttribute(a) ?? '')
-              .join(' ');
+            // Many sites name inputs through linked elements (aria-labelledby, <label>), not attributes.
+            const linked = (e.getAttribute('aria-labelledby') ?? '')
+              .split(/\s+/)
+              .map((id) => (id ? document.getElementById(id)?.textContent ?? '' : ''));
+            const labels = [...((e as HTMLInputElement).labels ?? [])].map((l) => l.textContent ?? '');
+            const hints = [...['aria-label', 'placeholder', 'title', 'name', 'id', 'aria-placeholder'].map((a) => e.getAttribute(a) ?? ''), ...linked, ...labels].join(' ');
             const searchBox =
               safe(e) &&
               (e.matches('input[type=search], [role=searchbox]') ||
@@ -302,6 +305,22 @@ export async function runRecipe(input: Input): Promise<RunResult> {
                 /search|buscar|busca|filt|find|recherch|such/i.test(hints));
             if (!searchBox) return fail(ErrorCode.READ_ONLY, 'search only fills search or filter boxes');
             typeText(e, String(render(payload.text, ctx())));
+            // Results usually update a moment later: wait until the page stops changing (max 3 s).
+            await new Promise<void>((done) => {
+              let timer = setTimeout(finish, 400);
+              const cap = setTimeout(finish, 3000);
+              const observer = new MutationObserver(() => {
+                clearTimeout(timer);
+                timer = setTimeout(finish, 400);
+              });
+              observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+              function finish() {
+                observer.disconnect();
+                clearTimeout(timer);
+                clearTimeout(cap);
+                done();
+              }
+            });
             break;
           }
           case 'select': {
