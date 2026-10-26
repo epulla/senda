@@ -28,7 +28,10 @@ const stepPayloads = {
       container: selector.optional(),
       item: selector,
       fields,
-      limit: z.number().int().optional(),
+      // A number, or a template like "{{args.limit}}".
+      limit: z.union([z.number().int(), z.string()]).optional(),
+      // Take the last items instead of the first (newest messages at the bottom).
+      from_end: z.boolean().optional(),
       allow_empty: z.boolean().optional(),
     })
     .strict(),
@@ -67,6 +70,7 @@ const stepPayloads = {
             gt: z.unknown().optional(),
             lt: z.unknown().optional(),
             contains: z.unknown().optional(),
+            icontains: z.unknown().optional(),
           })
           .strict(),
       ),
@@ -76,6 +80,8 @@ const stepPayloads = {
   pick: z.object({ from: name, path: z.string() }).strict(),
   join: z.object({ from: name, field: z.string().optional(), sep: z.string().optional() }).strict(),
   type: z.object({ selector, text: z.string() }).strict(),
+  // Fills a search/filter box only (checked at run time); allowed in read tools.
+  search: z.object({ selector, text: z.string() }).strict(),
   press: z.object({ key: z.string(), selector: selector.optional() }).strict(),
   select: z.object({ selector, value: z.string() }).strict(),
   submit: z.object({ selector }).strict(),
@@ -96,6 +102,7 @@ export const STEP_KINDS = [
   { name: 'map', description: 'Map object fields', read: true },
   { name: 'pick', description: 'Pick nested value', read: true },
   { name: 'join', description: 'Join values', read: true },
+  { name: 'search', description: 'Fill a search or filter box (no Enter)', read: true },
   ...WRITE_STEPS.map((name) => ({ name, description: `Perform ${name}`, read: false })),
   { name: 'return', description: 'Return value', read: true },
 ];

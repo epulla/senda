@@ -1,7 +1,7 @@
 import type { Adapter } from '@senda/adapter-schema';
 import { ErrorCode } from '@senda/protocol';
 import { matchesSites } from '../core/adapters/sites';
-import { render } from '../core/adapters/template';
+import { cssString, render } from '../core/adapters/template';
 import { isSensitiveLabel } from '../core/sensitive';
 import { pressKey, realClick, typeText } from './input';
 
@@ -60,8 +60,8 @@ export async function runRecipe(input: Input): Promise<RunResult> {
     current = -1,
     currentStep: any;
   const ctx = () => ({ args, vars, now: Math.floor(Date.now() / 1000) });
-  const sel = (selector: string | undefined, root?: ParentNode) =>
-    selector ? select(String(render(selector, ctx())), root) : null;
+  const css = (selector: string) => String(render(selector, ctx(), selector.startsWith('text=') ? undefined : cssString));
+  const sel = (selector: string | undefined, root?: ParentNode) => (selector ? select(css(selector), root) : null);
   const get = (el: Element, f: any) => {
     if (!safe(el)) return null;
     let v: any = f.text
@@ -141,10 +141,10 @@ export async function runRecipe(input: Input): Promise<RunResult> {
               else if ('default' in payload) out = payload.default;
               else throw Error('Missing extraction target');
             } else {
-              const items = [...container.querySelectorAll(String(render(payload.item, ctx())))].slice(
-                0,
-                payload.limit ?? Infinity,
-              );
+              const limit = payload.limit === undefined ? Infinity : Number(render(payload.limit, ctx()));
+              if (Number.isNaN(limit)) throw Error('Limit is not a number');
+              const all = [...container.querySelectorAll(css(payload.item))];
+              const items = limit === 0 ? [] : payload.from_end ? all.slice(-limit) : all.slice(0, limit);
               if (!items.length && !payload.allow_empty) throw Error(`No items match ${payload.item}`);
               out = items.map((el) =>
                 Object.fromEntries(
@@ -169,7 +169,7 @@ export async function runRecipe(input: Input): Promise<RunResult> {
               Date.now() - last < (payload.idle_ms ?? 1000) &&
               found.size < (payload.limit ?? Infinity)
             ) {
-              for (const row of el.querySelectorAll(String(render(payload.item, ctx())))) {
+              for (const row of el.querySelectorAll(css(payload.item))) {
                 const v = Object.fromEntries(
                   Object.entries(payload.fields).map(([k, f]) => {
                     const field = f as any;
@@ -250,7 +250,7 @@ export async function runRecipe(input: Input): Promise<RunResult> {
             out = ((vars[payload.from] ?? []) as any[]).filter((v: any) =>
               !payload.if_param || args[payload.if_param]
                 ? Object.entries(payload.where).every(([k, ops]: any) =>
-                    Object.entries(ops).every(([op, x]: any) =>
+                    Object.entries(render(ops, ctx()) as object).every(([op, x]: any) =>
                       op === 'eq'
                         ? path(v, k) === x
                         : op === 'ne'
@@ -261,7 +261,9 @@ export async function runRecipe(input: Input): Promise<RunResult> {
                               ? path(v, k) < x
                               : op === 'contains'
                                 ? String(path(v, k)).includes(String(x))
-                                : true,
+                                : op === 'icontains'
+                                  ? String(path(v, k)).toLowerCase().includes(String(x).toLowerCase())
+                                  : true,
                     ),
                   )
                 : true,
@@ -283,6 +285,21 @@ export async function runRecipe(input: Input): Promise<RunResult> {
           case 'type': {
             const e = sel(payload.selector) as HTMLElement | null;
             if (!e) throw Error('Missing input');
+            typeText(e, String(render(payload.text, ctx())));
+            break;
+          }
+          case 'search': {
+            const e = sel(payload.selector) as HTMLElement | null;
+            if (!e) throw Error('Missing search box');
+            const hints = ['aria-label', 'placeholder', 'title', 'name', 'id', 'aria-placeholder']
+              .map((a) => e.getAttribute(a) ?? '')
+              .join(' ');
+            const searchBox =
+              safe(e) &&
+              (e.matches('input[type=search], [role=searchbox]') ||
+                !!e.closest('[role=search]') ||
+                /search|buscar|busca|filt|find|recherch|such/i.test(hints));
+            if (!searchBox) return fail(ErrorCode.READ_ONLY, 'search only fills search or filter boxes');
             typeText(e, String(render(payload.text, ctx())));
             break;
           }

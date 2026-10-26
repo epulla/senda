@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, beforeEach } from 'vitest';
 import { Adapter } from '@senda/adapter-schema';
-import { render } from '../src/core/adapters/template';
+import { cssString, render } from '../src/core/adapters/template';
 import { runRecipe } from '../src/injected/runner';
 import { validateAdapter } from '../src/core/adapters/validate';
 import { materialize } from '../src/core/adapters/materialize';
@@ -46,6 +46,39 @@ describe('recipe runner', () => {
       render('{{args.n}}', { args: { n: 3 }, vars: {}, now: 1 }),
       render('x{{vars.a}}', { args: {}, vars: { a: 'y' }, now: 1 }),
     ]).toEqual([3, 'xy']));
+  it('fills only search boxes with the search step, also in read tools', async () => {
+    const tool = (selector: string) =>
+      Adapter.parse({
+        ...chat,
+        tools: { find: { description: 'x', effect: 'read', params: { query: { type: 'string' } }, steps: [{ search: { selector, text: '{{args.query}}' } }, { extract: { selector, attr: 'aria-label' }, save: 'label' }, { return: 'label' }] } },
+      });
+    document.body.innerHTML = '<input id="s" aria-label="Buscar un chat"><div id="m" contenteditable="true" aria-label="Escribir un mensaje"></div>';
+    expect(validateAdapter(tool('#s')).ok).toBe(true);
+    await runRecipe({ adapter: tool('#s'), tool: 'find', args: { query: 'mami' } });
+    expect((document.querySelector('#s') as HTMLInputElement).value).toBe('mami');
+    expect(await runRecipe({ adapter: tool('#m'), tool: 'find', args: { query: 'hola' } })).toMatchObject({ ok: false, code: 'READ_ONLY' });
+    expect(document.querySelector('#m')!.textContent).toBe('');
+  });
+  it('takes the last N items, filters by arguments ignoring case, and escapes inserted names', async () => {
+    const a = Adapter.parse({
+      ...chat,
+      tools: {
+        last: {
+          description: 'x',
+          effect: 'read',
+          params: { count: { type: 'number', default: 2 }, query: { type: 'string' } },
+          steps: [
+            { extract_list: { item: 'li', limit: '{{args.count}}', from_end: true, fields: { text: { selector: 'span', text: true } } }, save: 'items' },
+            { filter: { from: 'items', where: { text: { icontains: '{{args.query}}' } } }, save: 'hits' },
+            { return: 'hits' },
+          ],
+        },
+      },
+    });
+    document.body.innerHTML = '<ul><li><span>Old mami</span></li><li><span>Hi MAMI</span></li><li><span>bye</span></li></ul>';
+    expect(await runRecipe({ adapter: a, tool: 'last', args: { query: 'mami' } })).toMatchObject({ ok: true, value: [{ text: 'Hi MAMI' }] });
+    expect(render('[title="{{args.name}}"]', { args: { name: 'Say "hi" \\ bye' }, vars: {}, now: 1 }, cssString)).toBe('[title="Say \\"hi\\" \\\\ bye"]');
+  });
   it('validates fixture and reports variant selector breakage', async () => {
     const a = Adapter.parse(chat);
     document.body.innerHTML = '<article class="chat-row">row</article>';
