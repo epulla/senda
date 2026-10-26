@@ -6,8 +6,9 @@ const text = (result: unknown) => JSON.stringify(result);
 async function sendRef(mcp: Client, url: string) {
   await mcp.callTool({ name: 'browser_navigate', arguments: { url } });
   for (let i = 0; i < 20; i++) {
-    const [first] = (await mcp.callTool({ name: 'browser_snapshot', arguments: {} })).content as { text: string }[];
-    const ref = String(JSON.parse(first?.text ?? '{}').snapshot).match(/\[(\d+)\] button "Send"/)?.[1];
+    const result = await mcp.callTool({ name: 'browser_snapshot', arguments: {} });
+    const [first] = result.content as { text: string }[];
+    const ref = result.isError ? undefined : String(JSON.parse(first?.text ?? '{}').snapshot).match(/\[(\d+)\] button "Send"/)?.[1];
     if (ref) return ref;
     await new Promise((resolve) => setTimeout(resolve, 250));
   }

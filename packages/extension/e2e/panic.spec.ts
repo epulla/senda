@@ -12,8 +12,9 @@ test('Stop everything denies approvals, closes Senda tabs, pauses adapters and d
   await mcp.callTool({ name: 'browser_navigate', arguments: { url: `${fixtureUrl}/site/mail.html` } });
   let ref: string | undefined;
   await expect.poll(async () => {
-    const [first] = (await mcp.callTool({ name: 'browser_snapshot', arguments: {} })).content as { text: string }[];
-    ref = String(JSON.parse(first?.text ?? '{}').snapshot).match(/\[(\d+)\] button "Send"/)?.[1];
+    const result = await mcp.callTool({ name: 'browser_snapshot', arguments: {} });
+    const [first] = result.content as { text: string }[];
+    ref = result.isError ? undefined : String(JSON.parse(first?.text ?? '{}').snapshot).match(/\[(\d+)\] button "Send"/)?.[1];
     return ref;
   }).toBeTruthy();
   const click = mcp.callTool({ name: 'browser_click', arguments: { ref } });
