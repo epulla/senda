@@ -28,7 +28,8 @@ test('adapter compact row opens detail with tools, export, import, and removal',
   expect(exported.id).toBe('fixturemoodle');
   expect(Object.keys(exported.tools)).toHaveLength(3);
 
-  await panel.getByRole('button', { name: 'Import', exact: true }).click();
+  await panel.getByRole('button', { name: '+ Add a shortcut' }).click();
+  await panel.getByRole('button', { name: /Someone shared one with me/ }).click();
   const input = panel.locator('input[type="file"]');
   await input.setInputFiles({ name: 'fixturemoodle.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(exported)) });
   await expect(panel.getByRole('heading', { name: 'Import Fixture Moodle' })).toBeVisible();
@@ -47,10 +48,22 @@ test('Import also accepts pasted shortcut text and lands it as a not verified dr
   const recipe = (await readFile(file, 'utf8')).replaceAll('http://127.0.0.1:18766', fixtureUrl);
   const panel = await openSidepanel();
   await expect(panel.getByText('Let your AI use a site in one step instead of clicking around.')).toBeVisible();
-  await panel.getByRole('button', { name: 'Import', exact: true }).click();
+  await panel.getByRole('button', { name: '+ Add a shortcut' }).click();
+  await panel.getByRole('button', { name: /Someone shared one with me/ }).click();
   await panel.getByRole('textbox', { name: 'Link or shortcut text' }).fill(recipe);
   await panel.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(panel.getByRole('heading', { name: 'Import Fixture Moodle' })).toBeVisible();
   await panel.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(panel.getByText('Not verified: this comes from outside Senda.', { exact: false })).toBeVisible();
+});
+
+test('Add a shortcut offers ready-made, ask-your-AI and shared choices', async ({ openSidepanel }) => {
+  const panel = await openSidepanel();
+  await panel.getByRole('button', { name: '+ Add a shortcut' }).click();
+  await panel.getByRole('button', { name: /Ready-made by Senda/ }).click();
+  await expect(panel.getByText('Built into Senda', { exact: true })).toBeVisible();
+  await panel.getByRole('button', { name: 'Close' }).click();
+  await panel.getByRole('button', { name: '+ Add a shortcut' }).click();
+  await panel.getByRole('button', { name: /Ask your AI to make one/ }).click();
+  await expect(panel.getByText('Make a Senda site shortcut for https://example.com')).toBeVisible();
 });

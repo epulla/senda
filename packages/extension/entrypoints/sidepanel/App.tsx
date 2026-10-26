@@ -173,7 +173,7 @@ function AddSite({ onClose }: { onClose: () => void }) {
   return (
     <AddPanel
       title={text.sidepanel.addSite}
-      intro={text.sidepanel.addSiteHint}
+      intro={text.sidepanel.readyMadeHint}
       source={{ template: choice }}
       needsSite
       hint={site?.description}
@@ -189,11 +189,65 @@ function AddSite({ onClose }: { onClose: () => void }) {
           >
             <input type="radio" name="kind" className="sr-only" checked={choice === t.id} onChange={() => setChoice(t.id)} />
             <span className="block font-semibold">{t.name}</span>
+            <span className="block text-xs text-primary-text">{text.sidepanel.builtIn}</span>
             <span className="block text-xs text-muted">{t.description}</span>
           </label>
         ))}
       </fieldset>
     </AddPanel>
+  );
+}
+
+function CardHeader({ title, onClose }: { title: string; onClose: () => void }) {
+  const text = useText();
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <h3 className="font-semibold">{title}</h3>
+      <button type="button" onClick={onClose} className="btn btn-ghost btn-sm" aria-label={text.common.close}>
+        ✕
+      </button>
+    </div>
+  );
+}
+
+function ChooseHow({ onPick, onClose }: { onPick: (how: 'site' | 'ai' | 'import') => void; onClose: () => void }) {
+  const t = useText().sidepanel;
+  const choices = [
+    ['site', t.addSite, t.readyMadeHint],
+    ['ai', t.askAi, t.askAiHint],
+    ['import', t.importLink, t.sharedHint],
+  ] as const;
+  return (
+    <section className="card space-y-2">
+      <CardHeader title={t.howAdd} onClose={onClose} />
+      {choices.map(([how, title, hint]) => (
+        <button key={how} type="button" onClick={() => onPick(how)} className="card block w-full !p-3 text-left hover:bg-base-200">
+          <span className="block font-semibold">{title}</span>
+          <span className="block text-xs text-muted">{hint}</span>
+        </button>
+      ))}
+    </section>
+  );
+}
+
+function AskAi({ onClose }: { onClose: () => void }) {
+  const text = useText();
+  const t = text.sidepanel;
+  const [copied, setCopied] = useState(false);
+  return (
+    <section className="card space-y-3">
+      <CardHeader title={t.askAi} onClose={onClose} />
+      <p className="text-muted">{t.askAiIntro}</p>
+      <p className="card !p-2 font-mono text-xs">{t.askAiPrompt}</p>
+      <button
+        type="button"
+        onClick={() => void navigator.clipboard.writeText(t.askAiPrompt).then(() => setCopied(true))}
+        className="btn btn-primary"
+      >
+        {copied ? text.adapter.copied : text.adapter.copy}
+      </button>
+      <p className="text-xs text-muted">{t.askAiHint}</p>
+    </section>
   );
 }
 
@@ -228,12 +282,7 @@ function ImportAdapter({ onClose }: { onClose: () => void }) {
         }
       }}
     >
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="font-semibold">{t.importLink}</h3>
-        <button type="button" onClick={onClose} className="btn btn-ghost btn-sm" aria-label={text.common.close}>
-          ✕
-        </button>
-      </div>
+      <CardHeader title={t.importLink} onClose={onClose} />
       <button type="button" onClick={() => fileInput.current?.click()} className="btn w-full">
         {t.chooseFile}
       </button>
@@ -276,7 +325,7 @@ export default function App() {
   const [settings, setSettings] = useItem(settingsItem);
   const [activity] = useItem(activityItem);
   const [panic] = useItem(panicItem);
-  const [adding, setAdding] = useState<null | 'site' | 'import'>(null);
+  const [adding, setAdding] = useState<null | 'choose' | 'site' | 'ai' | 'import'>(null);
   const waiting = Object.values(approvals).filter((item) => !item.answer);
   const pending = Object.values(drafts).filter((draft) => draft.pending);
   const unsent = Object.values(drafts).filter((draft) => !draft.pending);
@@ -439,17 +488,14 @@ export default function App() {
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{t.installed}</h2>
-          <div className="flex gap-1">
-            <button type="button" onClick={() => setAdding('site')} title={t.addSiteHint} className="btn btn-sm">
-              {t.addSiteButton}
-            </button>
-            <button type="button" onClick={() => setAdding('import')} className="btn btn-sm">
-              {t.import}
-            </button>
-          </div>
+          <button type="button" onClick={() => setAdding('choose')} className="btn btn-sm">
+            {t.addShortcut}
+          </button>
         </div>
         <p className="text-xs text-muted">{t.installedHint}</p>
+        {adding === 'choose' && <ChooseHow onPick={setAdding} onClose={() => setAdding(null)} />}
         {adding === 'site' && <AddSite onClose={() => setAdding(null)} />}
+        {adding === 'ai' && <AskAi onClose={() => setAdding(null)} />}
         {adding === 'import' && <ImportAdapter onClose={() => setAdding(null)} />}
         {adapters.length === 0 && adding === null && (
           <p className="text-muted">{t.empty}</p>
@@ -500,8 +546,9 @@ export default function App() {
         </section>
       )}
 
-      <section className="card space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{t.settings}</h2>
+      <details className="card">
+        <summary className="cursor-pointer font-semibold">{t.settings}</summary>
+        <div className="mt-3 space-y-4">
         <fieldset className="space-y-2">
           <legend className="mb-1 font-semibold">{t.askBefore}</legend>
           {askOptions.map((value) => (
@@ -543,7 +590,8 @@ export default function App() {
             onChange={(alwaysSites) => void setSettings({ ...settings, alwaysSites })}
           />
         )}
-      </section>
+        </div>
+      </details>
 
       <section className="card">
         <details>
