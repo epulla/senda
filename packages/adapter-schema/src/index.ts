@@ -17,7 +17,8 @@ const field = z
   .strict();
 const fields = z.record(name, field);
 const stepPayloads = {
-  wait_for: z.object({ selector, text: z.string(), timeout_ms: z.number().int().optional() }).partial().strict(),
+  // exact: the element's whole text must equal text (spaces/case ignored), not just contain it.
+  wait_for: z.object({ selector, text: z.string(), exact: z.boolean(), timeout_ms: z.number().int().optional() }).partial().strict(),
   exists: z.object({ selector }).strict(),
   if_exists: z
     .object({ selector, then: z.array(z.lazy(() => Step)), else: z.array(z.lazy(() => Step)).optional() })

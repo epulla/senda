@@ -125,9 +125,10 @@ export async function runRecipe(input: Input): Promise<RunResult> {
               (el.textContent ?? '') + [...el.querySelectorAll('img[alt]')].map((img) => img.getAttribute('alt')).join('');
             const ready = () =>
               payload.selector && payload.text
-                ? [...document.querySelectorAll(css(payload.selector))].some((el) =>
-                    flat(textOf(el)).includes(flat(String(render(payload.text, ctx())))),
-                  )
+                ? [...document.querySelectorAll(css(payload.selector))].some((el) => {
+                    const want = flat(String(render(payload.text, ctx())));
+                    return payload.exact ? flat(textOf(el)) === want : flat(textOf(el)).includes(want);
+                  })
                 : payload.selector
                   ? sel(payload.selector)
                   : payload.text

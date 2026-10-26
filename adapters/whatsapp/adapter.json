@@ -1,7 +1,7 @@
 {
   "id": "whatsapp",
   "name": "WhatsApp",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "engine": 1,
   "source": "official",
   "sites": [
@@ -415,6 +415,14 @@
           "type": {
             "selector": "#main footer [contenteditable=\"true\"]",
             "text": "{{args.text}}"
+          }
+        },
+        {
+          "wait_for": {
+            "selector": "#main footer [contenteditable=\"true\"]",
+            "text": "{{args.text}}",
+            "exact": true,
+            "timeout_ms": 3000
           }
         },
         {

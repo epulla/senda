@@ -51,8 +51,15 @@ test('WhatsApp template lists, searches, reads, marks read and sends only after 
   expect(await call(mcp, 'mark_as_read', { chat: "Ana's group" })).toEqual({ chat: "Ana's group" });
   expect((await call(mcp, 'list_chats')).find((c: { name: string }) => c.name === "Ana's group").unread).toBe(0);
 
-  const send = mcp.callTool({ name: 'whatsapp__send_message', arguments: { chat: 'Book club 📚', text: 'Hello from Senda' } });
   const tab = context.pages().find((page) => page.url().includes('/site/whatsapp.html'))!;
+  // A leftover draft: the box ends up with more than the approved text, so nothing may be sent.
+  await tab.evaluate(() => (window as any).setDraft('Contact 2', 'old draft '));
+  const blocked = mcp.callTool({ name: 'whatsapp__send_message', arguments: { chat: 'Contact 2', text: 'Hi' } });
+  await tab.locator('senda-approval').getByRole('button', { name: 'Allow', exact: true }).click();
+  expect((await blocked).isError).toBe(true);
+  await expect(tab.locator('#main [role=row]', { hasText: 'old draft' })).toHaveCount(0);
+
+  const send = mcp.callTool({ name: 'whatsapp__send_message', arguments: { chat: 'Book club 📚', text: 'Hello from Senda' } });
   const card = tab.locator('senda-approval');
   await expect(card.getByText('Send to Book club 📚: Hello from Senda')).toBeVisible();
   await expect(tab.locator('#main [role=row]', { hasText: 'Hello from Senda' })).toHaveCount(0);

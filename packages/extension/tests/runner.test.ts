@@ -113,6 +113,14 @@ describe('recipe runner', () => {
     document.body.innerHTML = '<header>Old chat</header>';
     setTimeout(() => (document.body.innerHTML = '<header>Dome <img alt="🫶"></header>'), 200);
     expect(await runRecipe({ adapter: a, tool: 'opened', args: { name: 'Dome 🫶' } })).toEqual({ ok: true, value: 'Dome' });
+    const exact = Adapter.parse({
+      ...chat,
+      tools: { typed: { description: 'x', effect: 'read', params: { text: { type: 'string' } }, steps: [{ wait_for: { selector: 'p', text: '{{args.text}}', exact: true, timeout_ms: 300 } }, { extract: { selector: 'p', text: true }, save: 'typed' }, { return: 'typed' }] } },
+    });
+    document.body.innerHTML = '<p>Hi ✅Hi ✅</p>';
+    expect(await runRecipe({ adapter: exact, tool: 'typed', args: { text: 'Hi ✅' } })).toMatchObject({ ok: false, code: 'ADAPTER_BROKEN' });
+    document.body.innerHTML = '<p>Hi <img alt="✅"></p>';
+    expect(await runRecipe({ adapter: exact, tool: 'typed', args: { text: 'Hi ✅' } })).toMatchObject({ ok: true });
   });
   it('validates fixture and reports variant selector breakage', async () => {
     const a = Adapter.parse(chat);

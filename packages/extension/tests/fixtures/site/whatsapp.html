@@ -77,6 +77,12 @@
       );
     draw();
     const box = el('div', { contenteditable: 'true', role: 'textbox', 'data-tab': '10', 'aria-label': 'Type a message' });
+    // Like WhatsApp's editor: keeps a draft per chat, and typed text ends up after it.
+    box.textContent = c.draft ?? '';
+    box.addEventListener('input', () => {
+      if (c.draft && !box.textContent.startsWith(c.draft)) box.textContent = c.draft + box.textContent;
+      c.draft = box.textContent;
+    });
     // Like WhatsApp: the send button only exists while the box has text.
     // Like current WhatsApp: found by its label, the icon has no recognizable name.
     const send = el('button', { 'aria-label': 'Send' }, el('span', { 'data-icon': 'wds-ic-paper-plane' }, '➤'));
@@ -84,6 +90,7 @@
     send.addEventListener('click', () => {
       c.messages.push(['3:20 p.m.', 'You', box.textContent]);
       box.textContent = '';
+      c.draft = '';
       send.remove();
       draw();
     });
@@ -95,6 +102,7 @@
   // Like WhatsApp: results update a moment after typing.
   // Something changes at once (a clear button), the results only a bit later.
   const clear = el('button', { 'aria-label': 'Clear search' }, '×');
+  window.setDraft = (name, text) => (chats.find((c) => c.name === name).draft = text);
   search.addEventListener('input', () => {
     if (search.value) search.after(clear);
     else clear.remove();
