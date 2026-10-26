@@ -18,8 +18,12 @@ async function sendRef(mcp: Client, url: string) {
 test('click on a sensitive button shows a card on the page, highlights it and waits for Allow', async ({ context, mcp, fixtureUrl }) => {
   const ref = await sendRef(mcp, `${fixtureUrl}/site/mail.html`);
   const tab = context.pages().find((page) => page.url().endsWith('/site/mail.html'))!;
+  const elsewhere = await context.newPage();
+  await elsewhere.goto('about:blank');
   const click = mcp.callTool({ name: 'browser_click', arguments: { ref } });
   const card = tab.locator('senda-approval');
+  // The card's tab comes to the front by itself.
+  await expect.poll(() => tab.evaluate(() => document.visibilityState)).toBe('visible');
   await expect(card.getByText('Your AI wants to click “Send”')).toBeVisible();
   await expect(card.locator('.hl')).toBeVisible();
   await card.getByRole('button', { name: 'Allow', exact: true }).click();

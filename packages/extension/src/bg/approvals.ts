@@ -71,6 +71,12 @@ export async function requestApproval(card: Omit<ApprovalCard, 'id' | 'created_a
   const stored = { ...card, id, created_at: new Date().toISOString() };
   await approvalsItem.setValue({ ...rows, [id]: stored });
   void showOnPage(stored);
+  // The card only shows inside that tab: bring it (and its window) to the front so the user sees it.
+  if (card.tabId !== undefined)
+    void browser.tabs
+      .update(card.tabId, { active: true })
+      .then((tab) => tab?.windowId !== undefined && browser.windows.update(tab.windowId, { focused: true }))
+      .catch(() => undefined);
   const reshow = (tabId: number, info: { status?: string }) => {
     if (tabId === card.tabId && info.status === 'complete') void showOnPage(stored);
   };
