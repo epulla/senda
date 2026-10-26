@@ -3,8 +3,8 @@ import { adaptersItem } from '@/src/bg/state';
 import { removeAdapter, resetToTemplate, setStatus } from '@/src/bg/adapters/store';
 import { bundledTemplates } from '@/src/bg/adapters/templates';
 import { exportRecipe } from '@/src/core/adapters/export';
-import { ModeBadge, siteNames } from '@/src/ui/adapterLabels';
-import { useText } from '@/src/ui/i18n';
+import { localize, ModeBadge, siteNames } from '@/src/ui/adapterLabels';
+import { lang, useText } from '@/src/ui/i18n';
 import { LanguageToggle } from '@/src/ui/LanguageToggle';
 import { ThemeToggle } from '@/src/ui/ThemeToggle';
 import { useItem } from '@/src/ui/useItem';
@@ -27,6 +27,7 @@ export default function App() {
 
   const { adapter, status, from, override } = entry;
   const fixed = Object.keys(override ?? {});
+  const l = localize(adapter, lang());
   const recipe = JSON.stringify(adapter, null, 2);
 
   const download = () => {
@@ -58,7 +59,7 @@ export default function App() {
       </div>
 
       <section className="card space-y-3">
-        <p>{adapter.description}</p>
+        <p>{l.description}</p>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
           <dt className="text-muted">{t.version}</dt>
           <dd>{adapter.version}</dd>
@@ -125,7 +126,7 @@ export default function App() {
           return (
             <article key={name} className="card space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-medium">{tool.description}</p>
+                <p className="font-medium">{l.tool(name)}</p>
                 <ModeBadge mode={tool.effect} />
               </div>
               <p className="text-xs text-muted">

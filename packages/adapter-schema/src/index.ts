@@ -146,6 +146,20 @@ export const Adapter = z
     login_check: z.object({ exists: selector }).strict().optional(),
     read_endpoints: z.array(z.string()).optional(),
     tools: z.record(name, tool),
+    // Translations for people reading the extension UI; the AI always sees the English fields.
+    i18n: z
+      .record(
+        z.string().regex(/^[a-z]{2}$/),
+        z
+          .object({
+            name: z.string().optional(),
+            description: z.string().max(500).optional(),
+            site: z.string().max(200).optional(),
+            tools: z.record(name, z.object({ description: z.string().max(500) }).strict()).optional(),
+          })
+          .strict(),
+      )
+      .optional(),
   })
   .strict();
 export type Adapter = z.infer<typeof Adapter>;

@@ -70,4 +70,11 @@ test('Add a shortcut offers Senda templates (search, pick, then address), ask-yo
   await expect(panel.getByRole('textbox', { name: /Site address/ })).toBeVisible();
   await panel.getByRole('button', { name: /Not in the list/ }).click();
   await expect(panel.getByText('Make a Senda site shortcut for https://example.com')).toBeVisible();
+
+  await panel.getByRole('button', { name: 'ES' }).click();
+  await panel.getByRole('button', { name: '+ Agregar un atajo' }).click();
+  await panel.getByRole('button', { name: /Usar una plantilla de Senda/ }).click();
+  await expect(panel.getByText(/Muestra las próximas fechas de entrega/)).toBeVisible();
+  await panel.getByText('Moodle', { exact: true }).click();
+  await expect(panel.getByText('La dirección de tu Moodle', { exact: false })).toBeVisible();
 });

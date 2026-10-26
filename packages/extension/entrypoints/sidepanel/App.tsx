@@ -6,8 +6,8 @@ import { approveDraft, installTemplate, rejectDraft } from '@/src/bg/adapters/st
 import { bundledTemplates, fetchTemplate } from '@/src/bg/adapters/templates';
 import { describeChanges } from '@/src/core/adapters/diff';
 import { permissionIncrease } from '@/src/core/adapters/permissions';
-import { ModeBadge, siteNames } from '@/src/ui/adapterLabels';
-import { useText } from '@/src/ui/i18n';
+import { localize, ModeBadge, siteNames } from '@/src/ui/adapterLabels';
+import { lang, useText } from '@/src/ui/i18n';
 import { LanguageToggle } from '@/src/ui/LanguageToggle';
 import { ThemeToggle } from '@/src/ui/ThemeToggle';
 import { useItem } from '@/src/ui/useItem';
@@ -172,16 +172,19 @@ function AddPanel({
 function AddSite({ onClose, onAskAi }: { onClose: () => void; onAskAi: () => void }) {
   const [query, setQuery] = useState('');
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const text = useText();
+  const language = lang();
   const templates = Object.values(bundledTemplates()).filter((t) => {
-    const haystack = [t.name, t.description, ...Object.values(t.tools as Record<string, { description: string }>).map((tool) => tool.description)]
+    const l = localize(t, language);
+    const haystack = [t.name, l.name, t.description, l.description, ...Object.keys(t.tools).flatMap((name) => [t.tools[name].description, l.tool(name)])]
       .join(' ')
       .toLowerCase();
     return words.every((word) => haystack.includes(word));
   });
   const [picked, setChoice] = useState('');
   const choice = templates.some((t) => t.id === picked) ? picked : '';
-  const site = templates.find((t) => t.id === choice)?.template?.site;
-  const text = useText();
+  const chosen = templates.find((t) => t.id === choice);
+  const site = chosen?.template?.site;
   return (
     <AddPanel
       title={text.sidepanel.addSite}
@@ -189,7 +192,7 @@ function AddSite({ onClose, onAskAi }: { onClose: () => void; onAskAi: () => voi
       source={{ template: choice }}
       needsSite={!!choice}
       ready={!!choice}
-      hint={site?.description}
+      hint={chosen && localize(chosen, language).site}
       example={site?.example}
       onClose={onClose}
     >
@@ -208,12 +211,12 @@ function AddSite({ onClose, onAskAi }: { onClose: () => void; onAskAi: () => voi
           <label key={t.id} className={`card block cursor-pointer !p-3 ${choice === t.id ? 'outline-2 outline-primary' : ''}`}>
             <input type="radio" name="kind" className="sr-only" checked={choice === t.id} onChange={() => setChoice(t.id)} />
             <span className="flex items-center justify-between gap-2">
-              <span className="font-semibold">{t.name}</span>
+              <span className="font-semibold">{localize(t, language).name}</span>
               <ModeBadge mode={t.mode} />
             </span>
             <span className="mt-1 block text-xs text-muted">
-              {Object.values(t.tools as Record<string, { description: string }>)
-                .map((tool) => tool.description.replace(/\.$/, ''))
+              {Object.keys(t.tools)
+                .map((name) => localize(t, language).tool(name).replace(/\.$/, ''))
                 .join(' · ')}
             </span>
           </label>

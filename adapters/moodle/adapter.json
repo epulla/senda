@@ -1,7 +1,7 @@
 {
   "id": "moodle",
   "name": "Moodle",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "engine": 1,
   "source": "official",
   "template": { "site": { "description": "Your Moodle address, e.g. https://moodle.school.edu", "example": "https://moodle.school.edu" } },
@@ -74,6 +74,19 @@
         { "extract": { "selector": "#id_shortname", "attr": "value" }, "save": "new_short" },
         { "return": { "old_full": "old_full", "old_short": "old_short", "fullname": "new_full", "shortname": "new_short" } }
       ]
+    }
+  },
+  "i18n": {
+    "es": {
+      "description": "Busca cursos y fechas de entrega, mira la configuración de un curso y cambia el nombre de los cursos.",
+      "site": "La dirección de tu Moodle, p. ej. https://moodle.colegio.edu",
+      "tools": {
+        "my_courses": { "description": "Muestra tus cursos." },
+        "upcoming_deadlines": { "description": "Muestra las próximas fechas de entrega." },
+        "search_courses": { "description": "Busca cursos por nombre." },
+        "get_course": { "description": "Muestra el nombre completo y el nombre corto actuales de un curso." },
+        "rename_course": { "description": "Cambia el nombre completo y el nombre corto de un curso." }
+      }
     }
   }
 }

@@ -17,5 +17,11 @@ describe('adapter schema', () => {
     bad.tools.list_chats.steps[0].click = { selector: 'x' };
     expect(Adapter.safeParse(bad).success).toBe(false);
   });
+  it('accepts UI translations and rejects unknown translation fields', () => {
+    const recipe = fixture('whatsapp');
+    const es = { description: 'Lee tus chats.', tools: { list_chats: { description: 'Lista tus chats.' } } };
+    expect(Adapter.safeParse({ ...recipe, i18n: { es } }).success).toBe(true);
+    expect(Adapter.safeParse({ ...recipe, i18n: { es: { ...es, steps: [] } } }).success).toBe(false);
+  });
   it('exports JSON Schema object', () => expect(adapterJsonSchema).toMatchObject({ type: 'object' }));
 });

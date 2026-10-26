@@ -53,7 +53,7 @@ Before finishing a change, run `pnpm compile && pnpm test` (extension, server, a
 
 - Audience is non-technical. Use plain words that say what will happen; avoid jargon.
 - Explain permission requests and actions clearly.
-- Every user-facing string lives in `src/core/text/en.ts` and `es.ts` (neutral Latin American Spanish, "tú"). UI reads them with `useText()` from `src/ui/i18n.ts`; core functions take the dictionary as a parameter defaulting to English. Text returned to the AI (errors, tool descriptions) and adapter recipes stay English.
+- Every user-facing string lives in `src/core/text/en.ts` and `es.ts` (neutral Latin American Spanish, "tú"). UI reads them with `useText()` from `src/ui/i18n.ts`; core functions take the dictionary as a parameter defaulting to English. Text returned to the AI (errors, tool descriptions) and adapter recipes stay English; a recipe may add UI-only translations in `i18n.es` (name, description, site hint, tool descriptions), read with `localize()` from `src/ui/adapterLabels.tsx`.
 - Manifest name and description live in `public/_locales/{en,es}/messages.json`.
 
 ## Git
