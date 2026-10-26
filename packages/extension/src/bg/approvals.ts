@@ -75,7 +75,9 @@ export async function requestApproval(card: Omit<ApprovalCard, 'id' | 'created_a
   if (card.tabId !== undefined)
     void browser.tabs
       .update(card.tabId, { active: true })
-      .then((tab) => tab?.windowId !== undefined && browser.windows.update(tab.windowId, { focused: true }))
+      .then(async (tab) => {
+        if (tab?.windowId !== undefined) await browser.windows.update(tab.windowId, { focused: true });
+      })
       .catch(() => undefined);
   const reshow = (tabId: number, info: { status?: string }) => {
     if (tabId === card.tabId && info.status === 'complete') void showOnPage(stored);
