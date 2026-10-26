@@ -63,11 +63,15 @@ test('WhatsApp template lists, searches, reads, marks read and sends only after 
   expect((await blocked).isError).toBe(true);
   await expect(tab.locator('#main [role=row]', { hasText: 'old draft' })).toHaveCount(0);
 
+  await panel.getByRole('button', { name: 'Ver en español' }).click();
   const send = mcp.callTool({ name: 'whatsapp__send_message', arguments: { chat: 'Book club 📚', text: 'Hello from Senda' } });
   const card = tab.locator('senda-approval');
-  await expect(card.getByText('Send to Book club 📚: Hello from Senda')).toBeVisible();
+  // The template's own sentence in the user's language; only readable values below it.
+  await expect(card.getByText('Enviar a Book club 📚: Hello from Senda')).toBeVisible();
+  await expect(card).not.toContainText('[object Object]');
+  await expect(card).not.toContainText('chat_name');
   await expect(tab.locator('#main [role=row]', { hasText: 'Hello from Senda' })).toHaveCount(0);
-  await card.getByRole('button', { name: 'Allow', exact: true }).click();
+  await card.getByRole('button', { name: 'Permitir', exact: true }).click();
   expect(value(await send)).toEqual({ sent_to: 'Book club 📚' });
   await expect(tab.locator('#main [role=row]').last()).toHaveText('Hello from Senda');
 });

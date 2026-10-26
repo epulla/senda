@@ -168,7 +168,7 @@ export const Adapter = z
             name: z.string().optional(),
             description: z.string().max(500).optional(),
             site: z.string().max(200).optional(),
-            tools: z.record(name, z.object({ description: z.string().max(500) }).strict()).optional(),
+            tools: z.record(name, z.object({ description: z.string().max(500), confirm: z.string().max(200).optional() }).strict()).optional(),
           })
           .strict(),
       )

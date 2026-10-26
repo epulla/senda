@@ -9,6 +9,7 @@ import { getAdapter } from './store';
 import { requestApproval, noteExternal, logActivity } from '../approvals';
 import { settingsItem, taintItem } from '../state';
 import { bgText } from '../text';
+import { resolveLang } from '../../core/i18n';
 
 export async function runAdapter(input: {
   adapter: string;
@@ -82,9 +83,12 @@ export async function runAdapter(input: {
     if (result && 'confirm' in result) {
       const vars = result.confirm.vars;
       const uiText = await bgText();
-      const text = definition.confirm
+      const settings = await settingsItem.getValue();
+      const confirm =
+        adapter.i18n?.[resolveLang(settings.language, navigator.language)]?.tools?.[input.tool]?.confirm ?? definition.confirm;
+      const text = confirm
         ? String(
-            (await import('../../core/adapters/template')).render(definition.confirm, {
+            (await import('../../core/adapters/template')).render(confirm, {
               args: input.args,
               vars,
               now: Math.floor(Date.now() / 1000),
@@ -92,16 +96,19 @@ export async function runAdapter(input: {
           )
         : uiText.approval.adapterSummary(input.tool, adapter.name, host);
       const taint = await taintItem.getValue();
-      const settings = await settingsItem.getValue();
       if (settings.askBefore !== 'never' || taint) await requestApproval({
         kind: 'adapter',
         summary: text,
         host,
         url: tab?.url,
         tabId,
+        // Only plain values people can read; skip internal lists and values that repeat an argument.
         details: [
           ...Object.entries(input.args).map(([k, v]) => [k, String(v).slice(0, 200)] as [string, string]),
-          ...Object.entries(vars).map(([k, v]) => [uiText.approval.current(k), String(v).slice(0, 200)] as [string, string]),
+          ...Object.entries(vars)
+            .filter(([, v]) => ['string', 'number', 'boolean'].includes(typeof v))
+            .filter(([, v]) => !Object.values(input.args).some((arg) => String(arg) === String(v)))
+            .map(([k, v]) => [uiText.approval.current(k), String(v).slice(0, 200)] as [string, string]),
         ],
         source: taint || undefined,
         allowAlways: false,

@@ -1,7 +1,7 @@
 {
   "id": "whatsapp",
   "name": "WhatsApp",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "engine": 1,
   "source": "official",
   "sites": [
@@ -462,7 +462,8 @@
           "description": "Abre un chat para que WhatsApp lo marque como leído."
         },
         "send_message": {
-          "description": "Envía un mensaje de texto a un chat. Apruebas cada mensaje antes."
+          "description": "Envía un mensaje de texto a un chat. Apruebas cada mensaje antes.",
+          "confirm": "Enviar a {{vars.chat_name}}: {{args.text}}"
         }
       }
     }
