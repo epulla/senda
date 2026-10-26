@@ -98,6 +98,7 @@ export async function runAdapter(input: {
         summary: text,
         host,
         url: tab?.url,
+        tabId,
         details: [
           ...Object.entries(input.args).map(([k, v]) => [k, String(v).slice(0, 200)] as [string, string]),
           ...Object.entries(vars).map(([k, v]) => [uiText.approval.current(k), String(v).slice(0, 200)] as [string, string]),

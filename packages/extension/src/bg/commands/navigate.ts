@@ -27,6 +27,7 @@ export default async function navigate(p: { url: string; tabId?: number; newTab?
       summary: text.approval.navigateSummary(host),
       host,
       url: p.url,
+      tabId: p.tabId,
       details: [[text.approval.reasonLabel, reason]],
       source: taint || undefined,
       allowAlways: true,

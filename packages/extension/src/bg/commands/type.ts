@@ -29,6 +29,8 @@ export default async function type(p: { ref: string; text: string; submit?: bool
       summary: text.approval.typeSummary(host, !!p.submit),
       host,
       url,
+      tabId,
+      ref: p.ref,
       details: [[text.approval.reasonLabel, reason]],
       source: taint || undefined,
       allowAlways: true,

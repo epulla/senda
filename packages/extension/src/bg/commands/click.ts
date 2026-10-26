@@ -39,6 +39,8 @@ export default async function click(p: { ref: string; tabId?: number }) {
       summary: text.approval.clickSummary(label || text.approval.element, host),
       host,
       url,
+      tabId,
+      ref: p.ref,
       details: [[text.approval.reasonLabel, reason]],
       source: taint || undefined,
       allowAlways: true,

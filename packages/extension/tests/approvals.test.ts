@@ -102,6 +102,7 @@ describe('approval background', () => {
     });
     const id = Object.keys(cards)[0]!;
     expect(cards[id]!.summary).toContain('Send');
+    expect(cards[id]).toMatchObject({ tabId: 4, ref: 'senda-1' });
     await (await import('../src/bg/approvals')).answerApproval(id, 'allow');
     await expect(pending).resolves.toEqual({ tabId: 4 });
   });
