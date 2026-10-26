@@ -62,20 +62,33 @@ export async function runRecipe(input: Input): Promise<RunResult> {
   const ctx = () => ({ args, vars, now: Math.floor(Date.now() / 1000) });
   const css = (selector: string) => String(render(selector, ctx(), selector.startsWith('text=') ? undefined : cssString));
   const sel = (selector: string | undefined, root?: ParentNode) => (selector ? select(css(selector), root) : null);
+  // Text with image alt text in place (sites often draw emojis as images).
+  const textOf = (root: Element) => {
+    let out = '';
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode())
+      if (node.nodeType === Node.TEXT_NODE) out += node.nodeValue ?? '';
+      else if ((node as Element).tagName === 'IMG') out += (node as Element).getAttribute('alt') ?? '';
+    return out.trim();
+  };
   const get = (el: Element, f: any) => {
     if (!safe(el)) return null;
     let v: any = f.text
-      ? el.textContent?.trim()
+      ? textOf(el)
       : f.attr
         ? el.getAttribute(f.attr)
         : f.selector
-          ? sel(f.selector, el)?.textContent?.trim()
+          ? (() => {
+              const child = sel(f.selector, el);
+              return child ? textOf(child) : undefined;
+            })()
           : el.getAttribute('href')
             ? new URL(el.getAttribute('href')!, location.href).href
             : el.textContent?.trim();
     if (f.pattern && v) {
+      // First capturing group that matched, so a pattern can list alternatives: (a)|(b).
       const m = new RegExp(f.pattern).exec(v);
-      v = m?.[1] ?? undefined;
+      v = m?.slice(1).find((g) => g !== undefined);
     }
     if (v === undefined || v === null || v === '') {
       if ('default' in f) return f.default;

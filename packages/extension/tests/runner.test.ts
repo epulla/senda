@@ -112,7 +112,7 @@ describe('recipe runner', () => {
     });
     document.body.innerHTML = '<header>Old chat</header>';
     setTimeout(() => (document.body.innerHTML = '<header>Dome <img alt="🫶"></header>'), 200);
-    expect(await runRecipe({ adapter: a, tool: 'opened', args: { name: 'Dome 🫶' } })).toEqual({ ok: true, value: 'Dome' });
+    expect(await runRecipe({ adapter: a, tool: 'opened', args: { name: 'Dome 🫶' } })).toEqual({ ok: true, value: 'Dome 🫶' });
     const exact = Adapter.parse({
       ...chat,
       tools: { typed: { description: 'x', effect: 'read', params: { text: { type: 'string' } }, steps: [{ wait_for: { selector: 'p', text: '{{args.text}}', exact: true, timeout_ms: 300 } }, { extract: { selector: 'p', text: true }, save: 'typed' }, { return: 'typed' }] } },
@@ -121,6 +121,31 @@ describe('recipe runner', () => {
     expect(await runRecipe({ adapter: exact, tool: 'typed', args: { text: 'Hi ✅' } })).toMatchObject({ ok: false, code: 'ADAPTER_BROKEN' });
     document.body.innerHTML = '<p>Hi <img alt="✅"></p>';
     expect(await runRecipe({ adapter: exact, tool: 'typed', args: { text: 'Hi ✅' } })).toMatchObject({ ok: true });
+  });
+  it('keeps emoji images in extracted text and picks the first matching pattern alternative', async () => {
+    const a = Adapter.parse({
+      ...chat,
+      tools: {
+        rows: {
+          description: 'x',
+          effect: 'read',
+          params: {},
+          steps: [
+            { extract_list: { item: 'li', fields: { text: { selector: 'span', text: true }, kind: { selector: 'span', text: true, pattern: '(Missed call)|(Sticker)', default: '' } } }, save: 'rows' },
+            { return: 'rows' },
+          ],
+        },
+      },
+    });
+    document.body.innerHTML = '<li><span>Done <img alt="✅"> ok</span></li><li><span><img alt="Sticker sin etiquetas"></span></li><li><span>Missed call</span></li>';
+    expect(await runRecipe({ adapter: a, tool: 'rows', args: {} })).toEqual({
+      ok: true,
+      value: [
+        { text: 'Done ✅ ok', kind: '' },
+        { text: 'Sticker sin etiquetas', kind: 'Sticker' },
+        { text: 'Missed call', kind: 'Missed call' },
+      ],
+    });
   });
   it('validates fixture and reports variant selector breakage', async () => {
     const a = Adapter.parse(chat);

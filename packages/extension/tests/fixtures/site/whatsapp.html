@@ -14,6 +14,8 @@
   const chats = [
     { name: 'Ana', time: '3:13 p.m.', unread: 2, messages: [['3:10 p.m.', 'Ana', 'Are you coming?'], ['3:11 p.m.', 'Ana', null], ['3:13 p.m.', 'Ana', 'See you at 4']] },
     { name: "Ana's group", time: 'Yesterday', unread: 5, messages: [['9:00 a.m.', 'Luis', 'Morning all']] },
+    // Like your own chat in WhatsApp: listed as a contact, never marked selected, header adds "(You)".
+    { name: 'Me', self: true, time: '', unread: 0, messages: [['7:00 a.m.', 'You', 'Note to self']] },
     { name: 'Book club 📚', time: '2:59 p.m.', unread: 0, messages: [['2:59 p.m.', 'You', 'Chapter 3 done']] },
     ...Array.from({ length: 15 }, (_, i) => ({ name: `Contact ${i + 1}`, time: 'Monday', unread: 0, messages: [['8:00 a.m.', `Contact ${i + 1}`, `Hi ${i + 1}`]] })),
   ];
@@ -40,7 +42,7 @@
           const last = c.messages.at(-1);
           const row = el(
             'div',
-            { role: 'row', 'aria-selected': String(c === current), style: 'height:60px;overflow:hidden' },
+            { role: 'row', ...(c.self ? {} : { 'aria-selected': String(c === current) }), style: 'height:60px;overflow:hidden' },
             el(
               'div',
               { role: 'gridcell', 'aria-colindex': '2' },
@@ -72,7 +74,7 @@
     const draw = () =>
       rows.replaceChildren(
         ...c.messages.map(([time, from, text]) =>
-          el('div', { role: 'row' }, el('div', { 'data-pre-plain-text': `[${time}, 26/10/2026] ${from}: ` }, ...(text ? [el('span', { class: 'selectable-text' }, el('span', {}, text))] : []))),
+          el('div', { role: 'row' }, el('div', { 'data-pre-plain-text': `[${time}, 26/10/2026] ${from}: ` }, ...(text ? [el('span', { class: 'selectable-text' }, el('span', {}, text))] : [el('img', { alt: 'Sticker without label' })]))),
         ),
       );
     draw();
@@ -96,7 +98,7 @@
     });
     const footer = el('footer', {}, box);
     document.querySelector('#slot').replaceChildren(
-      el('div', { id: 'main' }, el('header', {}, el('span', { dir: 'auto' }, c.name)), rows, footer),
+      el('div', { id: 'main' }, el('header', {}, el('span', { dir: 'auto' }, c.name), ...(c.self ? [el('span', {}, '(You)')] : [])), rows, footer),
     );
   }
   // Like WhatsApp: results update a moment after typing.

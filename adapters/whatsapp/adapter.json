@@ -1,7 +1,7 @@
 {
   "id": "whatsapp",
   "name": "WhatsApp",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "engine": 1,
   "source": "official",
   "sites": [
@@ -178,14 +178,9 @@
         },
         {
           "wait_for": {
-            "selector": "#pane-side [aria-selected=\"true\"] span[dir=auto][title=\"{{args.chat}}\"]",
-            "timeout_ms": 8000
-          }
-        },
-        {
-          "wait_for": {
-            "selector": "#main header",
+            "selector": "#main header span[dir=auto]",
             "text": "{{args.chat}}",
+            "exact": true,
             "timeout_ms": 8000
           }
         },
@@ -197,8 +192,8 @@
         },
         {
           "extract": {
-            "selector": "#pane-side [aria-selected=\"true\"] span[dir=auto][title]",
-            "attr": "title"
+            "selector": "#main header span[dir=auto]",
+            "text": true
           },
           "save": "chat_name"
         },
@@ -232,6 +227,12 @@
                 "selector": "span.selectable-text",
                 "text": true,
                 "default": "[media]"
+              },
+              "media": {
+                "selector": ":scope",
+                "text": true,
+                "pattern": "(Llamada perdida|Videollamada perdida|Missed voice call|Missed video call)|(Videollamada|Video call)|(Llamada|Voice call)|(Mensaje de voz|Voice message)|(Sticker)|(Encuesta|Poll)|(Ubicación|Location)|(Documento|Document)",
+                "default": ""
               }
             }
           },
@@ -298,14 +299,9 @@
         },
         {
           "wait_for": {
-            "selector": "#pane-side [aria-selected=\"true\"] span[dir=auto][title=\"{{args.chat}}\"]",
-            "timeout_ms": 8000
-          }
-        },
-        {
-          "wait_for": {
-            "selector": "#main header",
+            "selector": "#main header span[dir=auto]",
             "text": "{{args.chat}}",
+            "exact": true,
             "timeout_ms": 8000
           }
         },
@@ -317,8 +313,8 @@
         },
         {
           "extract": {
-            "selector": "#pane-side [aria-selected=\"true\"] span[dir=auto][title]",
-            "attr": "title"
+            "selector": "#main header span[dir=auto]",
+            "text": true
           },
           "save": "chat_name"
         },
@@ -387,14 +383,9 @@
         },
         {
           "wait_for": {
-            "selector": "#pane-side [aria-selected=\"true\"] span[dir=auto][title=\"{{args.chat}}\"]",
-            "timeout_ms": 8000
-          }
-        },
-        {
-          "wait_for": {
-            "selector": "#main header",
+            "selector": "#main header span[dir=auto]",
             "text": "{{args.chat}}",
+            "exact": true,
             "timeout_ms": 8000
           }
         },
@@ -406,8 +397,8 @@
         },
         {
           "extract": {
-            "selector": "#pane-side [aria-selected=\"true\"] span[dir=auto][title]",
-            "attr": "title"
+            "selector": "#main header span[dir=auto]",
+            "text": true
           },
           "save": "chat_name"
         },

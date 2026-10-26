@@ -35,21 +35,25 @@ test('WhatsApp template lists, searches, reads, marks read and sends only after 
   expect(read).toEqual({
     chat: 'Ana',
     messages: [
-      { from: 'Ana', time: '3:11 p.m.', date: '26/10/2026', text: '[media]' },
-      { from: 'Ana', time: '3:13 p.m.', date: '26/10/2026', text: 'See you at 4' },
+      { from: 'Ana', time: '3:11 p.m.', date: '26/10/2026', text: '[media]', media: 'Sticker' },
+      { from: 'Ana', time: '3:13 p.m.', date: '26/10/2026', text: 'See you at 4', media: '' },
     ],
   });
 
   // Switching chats: must wait for the requested chat, never read the one still on screen.
   expect((await call(mcp, 'read_chat', { chat: 'Book club 📚', limit: 1 })).messages).toEqual([
-    { from: 'You', time: '2:59 p.m.', date: '26/10/2026', text: 'Chapter 3 done' },
+    { from: 'You', time: '2:59 p.m.', date: '26/10/2026', text: 'Chapter 3 done', media: '' },
   ]);
   // Many matches (Contact 1, Contact 10–15): the exact one must still be found without scrolling it away.
   expect((await call(mcp, 'read_chat', { chat: 'Contact 1', limit: 1 })).messages).toEqual([
-    { from: 'Contact 1', time: '8:00 a.m.', date: '26/10/2026', text: 'Hi 1' },
+    { from: 'Contact 1', time: '8:00 a.m.', date: '26/10/2026', text: 'Hi 1', media: '' },
   ]);
   expect(await call(mcp, 'mark_as_read', { chat: "Ana's group" })).toEqual({ chat: "Ana's group" });
   expect((await call(mcp, 'list_chats')).find((c: { name: string }) => c.name === "Ana's group").unread).toBe(0);
+  // "Ana" right after "Ana's group": the header must match exactly, not just contain the name.
+  expect((await call(mcp, 'read_chat', { chat: 'Ana', limit: 1 })).messages[0].text).toBe('See you at 4');
+  // Own chat: a contact entry that is never marked selected.
+  expect(await call(mcp, 'read_chat', { chat: 'Me', limit: 1 })).toEqual({ chat: 'Me', messages: [{ from: 'You', time: '7:00 a.m.', date: '26/10/2026', text: 'Note to self', media: '' }] });
 
   const tab = context.pages().find((page) => page.url().includes('/site/whatsapp.html'))!;
   // A leftover draft: the box ends up with more than the approved text, so nothing may be sent.
