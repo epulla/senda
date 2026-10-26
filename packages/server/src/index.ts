@@ -278,6 +278,7 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
         else {
           const matching = [...clients.entries()].find(([, client]) => client.adapters.some((a) => a.id === adapterId));
           if (matching) [targetId, { ws: target }] = matching;
+          else target = preferred.ws;
         }
       } else {
         const adapterId = (params as any)?.id ?? (params as any)?.adapter;

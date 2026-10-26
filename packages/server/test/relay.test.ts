@@ -146,6 +146,18 @@ describe('Senda WebSocket relay', () => {
     await reply;
     expect(chrome.listenerCount('message')).toBe(0);
   });
+  it('sends adapter calls for uninstalled ids to the preferred browser', async () => {
+    const { port, server } = await setup();
+    const chrome = connect(port, `chrome-extension://${EXTENSION_ID}`);
+    await connected(chrome);
+    chrome.send(JSON.stringify(hello(token, 'chrome-id', 'Chrome')));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const reply = replyOn(chrome, { ok: true });
+    await expect(server.relay.call('adapter.submit', { id: 'draft_only' }, { prefer: 'chrome-id' })).resolves.toMatchObject({
+      result: { ok: true },
+    });
+    await reply;
+  });
   it('unions hello adapters, updates from adapters_changed, and drops them on disconnect', async () => {
     const { port, server } = await setup();
     const adapter = {
