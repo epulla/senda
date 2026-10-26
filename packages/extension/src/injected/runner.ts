@@ -98,6 +98,14 @@ export async function runRecipe(input: Input): Promise<RunResult> {
     if (f.as === 'date') v = new Date(v).toISOString();
     return v;
   };
+  // A list field: value from the row, else its `or` alternative, else its default.
+  const pick = (row: Element, field: any): any => {
+    const child = field.selector ? sel(field.selector, row) : row;
+    if (!field.or) return child ? get(child, field) : 'default' in field ? field.default : null;
+    const v = child ? get(child, { ...field, or: undefined, default: '' }) : '';
+    if (v !== '' && v !== null && v !== undefined) return v;
+    return pick(row, 'default' in field ? { ...field.or, default: field.default } : field.or);
+  };
   const fail = (code: string, message: string, data?: unknown): RunResult => ({ ok: false, code, message, data });
   const bad = (message: string): RunResult => {
     const body = currentStep?.[Object.keys(currentStep ?? {}).find((k) => k !== 'save') ?? ''];
@@ -178,11 +186,7 @@ export async function runRecipe(input: Input): Promise<RunResult> {
               if (!items.length && !payload.allow_empty) throw Error(`No items match ${payload.item}`);
               out = items.map((el) =>
                 Object.fromEntries(
-                  Object.entries(payload.fields).map(([k, f]) => {
-                    const field = f as any,
-                      child = field.selector ? sel(field.selector, el) : el;
-                    return [k, child ? get(child, field) : 'default' in field ? field.default : null];
-                  }),
+                  Object.entries(payload.fields).map(([k, f]) => [k, pick(el, f)]),
                 ),
               );
             }
@@ -207,12 +211,7 @@ export async function runRecipe(input: Input): Promise<RunResult> {
             ) {
               for (const row of el.querySelectorAll(css(payload.item))) {
                 const v = Object.fromEntries(
-                  Object.entries(payload.fields).map(([k, f]) => {
-                    const field = f as any;
-                    const ch = field.selector ? sel(field.selector, row) : row;
-                    if (!ch) return [k, 'default' in field ? field.default : null];
-                    return [k, get(ch, field)];
-                  }),
+                  Object.entries(payload.fields).map(([k, f]) => [k, pick(row, f)]),
                 );
                 const key = path(v, payload.key);
                 if (!found.has(key)) {

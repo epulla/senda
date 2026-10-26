@@ -147,6 +147,24 @@ describe('recipe runner', () => {
       ],
     });
   });
+  it("uses a field's or-alternative when the first way finds nothing", async () => {
+    const a = Adapter.parse({
+      ...chat,
+      tools: {
+        rows: {
+          description: 'x',
+          effect: 'read',
+          params: {},
+          steps: [
+            { extract_list: { item: 'li', fields: { from: { selector: '[data-from]', attr: 'data-from', or: { selector: '[aria-label]', attr: 'aria-label', pattern: '^(.*?):$' }, default: '?' } } }, save: 'rows' },
+            { return: 'rows' },
+          ],
+        },
+      },
+    });
+    document.body.innerHTML = '<li><b data-from="Ana">x</b></li><li><b aria-label="Luis:">y</b></li><li><b>z</b></li>';
+    expect(await runRecipe({ adapter: a, tool: 'rows', args: {} })).toEqual({ ok: true, value: [{ from: 'Ana' }, { from: 'Luis' }, { from: '?' }] });
+  });
   it('validates fixture and reports variant selector breakage', async () => {
     const a = Adapter.parse(chat);
     document.body.innerHTML = '<article class="chat-row">row</article>';

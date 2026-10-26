@@ -74,7 +74,10 @@
     const draw = () =>
       rows.replaceChildren(
         ...c.messages.map(([time, from, text]) =>
-          el('div', { role: 'row' }, el('div', { 'data-pre-plain-text': `[${time}, 26/10/2026] ${from}: ` }, ...(text ? [el('span', { class: 'selectable-text' }, el('span', {}, text))] : [el('img', { alt: 'Sticker without label' })]))),
+          // Media (no text) has no metadata line: sender only as a label, time only as visible text.
+          text
+            ? el('div', { role: 'row' }, el('div', { 'data-pre-plain-text': `[${time}, 26/10/2026] ${from}: ` }, el('span', { class: 'selectable-text' }, el('span', {}, text))))
+            : el('div', { role: 'row' }, el('div', { 'aria-label': `${from}:` }, el('img', { alt: 'Sticker without label' }), el('span', {}, time))),
         ),
       );
     draw();

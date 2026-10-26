@@ -5,16 +5,21 @@ const name = z
   .string()
   .regex(/^[a-z][a-z0-9_]{1,40}$/, 'must match ^[a-z][a-z0-9_]{1,40}$ (2–41 chars: lowercase letter, then letters, digits or _)');
 const selector = z.string();
-const field = z
-  .object({
-    selector,
-    text: z.boolean().optional(),
-    attr: z.string().optional(),
-    as: z.enum(['string', 'number', 'date']).optional(),
-    pattern: z.string().optional(),
-    default: z.unknown().optional(),
-  })
-  .strict();
+type Field = { selector: string; text?: boolean; attr?: string; as?: 'string' | 'number' | 'date'; pattern?: string; default?: unknown; or?: Field };
+const field: z.ZodType<Field> = z.lazy(() =>
+  z
+    .object({
+      selector,
+      text: z.boolean().optional(),
+      attr: z.string().optional(),
+      as: z.enum(['string', 'number', 'date']).optional(),
+      pattern: z.string().optional(),
+      default: z.unknown().optional(),
+      // Another way to get the value when this one finds nothing (default applies after both).
+      or: field.optional(),
+    })
+    .strict(),
+);
 const fields = z.record(name, field);
 const stepPayloads = {
   // exact: the element's whole text must equal text (spaces/case ignored), not just contain it.

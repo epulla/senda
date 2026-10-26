@@ -35,7 +35,7 @@ test('WhatsApp template lists, searches, reads, marks read and sends only after 
   expect(read).toEqual({
     chat: 'Ana',
     messages: [
-      { from: 'Ana', time: '3:11 p.m.', date: '26/10/2026', text: '[media]', media: 'Sticker' },
+      { from: 'Ana', time: '3:11 p.m.', date: '', text: '[media]', media: 'Sticker' },
       { from: 'Ana', time: '3:13 p.m.', date: '26/10/2026', text: 'See you at 4', media: '' },
     ],
   });

@@ -1,7 +1,7 @@
 {
   "id": "whatsapp",
   "name": "WhatsApp",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "engine": 1,
   "source": "official",
   "sites": [
@@ -209,12 +209,22 @@
                 "selector": "[data-pre-plain-text]",
                 "attr": "data-pre-plain-text",
                 "pattern": "\\]\\s*(.*?):\\s*$",
+                "or": {
+                  "selector": "[aria-label$=':']",
+                  "attr": "aria-label",
+                  "pattern": "^(.*?):$"
+                },
                 "default": ""
               },
               "time": {
                 "selector": "[data-pre-plain-text]",
                 "attr": "data-pre-plain-text",
                 "pattern": "^\\[([^,\\]]+)",
+                "or": {
+                  "selector": ":scope",
+                  "text": true,
+                  "pattern": "(\\d{1,2}:\\d{2}\\s?(?:[ap]\\.?\\s?m\\.?)?)"
+                },
                 "default": ""
               },
               "date": {
