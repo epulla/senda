@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { Adapter } from '@senda/adapter-schema';
 import { materialize } from '../src/core/adapters/materialize';
+import { validateAdapter } from '../src/core/adapters/validate';
 import { runRecipe } from '../src/injected/runner';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -13,11 +14,14 @@ const templates = readdirSync(path.join(root, 'adapters'), { withFileTypes: true
   .map((entry) => ({ id: entry.name, value: JSON.parse(readFileSync(path.join(root, 'adapters', entry.name, 'adapter.json'), 'utf8')) }));
 
 describe('official adapters', () => {
-  it.each(templates.flatMap(({ id, value }) => [
+  it.each(templates.filter(({ value }) => value.template).flatMap(({ id }) => [
     [id, 'https://moodle.example.edu'], [id, 'https://example.edu/moodle'],
   ]))('materializes %s at %s', (id, site) => {
     const template = templates.find((item) => item.id === id)!.value;
     expect(materialize(template, site, 'test').ok).toBe(true);
+  });
+  it.each(templates.filter(({ value }) => !value.template).map(({ id }) => id))('validates fixed-site adapter %s', (id) => {
+    expect(validateAdapter(templates.find((item) => item.id === id)!.value)).toMatchObject({ ok: true });
   });
 
   const source = templates.find((item) => item.id === 'moodle')!.value;

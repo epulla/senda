@@ -105,6 +105,7 @@ export async function runRecipe(input: Input): Promise<RunResult> {
       if (++count > 200) return fail(ErrorCode.ADAPTER_BROKEN, 'Step limit exceeded');
       current = i;
       currentStep = steps[i];
+      const step = currentStep;
       const [kind, payload] = Object.entries(currentStep).find(([k]) => k !== 'save') as [string, any];
       if (def.effect === 'write' && !input.approved && ['type', 'select', 'press', 'submit'].includes(kind))
         return { confirm: { step: i, vars } };
@@ -339,9 +340,10 @@ export async function runRecipe(input: Input): Promise<RunResult> {
       } catch (e) {
         return bad(e instanceof Error ? e.message : String(e));
       }
-      if (currentStep.save) vars[currentStep.save] = out;
+      if (step.save) vars[step.save] = out;
     }
-    return { ok: true, value: undefined };
+    // A finished branch (if_exists then/else) continues with the steps after it.
+    return steps === def.steps ? { ok: true, value: undefined } : undefined;
   };
   const timeout = def.timeout_ms ?? 120000;
   const result = await Promise.race([

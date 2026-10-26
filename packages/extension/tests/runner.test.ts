@@ -79,6 +79,25 @@ describe('recipe runner', () => {
     expect(await runRecipe({ adapter: a, tool: 'last', args: { query: 'mami' } })).toMatchObject({ ok: true, value: [{ text: 'Hi MAMI' }] });
     expect(render('[title="{{args.name}}"]', { args: { name: 'Say "hi" \\ bye' }, vars: {}, now: 1 }, cssString)).toBe('[title="Say \\"hi\\" \\\\ bye"]');
   });
+  it('continues after an if_exists branch finishes', async () => {
+    const a = Adapter.parse({
+      ...chat,
+      tools: {
+        branch: {
+          description: 'x',
+          effect: 'read',
+          params: {},
+          steps: [
+            { if_exists: { selector: '#a', then: [{ extract: { selector: '#a', text: true }, save: 'first' }] } },
+            { extract: { selector: '#b', text: true }, save: 'second' },
+            { return: { first: 'first', second: 'second' } },
+          ],
+        },
+      },
+    });
+    document.body.innerHTML = '<i id="a">one</i><i id="b">two</i>';
+    expect(await runRecipe({ adapter: a, tool: 'branch', args: {} })).toEqual({ ok: true, value: { first: 'one', second: 'two' } });
+  });
   it('validates fixture and reports variant selector breakage', async () => {
     const a = Adapter.parse(chat);
     document.body.innerHTML = '<article class="chat-row">row</article>';

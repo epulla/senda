@@ -1,0 +1,428 @@
+{
+  "id": "whatsapp",
+  "name": "WhatsApp",
+  "version": "1.0.0",
+  "engine": 1,
+  "source": "official",
+  "sites": [
+    "https://web.whatsapp.com/*"
+  ],
+  "start_url": "https://web.whatsapp.com/",
+  "mode": "write",
+  "description": "List, search and read your chats, mark them as read, and send messages after you approve each one.",
+  "login_check": {
+    "exists": "#pane-side"
+  },
+  "tools": {
+    "list_chats": {
+      "description": "List your recent chats with unread counts and the last message.",
+      "effect": "read",
+      "params": {},
+      "steps": [
+        {
+          "search": {
+            "selector": "#side input[data-tab=\"3\"], #side [contenteditable=\"true\"][data-tab=\"3\"], #side [role=\"textbox\"]",
+            "text": ""
+          }
+        },
+        {
+          "scroll_until": {
+            "container": "#pane-side",
+            "item": "[role=row]",
+            "key": "name",
+            "limit": 30,
+            "idle_ms": 800,
+            "fields": {
+              "name": {
+                "selector": "span[dir=auto][title]",
+                "attr": "title"
+              },
+              "time": {
+                "selector": ":scope",
+                "text": true,
+                "pattern": "(\\d{1,2}:\\d{2}\\s?(?:[ap]\\.?\\s?m\\.?)?|\\d{1,2}/\\d{1,2}/\\d{2,4}|Ayer|Yesterday|lunes|martes|miércoles|jueves|viernes|sábado|domingo|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)",
+                "default": ""
+              },
+              "unread": {
+                "selector": "[aria-label*='no leído'], [aria-label*='unread']",
+                "text": true,
+                "as": "number",
+                "default": 0
+              },
+              "last_message": {
+                "selector": "span[title]:not([dir])",
+                "attr": "title",
+                "pattern": "^\\u202a?([\\s\\S]*?)\\u202c?$",
+                "default": ""
+              }
+            }
+          },
+          "save": "chats"
+        },
+        {
+          "return": "chats"
+        }
+      ]
+    },
+    "search_chats": {
+      "description": "Search chats and contacts by name or text.",
+      "effect": "read",
+      "params": {
+        "query": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "steps": [
+        {
+          "search": {
+            "selector": "#side input[data-tab=\"3\"], #side [contenteditable=\"true\"][data-tab=\"3\"], #side [role=\"textbox\"]",
+            "text": "{{args.query}}"
+          }
+        },
+        {
+          "scroll_until": {
+            "container": "#pane-side",
+            "item": "[role=row]",
+            "key": "name",
+            "limit": 20,
+            "idle_ms": 800,
+            "allow_empty": true,
+            "fields": {
+              "name": {
+                "selector": "span[dir=auto][title]",
+                "attr": "title"
+              },
+              "time": {
+                "selector": ":scope",
+                "text": true,
+                "pattern": "(\\d{1,2}:\\d{2}\\s?(?:[ap]\\.?\\s?m\\.?)?|\\d{1,2}/\\d{1,2}/\\d{2,4}|Ayer|Yesterday|lunes|martes|miércoles|jueves|viernes|sábado|domingo|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)",
+                "default": ""
+              },
+              "unread": {
+                "selector": "[aria-label*='no leído'], [aria-label*='unread']",
+                "text": true,
+                "as": "number",
+                "default": 0
+              },
+              "last_message": {
+                "selector": "span[title]:not([dir])",
+                "attr": "title",
+                "pattern": "^\\u202a?([\\s\\S]*?)\\u202c?$",
+                "default": ""
+              }
+            }
+          },
+          "save": "results"
+        },
+        {
+          "return": "results"
+        }
+      ]
+    },
+    "read_chat": {
+      "description": "Read the latest messages of a chat. Opening it marks it as read.",
+      "effect": "read",
+      "params": {
+        "chat": {
+          "type": "string",
+          "required": true,
+          "description": "Exact chat name as shown in WhatsApp."
+        },
+        "limit": {
+          "type": "number",
+          "default": 20,
+          "description": "How many recent messages (max 50)."
+        }
+      },
+      "steps": [
+        {
+          "search": {
+            "selector": "#side input[data-tab=\"3\"], #side [contenteditable=\"true\"][data-tab=\"3\"], #side [role=\"textbox\"]",
+            "text": "{{args.chat}}"
+          }
+        },
+        {
+          "scroll_until": {
+            "container": "#pane-side",
+            "item": "[role=row]",
+            "key": "name",
+            "limit": 15,
+            "idle_ms": 800,
+            "allow_empty": true,
+            "fields": {
+              "name": {
+                "selector": "span[dir=auto][title]",
+                "attr": "title"
+              }
+            }
+          },
+          "save": "candidates"
+        },
+        {
+          "if_exists": {
+            "selector": "#pane-side span[dir=auto][title=\"{{args.chat}}\"]",
+            "then": [
+              {
+                "click": {
+                  "selector": "#pane-side span[dir=auto][title=\"{{args.chat}}\"]"
+                }
+              }
+            ],
+            "else": [
+              {
+                "return": {
+                  "not_found": "candidates"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "wait_for": {
+            "selector": "#main footer [contenteditable=\"true\"]",
+            "timeout_ms": 8000
+          }
+        },
+        {
+          "extract": {
+            "selector": "#main header span[dir=auto]",
+            "text": true
+          },
+          "save": "chat_name"
+        },
+        {
+          "extract_list": {
+            "container": "#main",
+            "item": "[role=row]",
+            "limit": "{{args.limit}}",
+            "from_end": true,
+            "allow_empty": true,
+            "fields": {
+              "from": {
+                "selector": "[data-pre-plain-text]",
+                "attr": "data-pre-plain-text",
+                "pattern": "\\]\\s*(.*?):\\s*$",
+                "default": ""
+              },
+              "time": {
+                "selector": "[data-pre-plain-text]",
+                "attr": "data-pre-plain-text",
+                "pattern": "^\\[([^,\\]]+)",
+                "default": ""
+              },
+              "date": {
+                "selector": "[data-pre-plain-text]",
+                "attr": "data-pre-plain-text",
+                "pattern": ",\\s*([^\\]]+)\\]",
+                "default": ""
+              },
+              "text": {
+                "selector": "span.selectable-text",
+                "text": true,
+                "default": "[media]"
+              }
+            }
+          },
+          "save": "messages"
+        },
+        {
+          "return": {
+            "chat": "chat_name",
+            "messages": "messages"
+          }
+        }
+      ]
+    },
+    "mark_as_read": {
+      "description": "Open a chat so WhatsApp marks it as read.",
+      "effect": "read",
+      "params": {
+        "chat": {
+          "type": "string",
+          "required": true,
+          "description": "Exact chat name as shown in WhatsApp."
+        }
+      },
+      "steps": [
+        {
+          "search": {
+            "selector": "#side input[data-tab=\"3\"], #side [contenteditable=\"true\"][data-tab=\"3\"], #side [role=\"textbox\"]",
+            "text": "{{args.chat}}"
+          }
+        },
+        {
+          "scroll_until": {
+            "container": "#pane-side",
+            "item": "[role=row]",
+            "key": "name",
+            "limit": 15,
+            "idle_ms": 800,
+            "allow_empty": true,
+            "fields": {
+              "name": {
+                "selector": "span[dir=auto][title]",
+                "attr": "title"
+              }
+            }
+          },
+          "save": "candidates"
+        },
+        {
+          "if_exists": {
+            "selector": "#pane-side span[dir=auto][title=\"{{args.chat}}\"]",
+            "then": [
+              {
+                "click": {
+                  "selector": "#pane-side span[dir=auto][title=\"{{args.chat}}\"]"
+                }
+              }
+            ],
+            "else": [
+              {
+                "return": {
+                  "not_found": "candidates"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "wait_for": {
+            "selector": "#main footer [contenteditable=\"true\"]",
+            "timeout_ms": 8000
+          }
+        },
+        {
+          "extract": {
+            "selector": "#main header span[dir=auto]",
+            "text": true
+          },
+          "save": "chat_name"
+        },
+        {
+          "return": {
+            "chat": "chat_name"
+          }
+        }
+      ]
+    },
+    "send_message": {
+      "description": "Send a text message to a chat. You approve each message first.",
+      "effect": "write",
+      "confirm": "Send to {{vars.chat_name}}: {{args.text}}",
+      "params": {
+        "chat": {
+          "type": "string",
+          "required": true,
+          "description": "Exact chat name as shown in WhatsApp."
+        },
+        "text": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "steps": [
+        {
+          "search": {
+            "selector": "#side input[data-tab=\"3\"], #side [contenteditable=\"true\"][data-tab=\"3\"], #side [role=\"textbox\"]",
+            "text": "{{args.chat}}"
+          }
+        },
+        {
+          "scroll_until": {
+            "container": "#pane-side",
+            "item": "[role=row]",
+            "key": "name",
+            "limit": 15,
+            "idle_ms": 800,
+            "allow_empty": true,
+            "fields": {
+              "name": {
+                "selector": "span[dir=auto][title]",
+                "attr": "title"
+              }
+            }
+          },
+          "save": "candidates"
+        },
+        {
+          "if_exists": {
+            "selector": "#pane-side span[dir=auto][title=\"{{args.chat}}\"]",
+            "then": [
+              {
+                "click": {
+                  "selector": "#pane-side span[dir=auto][title=\"{{args.chat}}\"]"
+                }
+              }
+            ],
+            "else": [
+              {
+                "return": {
+                  "not_found": "candidates"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "wait_for": {
+            "selector": "#main footer [contenteditable=\"true\"]",
+            "timeout_ms": 8000
+          }
+        },
+        {
+          "extract": {
+            "selector": "#main header span[dir=auto]",
+            "text": true
+          },
+          "save": "chat_name"
+        },
+        {
+          "type": {
+            "selector": "#main footer [contenteditable=\"true\"]",
+            "text": "{{args.text}}"
+          }
+        },
+        {
+          "wait_for": {
+            "selector": "#main footer [data-icon*=\"send\"]",
+            "timeout_ms": 5000
+          }
+        },
+        {
+          "click": {
+            "selector": "#main footer [data-icon*=\"send\"]"
+          }
+        },
+        {
+          "return": {
+            "sent_to": "chat_name"
+          }
+        }
+      ]
+    }
+  },
+  "i18n": {
+    "es": {
+      "description": "Lista, busca y lee tus chats, márcalos como leídos y envía mensajes después de aprobar cada uno.",
+      "tools": {
+        "list_chats": {
+          "description": "Lista tus chats recientes con mensajes no leídos y el último mensaje."
+        },
+        "search_chats": {
+          "description": "Busca chats y contactos por nombre o texto."
+        },
+        "read_chat": {
+          "description": "Lee los últimos mensajes de un chat. Abrirlo lo marca como leído."
+        },
+        "mark_as_read": {
+          "description": "Abre un chat para que WhatsApp lo marque como leído."
+        },
+        "send_message": {
+          "description": "Envía un mensaje de texto a un chat. Apruebas cada mensaje antes."
+        }
+      }
+    }
+  }
+}

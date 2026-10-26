@@ -190,7 +190,7 @@ function AddSite({ onClose, onAskAi }: { onClose: () => void; onAskAi: () => voi
       title={text.sidepanel.addSite}
       intro={text.sidepanel.pickTemplate}
       source={{ template: choice }}
-      needsSite={!!choice}
+      needsSite={!!chosen?.template}
       ready={!!choice}
       hint={chosen && localize(chosen, language).site}
       example={site?.example}

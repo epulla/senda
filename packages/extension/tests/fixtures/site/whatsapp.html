@@ -1,0 +1,82 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>WhatsApp</title>
+<!-- Made-up chats. Mirrors the hooks the WhatsApp template relies on (no CSS classes). -->
+<div id="app" style="display: flex; height: 100vh; font: 14px sans-serif">
+  <div id="side" style="width: 320px; display: flex; flex-direction: column">
+    <input data-tab="3" aria-label="Search or start a new chat" />
+    <div id="pane-side" style="overflow: auto; flex: 1"><div role="grid" aria-label="Chat list"></div></div>
+  </div>
+  <div id="slot" style="flex: 1"></div>
+</div>
+<script>
+  const chats = [
+    { name: 'Ana', time: '3:13 p.m.', unread: 2, messages: [['3:10 p.m.', 'Ana', 'Are you coming?'], ['3:11 p.m.', 'Ana', null], ['3:13 p.m.', 'Ana', 'See you at 4']] },
+    { name: "Ana's group", time: 'Yesterday', unread: 5, messages: [['9:00 a.m.', 'Luis', 'Morning all']] },
+    { name: 'Book club 📚', time: '2:59 p.m.', unread: 0, messages: [['2:59 p.m.', 'You', 'Chapter 3 done']] },
+  ];
+  const grid = document.querySelector('[role=grid]');
+  const search = document.querySelector('#side input');
+  const el = (tag, attrs = {}, ...kids) => {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    node.append(...kids);
+    return node;
+  };
+  function renderList() {
+    const q = search.value.toLowerCase();
+    grid.replaceChildren(
+      ...chats
+        .filter((c) => c.name.toLowerCase().includes(q))
+        .map((c) => {
+          const last = c.messages.at(-1);
+          const row = el(
+            'div',
+            { role: 'row' },
+            el(
+              'div',
+              { role: 'gridcell', 'aria-colindex': '2' },
+              el('div', {}, el('div', {}, el('div', {}, el('span', { dir: 'auto', title: c.name }, c.name))), el('div', {}, c.time)),
+              el(
+                'div',
+                {},
+                el('span', { title: `\u202a${last[2] ?? 'Photo'}\u202c` }, last[2] ?? 'Photo'),
+                ...(c.unread ? [el('span', { 'aria-label': `${c.unread} unread messages` }, String(c.unread))] : []),
+              ),
+            ),
+          );
+          // Like WhatsApp: opens on the pointer sequence, not on a bare click() call.
+          row.addEventListener('mousedown', (e) => e.clientX > 0 && open(c));
+          return row;
+        }),
+    );
+  }
+  function open(c) {
+    c.unread = 0;
+    renderList();
+    const rows = el('div', {});
+    const draw = () =>
+      rows.replaceChildren(
+        ...c.messages.map(([time, from, text]) =>
+          el('div', { role: 'row' }, el('div', { 'data-pre-plain-text': `[${time}, 26/10/2026] ${from}: ` }, ...(text ? [el('span', { class: 'selectable-text' }, el('span', {}, text))] : []))),
+        ),
+      );
+    draw();
+    const box = el('div', { contenteditable: 'true', role: 'textbox', 'data-tab': '10', 'aria-label': 'Type a message' });
+    // Like WhatsApp: the send button only exists while the box has text.
+    const send = el('button', { 'aria-label': 'Send' }, el('span', { 'data-icon': 'send' }, '➤'));
+    box.addEventListener('input', () => (box.textContent.trim() ? footer.append(send) : send.remove()));
+    send.addEventListener('click', () => {
+      c.messages.push(['3:20 p.m.', 'You', box.textContent]);
+      box.textContent = '';
+      send.remove();
+      draw();
+    });
+    const footer = el('footer', {}, box);
+    document.querySelector('#slot').replaceChildren(
+      el('div', { id: 'main' }, el('header', {}, el('span', { dir: 'auto' }, c.name)), rows, footer),
+    );
+  }
+  search.addEventListener('input', renderList);
+  renderList();
+</script>

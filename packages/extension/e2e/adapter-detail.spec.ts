@@ -63,7 +63,7 @@ test('Add a shortcut offers Senda templates (search, pick, then address), ask-yo
   await panel.getByRole('button', { name: /Use a Senda template/ }).click();
   await expect(panel.getByRole('heading', { name: 'Senda templates' })).toBeVisible();
   await expect(panel.getByRole('textbox', { name: /Site address/ })).toHaveCount(0);
-  await panel.getByRole('searchbox', { name: 'Search templates' }).fill('whatsapp');
+  await panel.getByRole('searchbox', { name: 'Search templates' }).fill('zzz');
   await expect(panel.getByText('No template matches.')).toBeVisible();
   await panel.getByRole('searchbox', { name: 'Search templates' }).fill('deadlines');
   await panel.getByText('Moodle', { exact: true }).click();
