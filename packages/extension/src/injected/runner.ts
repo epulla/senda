@@ -329,13 +329,14 @@ export async function runRecipe(input: Input): Promise<RunResult> {
                 (e instanceof HTMLInputElement && ['text', 'search'].includes(e.type) && !e.closest('form')));
             if (!searchBox) return fail(ErrorCode.READ_ONLY, 'search only fills search or filter boxes');
             typeText(e, String(render(payload.text, ctx())));
-            // Results usually update a moment later: wait until the page stops changing (max 3 s).
+            // Results update a moment later: wait for the page to start changing (up to 1.5 s),
+            // then until it has been quiet for 700 ms (max 3.5 s in total).
             await new Promise<void>((done) => {
-              let timer = setTimeout(finish, 400);
-              const cap = setTimeout(finish, 3000);
+              let timer = setTimeout(finish, 1500);
+              const cap = setTimeout(finish, 3500);
               const observer = new MutationObserver(() => {
                 clearTimeout(timer);
-                timer = setTimeout(finish, 400);
+                timer = setTimeout(finish, 700);
               });
               observer.observe(document.body, { childList: true, subtree: true, characterData: true });
               function finish() {

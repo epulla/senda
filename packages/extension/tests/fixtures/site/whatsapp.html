@@ -92,6 +92,12 @@
     );
   }
   // Like WhatsApp: results update a moment after typing.
-  search.addEventListener('input', () => setTimeout(renderList, 300));
+  // Something changes at once (a clear button), the results only a bit later.
+  const clear = el('button', { 'aria-label': 'Clear search' }, '×');
+  search.addEventListener('input', () => {
+    if (search.value) search.after(clear);
+    else clear.remove();
+    setTimeout(renderList, 600);
+  });
   renderList();
 </script>
