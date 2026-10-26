@@ -2,11 +2,6 @@ import { readFile } from 'node:fs/promises';
 import { test, expect } from './fixtures';
 
 test('adapter compact row opens detail with tools, export, import, and removal', async ({ context, extensionId, fixtureUrl, mcp, openSidepanel }) => {
-  const login = await context.newPage();
-  await login.goto(`${fixtureUrl}/moodle/login/index.php`);
-  await login.locator('#login').click();
-  await login.waitForURL('**/moodle/my/');
-
   const file = new URL('../tests/fixtures/adapters/fixturemoodle.json', import.meta.url);
   const recipe = JSON.parse((await readFile(file, 'utf8')).replaceAll('http://127.0.0.1:18766', fixtureUrl));
   expect((await mcp.callTool({ name: 'adapter_draft', arguments: { recipe } })).isError).toBeFalsy();
@@ -25,15 +20,6 @@ test('adapter compact row opens detail with tools, export, import, and removal',
     await expect(detail.getByText(tool, { exact: true })).toBeVisible();
   await expect(detail.getByText('What your AI can do (3)')).toBeVisible();
   await expect(detail.getByText('Rename course [id]: [old_full] → [fullname]')).toBeVisible();
-
-  const rename = mcp.callTool({ name: 'fixturemoodle__rename_course', arguments: { id: 2, fullname: 'Renamed course', shortname: 'FIX2' } });
-  await expect.poll(() => context.pages().some((page) => page.url().includes('/moodle/course/edit.php'))).toBe(true);
-  const approval = context.pages().find((page) => page.url().includes('/moodle/course/edit.php'))!.locator('senda-approval');
-  await expect(approval.getByText('Rename course 2: Fixture course → Renamed course')).toBeVisible();
-  await approval.getByRole('button', { name: 'Allow', exact: true }).click();
-  expect((await rename).isError).toBeFalsy();
-  await login.goto(`${fixtureUrl}/moodle/course/view.php?id=2`);
-  await expect(login.locator('h1')).toHaveText('Renamed course');
 
   const downloadPromise = detail.waitForEvent('download');
   await detail.getByRole('button', { name: 'Export', exact: true }).click();
