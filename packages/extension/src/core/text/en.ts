@@ -154,6 +154,8 @@ export const en = {
     adapterSummary: (tool: string, adapter: string, host: string) =>
       `Your AI wants to use ${tool} on ${adapter} (${host}).`,
     current: (key: string) => `Current ${key}`,
+    pageTitle: 'Senda · your AI is waiting for you',
+    openPanel: 'Open Senda side panel',
   },
   diff: {
     mode: { read: 'read only', write: 'can make changes' },

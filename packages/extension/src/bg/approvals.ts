@@ -14,6 +14,8 @@ import { listAgentIds } from './agent-tabs';
 import { stopConnection, waitForReplies } from './connection';
 import { looksLikeInjection } from '../core/injection';
 import { bgText } from './text';
+import { detectCapabilities } from '../core/capabilities';
+import { hideApprovalCard, showApprovalCard } from '../injected/approval-card';
 
 export async function logActivity(kind: 'approval' | 'denied' | 'injection' | 'adapter' | 'panic' | 'tab', text: string) {
   const rows = await activityItem.getValue();
@@ -23,13 +25,56 @@ export async function answerApproval(id: string, answer: 'allow' | 'deny' | 'alw
   const rows = await approvalsItem.getValue();
   if (rows[id]) await approvalsItem.setValue({ ...rows, [id]: { ...rows[id], answer } });
 }
+async function showOnPage(card: ApprovalCard) {
+  if (card.tabId === undefined) return;
+  const t = await bgText();
+  const always = card.allowAlways && !card.source ? t.sidepanel.alwaysOn(card.host) : undefined;
+  await browser.scripting
+    .executeScript({
+      target: { tabId: card.tabId },
+      func: showApprovalCard,
+      args: [
+        { id: card.id, summary: card.summary, url: card.url, details: card.details, source: card.source, ref: card.ref, always },
+        {
+          title: t.approval.pageTitle,
+          allow: t.sidepanel.allow,
+          deny: t.sidepanel.deny,
+          openPanel: t.approval.openPanel,
+          readFrom: card.source ? t.sidepanel.readFrom(card.source) : undefined,
+        },
+      ],
+    })
+    .catch(() => undefined);
+}
+export function watchPageAnswers() {
+  browser.runtime.onMessage.addListener((message: any, sender) => {
+    const tabId = sender.tab?.id;
+    if (sender.id !== browser.runtime.id || sender.frameId !== 0 || tabId === undefined) return;
+    if (message?.type === 'senda:open-panel') {
+      // Must run before any await so Chrome still sees the user's click.
+      if (detectCapabilities(browser).includes('sidePanel')) void browser.sidePanel.open({ tabId }).catch(() => undefined);
+      else void browser.tabs.create({ url: browser.runtime.getURL('/sidepanel.html' as never) });
+      return;
+    }
+    if (message?.type !== 'senda:answer' || !['allow', 'deny', 'always'].includes(message.answer)) return;
+    void approvalsItem.getValue().then((rows) => {
+      const card = rows[message.id];
+      if (!card || card.tabId !== tabId) return;
+      if (message.answer === 'always' && !(card.allowAlways && !card.source)) return;
+      return answerApproval(card.id, message.answer);
+    });
+  });
+}
 export async function requestApproval(card: Omit<ApprovalCard, 'id' | 'created_at'>): Promise<'allow' | 'always'> {
   const id = crypto.randomUUID();
   const rows = await approvalsItem.getValue();
-  await approvalsItem.setValue({
-    ...rows,
-    [id]: { ...card, id, created_at: new Date().toISOString() },
-  });
+  const stored = { ...card, id, created_at: new Date().toISOString() };
+  await approvalsItem.setValue({ ...rows, [id]: stored });
+  void showOnPage(stored);
+  const reshow = (tabId: number, info: { status?: string }) => {
+    if (tabId === card.tabId && info.status === 'complete') void showOnPage(stored);
+  };
+  browser.tabs.onUpdated.addListener(reshow);
   try {
     const answer = await new Promise<'allow' | 'deny' | 'always'>((resolve, reject) => {
       const timer = setTimeout(() => {
@@ -37,7 +82,7 @@ export async function requestApproval(card: Omit<ApprovalCard, 'id' | 'created_a
         reject(
           new CommandError(
             ErrorCode.DENIED_BY_USER,
-            'No answer in the Senda side panel within 110 s. Ask the user to open the Senda side panel, then try again.',
+            'No answer within 110 s. Ask the user to answer the Senda card on the page (or in the Senda side panel), then try again.',
           ),
         );
       }, 110_000);
@@ -51,7 +96,7 @@ export async function requestApproval(card: Omit<ApprovalCard, 'id' | 'created_a
       });
     });
     if (answer === 'deny')
-      throw new CommandError(ErrorCode.DENIED_BY_USER, 'The user denied this in the Senda side panel.');
+      throw new CommandError(ErrorCode.DENIED_BY_USER, 'The user denied this.');
     if (answer === 'always') {
       const settings = await settingsItem.getValue();
       await settingsItem.setValue({
@@ -65,6 +110,9 @@ export async function requestApproval(card: Omit<ApprovalCard, 'id' | 'created_a
     await logActivity('denied', card.summary);
     throw error;
   } finally {
+    browser.tabs.onUpdated.removeListener(reshow);
+    if (card.tabId !== undefined)
+      void browser.scripting.executeScript({ target: { tabId: card.tabId }, func: hideApprovalCard, args: [id] }).catch(() => undefined);
     const current = await approvalsItem.getValue();
     delete current[id];
     await approvalsItem.setValue(current);

@@ -17,8 +17,10 @@ test('approved adapter draft reads data and renames a course after Allow', async
   await expect.poll(async () => JSON.stringify(await mcp.callTool({ name: 'fixturemoodle__my_courses', arguments: {} }))).toContain('Fixture course');
 
   const rename = mcp.callTool({ name: 'fixturemoodle__rename_course', arguments: { id: 2, fullname: 'Renamed course', shortname: 'FIX2' } });
-  await expect(panel.getByText('Rename course 2: Fixture course → Renamed course')).toBeVisible();
-  await panel.getByRole('button', { name: 'Allow', exact: true }).click();
+  await expect.poll(() => context.pages().some((page) => page.url().includes('/moodle/course/edit.php'))).toBe(true);
+  const card = context.pages().find((page) => page.url().includes('/moodle/course/edit.php'))!.locator('senda-approval');
+  await expect(card.getByText('Rename course 2: Fixture course → Renamed course')).toBeVisible();
+  await card.getByRole('button', { name: 'Allow', exact: true }).click();
   expect((await rename).isError).toBeFalsy();
   await login.goto(`${fixtureUrl}/moodle/course/view.php?id=2`);
   await expect(login.locator('h1')).toHaveText('Renamed course');

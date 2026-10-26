@@ -14,14 +14,28 @@ async function sendRef(mcp: Client, url: string) {
   throw new Error('Send button not found in snapshot');
 }
 
-test('click on a sensitive button waits for Allow in the side panel', async ({ context, mcp, fixtureUrl, openSidepanel }) => {
+test('click on a sensitive button shows a card on the page, highlights it and waits for Allow', async ({ context, mcp, fixtureUrl }) => {
   const ref = await sendRef(mcp, `${fixtureUrl}/site/mail.html`);
-  const panel = await openSidepanel();
-  const click = mcp.callTool({ name: 'browser_click', arguments: { ref } });
-  await panel.getByRole('button', { name: 'Allow', exact: true }).click();
-  expect((await click).isError).toBeFalsy();
   const tab = context.pages().find((page) => page.url().endsWith('/site/mail.html'))!;
+  const click = mcp.callTool({ name: 'browser_click', arguments: { ref } });
+  const card = tab.locator('senda-approval');
+  await expect(card.getByText('Your AI wants to click “Send”')).toBeVisible();
+  await expect(card.locator('.hl')).toBeVisible();
+  await card.getByRole('button', { name: 'Allow', exact: true }).click();
+  expect((await click).isError).toBeFalsy();
   await expect(tab.locator('#status')).toHaveText('Sent');
+  await expect(card).toHaveCount(0);
+});
+
+test('a page script cannot approve the card', async ({ context, mcp, fixtureUrl }) => {
+  const ref = await sendRef(mcp, `${fixtureUrl}/site/mail.html`);
+  const tab = context.pages().find((page) => page.url().endsWith('/site/mail.html'))!;
+  void mcp.callTool({ name: 'browser_click', arguments: { ref } }).catch(() => undefined);
+  await expect(tab.locator('senda-approval').getByRole('button', { name: 'Allow', exact: true })).toBeVisible();
+  await tab.evaluate(() => (document.querySelector('senda-approval')!.shadowRoot!.querySelector('button.primary') as HTMLElement).click());
+  await tab.waitForTimeout(500);
+  await expect(tab.locator('#status')).toHaveText('');
+  await expect(tab.locator('senda-approval')).toHaveCount(1);
 });
 
 test('click on a sensitive button fails when denied in the side panel', async ({ context, mcp, fixtureUrl, openSidepanel }) => {
@@ -34,4 +48,5 @@ test('click on a sensitive button fails when denied in the side panel', async ({
   expect(text(result)).toContain('DENIED_BY_USER');
   const tab = context.pages().find((page) => page.url().endsWith('/site/mail.html'))!;
   await expect(tab.locator('#status')).toHaveText('');
+  await expect(tab.locator('senda-approval')).toHaveCount(0);
 });

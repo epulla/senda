@@ -158,6 +158,8 @@ export const es: Text = {
     adapterSummary: (tool: string, adapter: string, host: string) =>
       `Tu IA quiere usar ${tool} en ${adapter} (${host}).`,
     current: (key: string) => `Valor actual de ${key}`,
+    pageTitle: 'Senda · tu IA te está esperando',
+    openPanel: 'Abrir el panel lateral de Senda',
   },
   diff: {
     mode: { read: 'solo lectura', write: 'puede hacer cambios' },
