@@ -6,8 +6,8 @@ import { CommandError } from '../commands/shared';
 import navigate from '../commands/navigate';
 import { listAgentIds } from '../agent-tabs';
 import { getAdapter } from './store';
-import { requestApproval, noteExternal, logActivity } from '../approvals';
-import { settingsItem, taintItem } from '../state';
+import { requestApproval, noteExternal, logActivity, riskSource } from '../approvals';
+import { settingsItem } from '../state';
 import { bgText } from '../text';
 import { resolveLang } from '../../core/i18n';
 
@@ -95,7 +95,7 @@ export async function runAdapter(input: {
             }),
           )
         : uiText.approval.adapterSummary(input.tool, adapter.name, host);
-      const taint = await taintItem.getValue();
+      const taint = await riskSource(settings.askBefore);
       if (settings.askBefore !== 'never' || taint) await requestApproval({
         kind: 'adapter',
         summary: text,

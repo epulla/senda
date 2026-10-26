@@ -2,8 +2,8 @@ import { ErrorCode } from '@senda/protocol';
 import { addAgentTab } from '../agent-tabs';
 import { CommandError, target } from './shared';
 import { needsApproval } from '../../core/approvals';
-import { requestApproval } from '../approvals';
-import { settingsItem, visitedHostsItem, taintItem, openedTabsItem } from '../state';
+import { requestApproval, riskSource } from '../approvals';
+import { settingsItem, visitedHostsItem, openedTabsItem } from '../state';
 import { bgText } from '../text';
 export default async function navigate(p: { url: string; tabId?: number; newTab?: boolean; internal?: boolean }) {
   const host = new URL(p.url).host;
@@ -11,7 +11,7 @@ export default async function navigate(p: { url: string; tabId?: number; newTab?
   const text = await bgText();
   if (settings.blockedDomains.some((d) => host === d || host.endsWith(`.${d}`)))
     throw new CommandError(ErrorCode.DOMAIN_BLOCKED, `Domain ${host} is blocked.`);
-  const taint = await taintItem.getValue();
+  const taint = await riskSource(settings.askBefore);
   const reason = needsApproval({
     action: 'navigate',
     url: p.url,

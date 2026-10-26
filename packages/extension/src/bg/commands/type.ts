@@ -2,8 +2,8 @@ import { ErrorCode } from '@senda/protocol';
 import { typeRef } from '../../injected/actions';
 import { CommandError, target } from './shared';
 import { needsApproval } from '../../core/approvals';
-import { requestApproval } from '../approvals';
-import { settingsItem, visitedHostsItem, taintItem } from '../state';
+import { requestApproval, riskSource } from '../approvals';
+import { settingsItem, visitedHostsItem } from '../state';
 import { bgText } from '../text';
 export default async function type(p: { ref: string; text: string; submit?: boolean; tabId?: number }) {
   const tabId = await target(p.tabId);
@@ -12,7 +12,7 @@ export default async function type(p: { ref: string; text: string; submit?: bool
   const host = new URL(url).host;
   const settings = await settingsItem.getValue();
   const text = await bgText();
-  const taint = await taintItem.getValue();
+  const taint = await riskSource(settings.askBefore);
   const reason = needsApproval({
     action: 'type',
     url,

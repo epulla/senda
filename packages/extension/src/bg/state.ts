@@ -33,5 +33,7 @@ export const activityItem = storage.defineItem<
 >('local:activity', { fallback: [] });
 export const visitedHostsItem = storage.defineItem<string[]>('session:visitedHosts', { fallback: [] });
 export const taintItem = storage.defineItem<string|null>('session:taint', { fallback: null });
+// Host of content that looked like a prompt injection; the only thing that brings back cards under "Never ask".
+export const suspectItem = storage.defineItem<string|null>('session:suspect', { fallback: null });
 export const panicItem = storage.defineItem<number>('session:panic', { fallback: 0 });
 export const openedTabsItem = storage.defineItem<number[]>('session:openedTabs', { fallback: [] });

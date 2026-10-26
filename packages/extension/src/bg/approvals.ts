@@ -6,6 +6,7 @@ import {
   panicItem,
   settingsItem,
   taintItem,
+  suspectItem,
   openedTabsItem,
   type ApprovalCard,
 } from './state';
@@ -129,7 +130,13 @@ export async function requestApproval(card: Omit<ApprovalCard, 'id' | 'created_a
 }
 export async function noteExternal(host: string, text: string) {
   await taintItem.setValue(host);
-  if (looksLikeInjection(text)) await logActivity('injection', (await bgText()).activity.injection(host));
+  if (!looksLikeInjection(text)) return;
+  await suspectItem.setValue(host);
+  await logActivity('injection', (await bgText()).activity.injection(host));
+}
+// Under "Never ask" only suspected injections count; every other mode treats anything read as a risk.
+export async function riskSource(askBefore: string): Promise<string | null> {
+  return askBefore === 'never' ? suspectItem.getValue() : taintItem.getValue();
 }
 export async function requestPanic() {
   await panicItem.setValue(Date.now());

@@ -257,13 +257,18 @@ describe('adapter background', () => {
     });
     expect(calls).toBe(1);
   });
-  it.each([false, true])('never-ask write approval depends on taint (tainted=%s)', async (tainted) => {
-    const { adaptersItem, settingsItem, taintItem } = await import('../src/bg/state');
+  it.each([
+    ['nothing read', null, null, 0],
+    ['a normal page read', 'example.com', null, 0],
+    ['a suspected injection read', 'example.com', 'example.com', 1],
+  ] as const)('never-ask asks before a write only after %s → %i card(s)', async (_, taint, suspect, cards) => {
+    const { adaptersItem, settingsItem, taintItem, suspectItem } = await import('../src/bg/state');
     const { trackAgentTab } = await import('../src/bg/agent-tabs');
     const approval = await import('../src/bg/approvals');
     await adaptersItem.setValue({ writer: { adapter: writeRecipe as any, status: 'active', installed_at: '' } });
     await settingsItem.setValue({ askBefore: 'never', allowedDomains: [], blockedDomains: [], alwaysSites: [] });
-    await taintItem.setValue(tainted ? 'example.com' : null);
+    await taintItem.setValue(taint);
+    await suspectItem.setValue(suspect);
     vi.spyOn(fakeBrowser.tabs, 'query').mockResolvedValue([{ id: 2, url: 'https://example.com/edit' }] as any);
     trackAgentTab(2);
     const ask = vi.spyOn(approval, 'requestApproval').mockResolvedValue('allow');
@@ -275,7 +280,7 @@ describe('adapter background', () => {
     });
     const { runAdapter } = await import('../src/bg/adapters/run');
     await runAdapter({ adapter: 'writer', tool: 'write', args: {} });
-    expect(ask).toHaveBeenCalledTimes(tainted ? 1 : 0);
+    expect(ask).toHaveBeenCalledTimes(cards);
     expect(calls).toBe(2);
   });
   it('rejects adapters whose site is blocked', async () => {
