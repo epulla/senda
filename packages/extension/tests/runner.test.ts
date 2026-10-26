@@ -61,6 +61,10 @@ describe('recipe runner', () => {
     document.body.innerHTML = '<span id="lbl">Buscar un chat</span><input id="s" type="text" aria-labelledby="lbl">';
     await runRecipe({ adapter: tool('#s'), tool: 'find', args: { query: 'ana' } });
     expect((document.querySelector('#s') as HTMLInputElement).value).toBe('ana');
+    document.body.innerHTML = '<input id="s" type="text"><form><input id="f" type="text"></form>';
+    await runRecipe({ adapter: tool('#s'), tool: 'find', args: { query: 'ana' } });
+    expect((document.querySelector('#s') as HTMLInputElement).value).toBe('ana');
+    expect(await runRecipe({ adapter: tool('#f'), tool: 'find', args: { query: 'x' } })).toMatchObject({ ok: false, code: 'READ_ONLY' });
   });
   it('takes the last N items, filters by arguments ignoring case, and escapes inserted names', async () => {
     const a = Adapter.parse({

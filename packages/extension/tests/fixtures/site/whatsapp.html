@@ -4,9 +4,8 @@
 <!-- Made-up chats. Mirrors the hooks the WhatsApp template relies on (no CSS classes). -->
 <div id="app" style="display: flex; height: 100vh; font: 14px sans-serif">
   <div id="side" style="width: 320px; display: flex; flex-direction: column">
-    <!-- Like WhatsApp: named through a linked element, not its own attributes. -->
-    <span id="search-label" hidden>Search or start a new chat</span>
-    <input type="text" role="textbox" data-tab="3" aria-labelledby="search-label" />
+    <!-- Like WhatsApp: no name of its own (the hint is a separate element shown only while empty). -->
+    <input type="text" role="textbox" data-tab="3" id="_r_d_" />
     <div id="pane-side" style="overflow: auto; flex: 1"><div role="grid" aria-label="Chat list"></div></div>
   </div>
   <div id="slot" style="flex: 1"></div>

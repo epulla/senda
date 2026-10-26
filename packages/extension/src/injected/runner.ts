@@ -302,7 +302,10 @@ export async function runRecipe(input: Input): Promise<RunResult> {
               safe(e) &&
               (e.matches('input[type=search], [role=searchbox]') ||
                 !!e.closest('[role=search]') ||
-                /search|buscar|busca|filt|find|recherch|such/i.test(hints));
+                /search|buscar|busca|filt|find|recherch|such/i.test(hints) ||
+                // A plain one-line field outside any form (e.g. WhatsApp's unnamed search box) can't send anything;
+                // message boxes are textareas or rich editors, and form fields could be submitted.
+                (e instanceof HTMLInputElement && ['text', 'search'].includes(e.type) && !e.closest('form')));
             if (!searchBox) return fail(ErrorCode.READ_ONLY, 'search only fills search or filter boxes');
             typeText(e, String(render(payload.text, ctx())));
             // Results usually update a moment later: wait until the page stops changing (max 3 s).
