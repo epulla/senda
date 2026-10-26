@@ -496,7 +496,7 @@ async function main() {
       },
     );
   registerAdapter('adapter_list', 'List installed adapters and saved drafts.', {}, 'adapter.list');
-  registerAdapter('adapter_install', 'Install a site template as a draft for approval. Use a bundled template id from adapter_list.templates, recipe JSON, or HTTPS URL; site is base URL, label is short lowercase name. User approves in Senda side panel.', { template: z.string().optional(), recipe: z.unknown().optional(), url: z.string().url().optional(), site: z.string(), label: z.string() }, 'adapter.install');
+  registerAdapter('adapter_install', 'Install a site template as a draft for approval. Use a bundled template id from adapter_list.templates, recipe JSON, or HTTPS URL; site is base URL and label a short lowercase name (only for templates that ask for a site, e.g. moodle; not whatsapp). User approves in Senda side panel.', { template: z.string().optional(), recipe: z.unknown().optional(), url: z.string().url().optional(), site: z.string().optional(), label: z.string().optional() }, 'adapter.install');
   mcp.registerTool(
     'adapter_schema',
     { description: 'Show recipe schema and concise authoring guidance.', inputSchema: {} },
@@ -509,7 +509,7 @@ async function main() {
             steps: STEP_KINDS,
             engine: ENGINE_VERSION,
             notes:
-              'Tool names <id>__<tool>. Sites use URL patterns. Read-only by default. Selectors: CSS, text=, role=. Templates: {{args.x}}, {{vars.x}}, {{now}}. request uses same-origin path; POST requires read_endpoints. scroll_until supports virtualized lists. search fills a search/filter box (no Enter) and is allowed in read tools. extract_list limit may be a template like {{args.limit}}; from_end: true takes the last items. filter supports icontains (case-insensitive) and {{args.x}} values. Values inserted into selectors are escaped for quoted attributes. extract_list/scroll_until fail when item matches nothing; set allow_empty: true when an empty list is valid. Use "save" as a sibling of the step key, and end every tool with {"return": "<saved name>"}. Flow: draft → test → submit → user approves in Senda side panel. Write tools pause before first write step for user approval; optional confirm sentence supports {{args.x}} and {{vars.x}}.',
+              'Tool names <id>__<tool>. Sites use URL patterns. Read-only by default. Selectors: CSS, text=, role=. Templates: {{args.x}}, {{vars.x}}, {{now}}. request uses same-origin path; POST requires read_endpoints. scroll_until supports virtualized lists. search fills a search/filter box (no Enter) and is allowed in read tools. extract_list limit may be a template like {{args.limit}}; from_end: true takes the last items. filter supports icontains (case-insensitive) and {{args.x}} values. Values inserted into selectors are escaped for quoted attributes. wait_for with selector and text waits for a matching element whose text (incl. image alt, ignoring spaces/case) contains text. extract_list/scroll_until fail when item matches nothing; set allow_empty: true when an empty list is valid. Use "save" as a sibling of the step key, and end every tool with {"return": "<saved name>"}. Flow: draft → test → submit → user approves in Senda side panel. Write tools pause before first write step for user approval; optional confirm sentence supports {{args.x}} and {{vars.x}}.',
           }),
         },
       ],

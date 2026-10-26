@@ -20,7 +20,8 @@ export async function installTemplate(p: { template?: string; recipe?: unknown; 
     ? materialize(recipe, p.site ?? '', p.label ?? '', { blockedDomains })
     : validateAdapter(recipe, { blockedDomains });
   if (!parsed.ok) throw new CommandError(ErrorCode.ADAPTER_BROKEN, 'Adapter validation failed.', parsed.errors);
-  const from = (recipe as any)?.template ? { template: templateId!, version: (recipe as any)?.version ?? '', site: p.site!, label: p.label!, source, ...(source === 'community' ? { recipe } : {}) } : undefined;
+  // Built-in adapters keep a link to their template even without a site (e.g. WhatsApp), so bundled updates reach them.
+  const from = (recipe as any)?.template || p.template ? { template: templateId!, version: (recipe as any)?.version ?? '', site: p.site ?? '', label: p.label ?? '', source, ...(source === 'community' ? { recipe } : {}) } : undefined;
   const drafts = await draftsItem.getValue();
   drafts[parsed.adapter.id] = { adapter: { ...parsed.adapter, source }, updated_at: new Date().toISOString(), pending: true, source, ...(from ? { from } : {}) };
   await draftsItem.setValue(drafts);
@@ -31,7 +32,8 @@ function templateFor(from: NonNullable<Awaited<ReturnType<typeof adaptersItem.ge
   return from.recipe ?? bundledTemplates()[from.template];
 }
 export async function materializeFrom(from: NonNullable<Awaited<ReturnType<typeof adaptersItem.getValue>>[string]['from']>) {
-  const result = materialize(templateFor(from), from.site, from.label, { blockedDomains: (await settingsItem.getValue()).blockedDomains });
+  const template = templateFor(from), blockedDomains = (await settingsItem.getValue()).blockedDomains;
+  const result = (template as any)?.template ? materialize(template, from.site, from.label, { blockedDomains }) : validateAdapter(template, { blockedDomains });
   return result.ok ? { ...result, adapter: { ...result.adapter, source: from.source } } : result;
 }
 

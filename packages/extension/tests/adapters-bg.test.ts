@@ -290,6 +290,19 @@ describe('adapter background', () => {
     await expect(saveDraft(recipe)).rejects.toMatchObject({ code: ErrorCode.ADAPTER_BROKEN });
   });
 
+  it('updates built-in fixed-site adapters when the bundled version changes', async () => {
+    const fixed = (version: string, description: string) => ({ ...recipe, id: 'fixed', name: 'Fixed', version, source: 'official', tools: { tool_a: { ...recipe.tools.search, description } } });
+    bundled.current = { fixed: fixed('1.0.0', 'v1') };
+    const { adaptersItem, settingsItem } = await import('../src/bg/state');
+    await settingsItem.setValue({ askBefore: 'destructive', allowedDomains: [], blockedDomains: [], alwaysSites: [] });
+    const { installTemplate, approveDraft, syncBundledTemplates } = await import('../src/bg/adapters/store');
+    await installTemplate({ template: 'fixed' });
+    await approveDraft('fixed');
+    bundled.current = { fixed: fixed('1.0.1', 'v1.0.1') };
+    await syncBundledTemplates();
+    expect((await adaptersItem.getValue()).fixed).toMatchObject({ adapter: { version: '1.0.1', tools: { tool_a: { description: 'v1.0.1' } } }, from: { version: '1.0.1' } });
+  });
+
   it('installs, repairs, updates, approves permission increases, and resets template instances independently', async () => {
     const template = (version: string, descriptionA: string, write = false) => ({
       ...recipe, id: 'catalog', name: 'Catalog', version, source: 'official', sites: ['{{site}}/*'],

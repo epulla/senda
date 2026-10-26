@@ -105,6 +105,15 @@ describe('recipe runner', () => {
     document.body.innerHTML = '<i id="a">one</i><i id="b">two</i>';
     expect(await runRecipe({ adapter: a, tool: 'branch', args: {} })).toEqual({ ok: true, value: { first: 'one', second: 'two' } });
   });
+  it('waits for an element whose text, including image alt, contains the given text', async () => {
+    const a = Adapter.parse({
+      ...chat,
+      tools: { opened: { description: 'x', effect: 'read', params: { name: { type: 'string' } }, steps: [{ wait_for: { selector: 'header', text: '{{args.name}}', timeout_ms: 2000 } }, { extract: { selector: 'header', text: true }, save: 'title' }, { return: 'title' }] } },
+    });
+    document.body.innerHTML = '<header>Old chat</header>';
+    setTimeout(() => (document.body.innerHTML = '<header>Dome <img alt="🫶"></header>'), 200);
+    expect(await runRecipe({ adapter: a, tool: 'opened', args: { name: 'Dome 🫶' } })).toEqual({ ok: true, value: 'Dome' });
+  });
   it('validates fixture and reports variant selector breakage', async () => {
     const a = Adapter.parse(chat);
     document.body.innerHTML = '<article class="chat-row">row</article>';

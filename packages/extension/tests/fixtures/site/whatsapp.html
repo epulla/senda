@@ -17,6 +17,7 @@
     { name: 'Book club 📚', time: '2:59 p.m.', unread: 0, messages: [['2:59 p.m.', 'You', 'Chapter 3 done']] },
   ];
   const grid = document.querySelector('[role=grid]');
+  let current;
   const search = document.querySelector('#side input');
   const el = (tag, attrs = {}, ...kids) => {
     const node = document.createElement(tag);
@@ -33,7 +34,7 @@
           const last = c.messages.at(-1);
           const row = el(
             'div',
-            { role: 'row' },
+            { role: 'row', 'aria-selected': String(c === current) },
             el(
               'div',
               { role: 'gridcell', 'aria-colindex': '2' },
@@ -53,8 +54,13 @@
     );
   }
   function open(c) {
+    current = c;
     c.unread = 0;
     renderList();
+    // Like WhatsApp: the selected row updates at once, the chat pane a moment later.
+    setTimeout(() => show(c), 400);
+  }
+  function show(c) {
     const rows = el('div', {});
     const draw = () =>
       rows.replaceChildren(

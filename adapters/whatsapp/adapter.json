@@ -1,7 +1,7 @@
 {
   "id": "whatsapp",
   "name": "WhatsApp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "engine": 1,
   "source": "official",
   "sites": [
@@ -180,14 +180,27 @@
         },
         {
           "wait_for": {
+            "selector": "#pane-side [aria-selected=\"true\"] span[dir=auto][title=\"{{args.chat}}\"]",
+            "timeout_ms": 8000
+          }
+        },
+        {
+          "wait_for": {
+            "selector": "#main header",
+            "text": "{{args.chat}}",
+            "timeout_ms": 8000
+          }
+        },
+        {
+          "wait_for": {
             "selector": "#main footer [contenteditable=\"true\"]",
             "timeout_ms": 8000
           }
         },
         {
           "extract": {
-            "selector": "#main header span[dir=auto]",
-            "text": true
+            "selector": "#pane-side [aria-selected=\"true\"] span[dir=auto][title]",
+            "attr": "title"
           },
           "save": "chat_name"
         },
@@ -289,14 +302,27 @@
         },
         {
           "wait_for": {
+            "selector": "#pane-side [aria-selected=\"true\"] span[dir=auto][title=\"{{args.chat}}\"]",
+            "timeout_ms": 8000
+          }
+        },
+        {
+          "wait_for": {
+            "selector": "#main header",
+            "text": "{{args.chat}}",
+            "timeout_ms": 8000
+          }
+        },
+        {
+          "wait_for": {
             "selector": "#main footer [contenteditable=\"true\"]",
             "timeout_ms": 8000
           }
         },
         {
           "extract": {
-            "selector": "#main header span[dir=auto]",
-            "text": true
+            "selector": "#pane-side [aria-selected=\"true\"] span[dir=auto][title]",
+            "attr": "title"
           },
           "save": "chat_name"
         },
@@ -367,14 +393,27 @@
         },
         {
           "wait_for": {
+            "selector": "#pane-side [aria-selected=\"true\"] span[dir=auto][title=\"{{args.chat}}\"]",
+            "timeout_ms": 8000
+          }
+        },
+        {
+          "wait_for": {
+            "selector": "#main header",
+            "text": "{{args.chat}}",
+            "timeout_ms": 8000
+          }
+        },
+        {
+          "wait_for": {
             "selector": "#main footer [contenteditable=\"true\"]",
             "timeout_ms": 8000
           }
         },
         {
           "extract": {
-            "selector": "#main header span[dir=auto]",
-            "text": true
+            "selector": "#pane-side [aria-selected=\"true\"] span[dir=auto][title]",
+            "attr": "title"
           },
           "save": "chat_name"
         },

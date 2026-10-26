@@ -118,7 +118,22 @@ export async function runRecipe(input: Input): Promise<RunResult> {
         switch (kind) {
           case 'wait_for': {
             const until = Date.now() + (payload.timeout_ms ?? 10000);
-            while (!(payload.selector ? sel(payload.selector) : payload.text ? sel(`text=${payload.text}`) : null)) {
+            // With both: an element matching selector whose text (image alt text included, spaces and case ignored)
+            // contains text — e.g. a chat header after switching chats, where emojis are images.
+            const flat = (t: string) => t.replace(/\s+/g, '').toLowerCase();
+            const textOf = (el: Element) =>
+              (el.textContent ?? '') + [...el.querySelectorAll('img[alt]')].map((img) => img.getAttribute('alt')).join('');
+            const ready = () =>
+              payload.selector && payload.text
+                ? [...document.querySelectorAll(css(payload.selector))].some((el) =>
+                    flat(textOf(el)).includes(flat(String(render(payload.text, ctx())))),
+                  )
+                : payload.selector
+                  ? sel(payload.selector)
+                  : payload.text
+                    ? sel(`text=${payload.text}`)
+                    : null;
+            while (!ready()) {
               if (Date.now() > until) throw Error('Timed out waiting for selector');
               await new Promise((r) => setTimeout(r, 100));
             }
