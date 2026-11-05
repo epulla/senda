@@ -296,8 +296,10 @@ describe('adapter background', () => {
     const { adaptersItem, settingsItem } = await import('../src/bg/state');
     const { saveDraft, approveDraft, list } = await import('../src/bg/adapters/store');
     await settingsItem.setValue({ askBefore: 'destructive', allowedDomains: [], blockedDomains: [], alwaysSites: [] });
-    await adaptersItem.setValue({ example: { adapter: recipe as any, status: 'active', installed_at: '', from: { template: 'whatsapp', source: 'official' } } as any });
-    await saveDraft({ ...recipe, name: 'Edited' });
+    const legacy = { ...recipe, i18n: { es: { site: 'La dirección de tu Moodle' } } };
+    await adaptersItem.setValue({ example: { adapter: legacy as any, status: 'active', installed_at: '', from: { template: 'moodle', source: 'official' }, override: {} } as any });
+    expect((await import('../src/core/adapters/validate')).validateAdapter(legacy).ok).toBe(true);
+    await saveDraft({ ...legacy, name: 'Edited' });
     expect(await approveDraft('example')).toBe(true);
     expect((await adaptersItem.getValue()).example).toMatchObject({ adapter: { name: 'Edited' }, status: 'active' });
     expect((await list()).installed).toHaveLength(1);

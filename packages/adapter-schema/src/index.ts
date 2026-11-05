@@ -166,6 +166,8 @@ export const Adapter = z
           .object({
             name: z.string().optional(),
             description: z.string().max(500).optional(),
+            // Unused; kept so adapters installed from removed site templates still validate.
+            site: z.string().max(200).optional(),
             tools: z.record(name, z.object({ description: z.string().max(500), confirm: z.string().max(200).optional() }).strict()).optional(),
           })
           .strict(),
