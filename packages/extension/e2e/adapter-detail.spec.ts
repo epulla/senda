@@ -57,24 +57,11 @@ test('Import also accepts pasted shortcut text and lands it as a not verified dr
   await expect(panel.getByText('Not verified: this comes from outside Senda.', { exact: false })).toBeVisible();
 });
 
-test('Add a shortcut offers Senda templates (search, pick, then address), ask-your-AI and shared choices', async ({ openSidepanel }) => {
+test('Add a shortcut offers ask-your-AI and shared choices only', async ({ openSidepanel }) => {
   const panel = await openSidepanel();
   await panel.getByRole('button', { name: '+ Add a shortcut' }).click();
-  await panel.getByRole('button', { name: /Use a Senda template/ }).click();
-  await expect(panel.getByRole('heading', { name: 'Senda templates' })).toBeVisible();
-  await expect(panel.getByRole('textbox', { name: /Site address/ })).toHaveCount(0);
-  await panel.getByRole('searchbox', { name: 'Search templates' }).fill('zzz');
-  await expect(panel.getByText('No template matches.')).toBeVisible();
-  await panel.getByRole('searchbox', { name: 'Search templates' }).fill('deadlines');
-  await panel.getByText('Moodle', { exact: true }).click();
-  await expect(panel.getByRole('textbox', { name: /Site address/ })).toBeVisible();
-  await panel.getByRole('button', { name: /Not in the list/ }).click();
+  await expect(panel.getByRole('button', { name: /template/i })).toHaveCount(0);
+  await expect(panel.getByRole('button', { name: /Someone shared one with me/ })).toBeVisible();
+  await panel.getByRole('button', { name: /Ask your AI to make one/ }).click();
   await expect(panel.getByText('Make a Senda site shortcut for https://example.com')).toBeVisible();
-
-  await panel.getByRole('button', { name: 'ES' }).click();
-  await panel.getByRole('button', { name: '+ Agregar un atajo' }).click();
-  await panel.getByRole('button', { name: /Usar una plantilla de Senda/ }).click();
-  await expect(panel.getByText(/Muestra las próximas fechas de entrega/)).toBeVisible();
-  await panel.getByText('Moodle', { exact: true }).click();
-  await expect(panel.getByText('La dirección de tu Moodle', { exact: false })).toBeVisible();
 });

@@ -29,7 +29,7 @@ Before finishing a change, run `pnpm compile && pnpm test` (extension, server, a
 - `packages/extension/entrypoints/onboarding/`: setup page.
 - `packages/extension/entrypoints/sidepanel/`: adapter list and approvals.
 - `packages/extension/entrypoints/runner.ts` + `src/injected/runner.ts`: recipe runner injected into agent tabs.
-- `packages/extension/src/core/adapters/`: recipe validation, diff, permissions, templates (pure).
+- `packages/extension/src/core/adapters/`: recipe validation, diff, permissions, `{{args.x}}` rendering (pure).
 - `packages/extension/src/bg/adapters/`: adapter storage and execution.
 - `packages/extension/tests/fixtures/server.mjs`: local fixture site (`pnpm fixtures`, 127.0.0.1:18766) with a chat page and a fake Moodle.
 - `packages/extension/src/core/`: pure logic; no browser API calls.

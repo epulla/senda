@@ -4,7 +4,6 @@ import { Adapter } from '@senda/adapter-schema';
 import { cssString, render } from '../src/core/adapters/template';
 import { runRecipe } from '../src/injected/runner';
 import { validateAdapter } from '../src/core/adapters/validate';
-import { materialize } from '../src/core/adapters/materialize';
 import chat from './fixtures/adapters/fixturechat.json';
 import moodle from './fixtures/adapters/fixturemoodle.json';
 import { handleMoodle } from './fixtures/moodle-api.mjs';
@@ -253,26 +252,6 @@ describe('recipe runner', () => {
     } finally {
       globalThis.fetch = originalFetch;
     }
-  });
-  it('runs my_courses from a materialized subpath template', async () => {
-    const replace = (value: any): any => typeof value === 'string'
-      ? value.replaceAll('http://127.0.0.1:18766/moodle', '{{site}}').replaceAll('/moodle', '{{site_path}}')
-      : Array.isArray(value) ? value.map(replace) : value && typeof value === 'object'
-        ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, replace(item)])) : value;
-    const template = { ...replace(moodle), template: { site: { description: 'Moodle site', example: 'https://moodle.example.edu' } } };
-    const result = materialize(template, 'http://127.0.0.1:18766/moodle', 'runner');
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    document.body.innerHTML = '<a href="/moodle/login/logout.php?sesskey=fixSESS123">Log out</a>';
-    Object.defineProperty(window, 'location', { configurable: true, value: new URL('http://127.0.0.1:18766/moodle/my/') });
-    const originalFetch = globalThis.fetch;
-    globalThis.fetch = (async (_url: any, init: any) => {
-      const body = JSON.parse(init.body);
-      return new Response(JSON.stringify(handleMoodle(body, 'MoodleSession=fixture', 'fixSESS123')), { status: 200 });
-    }) as any;
-    try {
-      expect(await runRecipe({ adapter: result.adapter, tool: 'my_courses', args: {} })).toMatchObject({ ok: true, value: [{ fullname: 'Fixture course' }] });
-    } finally { globalThis.fetch = originalFetch; }
   });
   it('blocks outside navigation and resumes inside navigation', async () => {
     const a = Adapter.parse({

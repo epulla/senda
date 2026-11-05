@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { adaptersItem } from '@/src/bg/state';
-import { removeAdapter, resetToTemplate, setStatus } from '@/src/bg/adapters/store';
-import { bundledTemplates } from '@/src/bg/adapters/templates';
-import { exportRecipe } from '@/src/core/adapters/export';
+import { removeAdapter, setStatus } from '@/src/bg/adapters/store';
 import { localize, ModeBadge, siteNames } from '@/src/ui/adapterLabels';
 import { lang, useText } from '@/src/ui/i18n';
 import { LanguageToggle } from '@/src/ui/LanguageToggle';
@@ -25,18 +23,15 @@ export default function App() {
       </main>
     );
 
-  const { adapter, status, from, override } = entry;
-  const fixed = Object.keys(override ?? {});
+  const { adapter, status } = entry;
   const l = localize(adapter, lang());
   const recipe = JSON.stringify(adapter, null, 2);
 
   const download = () => {
-    const template = from ? (from.recipe ?? bundledTemplates()[from.template]) : undefined;
-    const data = exportRecipe(entry, template) as { id: string };
-    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+    const url = URL.createObjectURL(new Blob([recipe], { type: 'application/json' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${data.id}.json`;
+    link.download = `${adapter.id}.json`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url));
   };
@@ -65,20 +60,6 @@ export default function App() {
           <dd>{adapter.version}</dd>
           <dt className="text-muted">{t.origin}</dt>
           <dd>{text.labels.source[adapter.source]}</dd>
-          {from && (
-            <>
-              <dt className="text-muted">{t.basedOn}</dt>
-              <dd>
-                {t.templateFor(bundledTemplates()[from.template]?.name ?? from.template, from.site)}
-              </dd>
-            </>
-          )}
-          {fixed.length > 0 && (
-            <>
-              <dt className="text-muted">{t.fixed}</dt>
-              <dd>{fixed.join(', ')}</dd>
-            </>
-          )}
         </dl>
         <div className="flex flex-wrap gap-2 pt-1">
           <button
@@ -88,18 +69,6 @@ export default function App() {
           >
             {status === 'active' ? t.pause : t.resume}
           </button>
-          {fixed.length > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                if (confirm(t.confirmReset(adapter.name)))
-                  void resetToTemplate(adapter.id);
-              }}
-              className="btn"
-            >
-              {t.reset}
-            </button>
-          )}
           <button type="button" onClick={download} className="btn">
             {t.export}
           </button>
@@ -131,7 +100,6 @@ export default function App() {
               </div>
               <p className="text-xs text-muted">
                 {t.calls} <code>{name}</code>
-                {fixed.includes(name) && t.fixedTool}
               </p>
               {inputs.length > 0 && (
                 <div>

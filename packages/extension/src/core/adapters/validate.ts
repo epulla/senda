@@ -13,13 +13,6 @@ export function validateAdapter(
       ) };
   const adapter = parsed.data;
   const errors: string[] = [];
-  const containsSitePlaceholder = (value: unknown): boolean =>
-    typeof value === 'string'
-      ? value.includes('{{site}}') || value.includes('{{site_path}}')
-      : Array.isArray(value)
-        ? value.some(containsSitePlaceholder)
-        : !!value && typeof value === 'object' && Object.values(value).some(containsSitePlaceholder);
-  if ('template' in adapter || containsSitePlaceholder(adapter)) errors.push('Adapter contains unresolved site template');
   for (const site of adapter.sites) {
     const m = /^(https?):\/\/([^/*?:#]+(?::\d+)?)\/(.*)$/.exec(site);
     if (site === '<all_urls>' || !m || (site.indexOf('*') >= 0 && site.indexOf('*') < site.indexOf('/'))) {

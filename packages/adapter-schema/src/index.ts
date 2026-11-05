@@ -152,8 +152,7 @@ export const Adapter = z
     engine: z.literal(1),
     source: z.enum(['official', 'community', 'local']),
     sites: z.array(z.string()).min(1),
-    start_url: z.string().refine((value) => value.startsWith('{{site}}') || z.string().url().safeParse(value).success).optional(),
-    template: z.object({ site: z.object({ description: z.string().max(200), example: z.string() }).strict() }).strict().optional(),
+    start_url: z.string().url().optional(),
     mode: z.enum(['read', 'write']),
     description: z.string().max(500),
     login_check: z.object({ exists: selector }).strict().optional(),
@@ -167,7 +166,6 @@ export const Adapter = z
           .object({
             name: z.string().optional(),
             description: z.string().max(500).optional(),
-            site: z.string().max(200).optional(),
             tools: z.record(name, z.object({ description: z.string().max(500), confirm: z.string().max(200).optional() }).strict()).optional(),
           })
           .strict(),

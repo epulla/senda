@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ErrorCode } from '@senda/protocol';
-import { fetchTemplate } from '../src/bg/adapters/templates';
+import { fetchRecipe } from '../src/bg/adapters/fetch';
 
-describe('fetchTemplate', () => {
+describe('fetchRecipe', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('rejects streamed bodies larger than 1 MB', async () => {
@@ -12,6 +12,6 @@ describe('fetchTemplate', () => {
         controller.enqueue(new Uint8Array(1));
       },
     }))));
-    await expect(fetchTemplate('https://example.com/template.json')).rejects.toMatchObject({ code: ErrorCode.INVALID_PARAMS });
+    await expect(fetchRecipe('https://example.com/template.json')).rejects.toMatchObject({ code: ErrorCode.INVALID_PARAMS });
   });
 });

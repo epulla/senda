@@ -6,7 +6,6 @@ export function localize(adapter: Adapter, language: string) {
   return {
     name: tr?.name ?? adapter.name,
     description: tr?.description ?? adapter.description,
-    site: tr?.site ?? adapter.template?.site.description,
     tool: (name: string) => tr?.tools?.[name]?.description ?? adapter.tools[name]?.description ?? '',
   };
 }

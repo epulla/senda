@@ -4,9 +4,7 @@ import { stubBrowserWithoutTabGroups } from './no-tab-groups';
 import { AdaptersChanged, ErrorCode } from '@senda/protocol';
 
 const navigate = vi.hoisted(() => vi.fn());
-const bundled = vi.hoisted(() => ({ current: {} as Record<string, any> }));
 vi.mock('../src/bg/commands/navigate', () => ({ default: navigate }));
-vi.mock('../src/bg/adapters/templates', () => ({ bundledTemplates: () => bundled.current, fetchTemplate: vi.fn() }));
 
 const recipe = {
   id: 'example',
@@ -52,13 +50,12 @@ describe('adapter background', () => {
     expect((await draftsItem.getValue()).example?.adapter.source).toBe('local');
   });
 
-  it('installs a non-template recipe as pending community draft without from', async () => {
-    const { installTemplate } = await import('../src/bg/adapters/store');
+  it('installs recipe as pending community draft', async () => {
+    const { installRecipe } = await import('../src/bg/adapters/store');
     const { draftsItem } = await import('../src/bg/state');
     const community = { ...recipe, id: 'community', source: 'community' };
-    await installTemplate({ recipe: community });
+    await installRecipe({ recipe: community });
     expect(await draftsItem.getValue()).toMatchObject({ community: { pending: true, source: 'community' } });
-    expect((await draftsItem.getValue()).community?.from).toBeUndefined();
   });
 
   it('approves draft as active summary', async () => {
@@ -295,61 +292,14 @@ describe('adapter background', () => {
     await expect(saveDraft(recipe)).rejects.toMatchObject({ code: ErrorCode.ADAPTER_BROKEN });
   });
 
-  it('updates built-in fixed-site adapters when the bundled version changes', async () => {
-    const fixed = (version: string, description: string) => ({ ...recipe, id: 'fixed', name: 'Fixed', version, source: 'official', tools: { tool_a: { ...recipe.tools.search, description } } });
-    bundled.current = { fixed: fixed('1.0.0', 'v1') };
+  it('ignores legacy template metadata when approving and listing an edited draft', async () => {
     const { adaptersItem, settingsItem } = await import('../src/bg/state');
+    const { saveDraft, approveDraft, list } = await import('../src/bg/adapters/store');
     await settingsItem.setValue({ askBefore: 'destructive', allowedDomains: [], blockedDomains: [], alwaysSites: [] });
-    const { installTemplate, approveDraft, syncBundledTemplates } = await import('../src/bg/adapters/store');
-    await installTemplate({ template: 'fixed' });
-    await approveDraft('fixed');
-    bundled.current = { fixed: fixed('1.0.1', 'v1.0.1') };
-    await syncBundledTemplates();
-    expect((await adaptersItem.getValue()).fixed).toMatchObject({ adapter: { version: '1.0.1', tools: { tool_a: { description: 'v1.0.1' } } }, from: { version: '1.0.1' } });
-  });
-
-  it('installs, repairs, updates, approves permission increases, and resets template instances independently', async () => {
-    const template = (version: string, descriptionA: string, write = false) => ({
-      ...recipe, id: 'catalog', name: 'Catalog', version, source: 'official', sites: ['{{site}}/*'],
-      template: { site: { description: 'Catalog site', example: 'https://example.com' } },
-      mode: write ? 'write' : 'read',
-      tools: {
-        tool_a: { ...recipe.tools.search, description: descriptionA },
-        tool_b: { ...recipe.tools.search, description: 'Original B' },
-      },
-    });
-    bundled.current = { catalog: template('1.0.0', 'A v1') };
-    const { adaptersItem, draftsItem, settingsItem } = await import('../src/bg/state');
-    await settingsItem.setValue({ askBefore: 'destructive', allowedDomains: [], blockedDomains: [], alwaysSites: [] });
-    const { installTemplate, approveDraft, saveDraft, syncBundledTemplates, resetToTemplate } = await import('../src/bg/adapters/store');
-    const communityRecipe = { ...template('1.0.0', 'A v1'), id: 'community' };
-    const first = await installTemplate({ recipe: communityRecipe, site: 'https://example.com', label: 'one' });
-    expect(first).toMatchObject({ status: 'pending', id: 'community_one' });
-    expect(await draftsItem.getValue()).toMatchObject({ community_one: { pending: true, source: 'community', from: { template: 'community', source: 'community' } } });
-    await approveDraft('community_one');
-    await installTemplate({ template: 'catalog', site: 'https://example.com', label: 'first' });
-    await approveDraft('catalog_first');
-    await installTemplate({ template: 'catalog', site: 'https://example.com', label: 'second' });
-    await approveDraft('catalog_second');
-
-    const active = (await adaptersItem.getValue()).catalog_first!.adapter;
-    await saveDraft({ ...active, tools: { ...active.tools, tool_b: { ...active.tools.tool_b!, description: 'Repaired B' } } });
-    await approveDraft('catalog_first');
-    expect((await adaptersItem.getValue()).catalog_first).toMatchObject({ from: { source: 'official' }, override: { tool_b: { description: 'Repaired B' } } });
-
-    bundled.current = { catalog: template('1.1.0', 'A v1.1') };
-    await syncBundledTemplates();
-    expect((await adaptersItem.getValue()).catalog_first).toMatchObject({ adapter: { tools: { tool_a: { description: 'A v1.1' }, tool_b: { description: 'Repaired B' } } }, override: { tool_b: { description: 'Repaired B' } } });
-    expect((await adaptersItem.getValue()).catalog_second!.adapter.tools.tool_b?.description).toBe('Original B');
-
-    bundled.current = { catalog: template('1.2.0', 'A v1.2', true) };
-    await syncBundledTemplates();
-    expect((await draftsItem.getValue()).catalog_first).toMatchObject({ pending: true, from: { version: '1.2.0' } });
-    await approveDraft('catalog_first');
-    expect((await adaptersItem.getValue()).catalog_first).toMatchObject({ from: { version: '1.2.0' }, override: { tool_b: { description: 'Repaired B' } } });
-    await resetToTemplate('catalog_first');
-    expect((await adaptersItem.getValue()).catalog_first).toMatchObject({ adapter: { tools: { tool_a: { description: 'A v1.2' }, tool_b: { description: 'Original B' } } } });
-    expect((await adaptersItem.getValue()).catalog_first!.override).toBeUndefined();
-    expect((await adaptersItem.getValue()).catalog_second!.adapter.tools.tool_b?.description).toBe('Original B');
+    await adaptersItem.setValue({ example: { adapter: recipe as any, status: 'active', installed_at: '', from: { template: 'whatsapp', source: 'official' } } as any });
+    await saveDraft({ ...recipe, name: 'Edited' });
+    expect(await approveDraft('example')).toBe(true);
+    expect((await adaptersItem.getValue()).example).toMatchObject({ adapter: { name: 'Edited' }, status: 'active' });
+    expect((await list()).installed).toHaveLength(1);
   });
 });

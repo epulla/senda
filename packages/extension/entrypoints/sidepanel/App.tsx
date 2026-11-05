@@ -1,13 +1,13 @@
 import { activityItem, adaptersItem, approvalsItem, draftsItem, panicItem, settingsItem } from '@/src/bg/state';
 import { answerApproval, requestPanic } from '@/src/bg/approvals';
 import { resumeAfterPanic } from '@/src/bg/connection';
-import { useRef, useState, type ReactNode } from 'react';
-import { approveDraft, installTemplate, rejectDraft } from '@/src/bg/adapters/store';
-import { bundledTemplates, fetchTemplate } from '@/src/bg/adapters/templates';
+import { useRef, useState } from 'react';
+import { approveDraft, installRecipe, rejectDraft } from '@/src/bg/adapters/store';
+import { fetchRecipe } from '@/src/bg/adapters/fetch';
 import { describeChanges } from '@/src/core/adapters/diff';
 import { permissionIncrease } from '@/src/core/adapters/permissions';
-import { localize, ModeBadge, siteNames } from '@/src/ui/adapterLabels';
-import { lang, useText } from '@/src/ui/i18n';
+import { ModeBadge, siteNames } from '@/src/ui/adapterLabels';
+import { useText } from '@/src/ui/i18n';
 import { LanguageToggle } from '@/src/ui/LanguageToggle';
 import { ThemeToggle } from '@/src/ui/ThemeToggle';
 import { useItem } from '@/src/ui/useItem';
@@ -70,56 +70,13 @@ function SiteList({
   );
 }
 
-const labelFor = (site: string) =>
-  new URL(site).hostname.split('.')[0]!.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20);
 const errorText = (e: unknown) => {
   const data = (e as { data?: unknown }).data;
   return [(e as Error).message, ...(Array.isArray(data) ? data : [])].join(' ');
 };
-type Source = { template: string } | { recipe: unknown } | { url: string };
+type Source = { recipe: unknown } | { url: string };
 
-function SiteFields({ hint, example }: { hint?: string; example?: string }) {
-  const t = useText().sidepanel;
-  return (
-    <>
-      <label className="block">
-        <span className="font-medium">{t.siteAddress}</span>
-        {hint && <span className="block text-muted">{hint}</span>}
-        <input name="site" required type="url" placeholder={example ?? 'https://example.com'} />
-      </label>
-      <details>
-        <summary className="text-muted">{t.moreOptions}</summary>
-        <label className="mt-2 block">
-          <span className="font-medium">{t.shortName}</span>
-          <span className="block text-muted">{t.shortNameHint}</span>
-          <input name="label" pattern="[a-z0-9_]{1,20}" placeholder={t.shortNameExample} />
-        </label>
-      </details>
-    </>
-  );
-}
-
-function AddPanel({
-  title,
-  intro,
-  source,
-  needsSite,
-  hint,
-  example,
-  onClose,
-  children,
-  ready = true,
-}: {
-  ready?: boolean;
-  title: string;
-  intro?: string;
-  source?: Source;
-  needsSite: boolean;
-  hint?: string;
-  example?: string;
-  onClose: () => void;
-  children?: ReactNode;
-}) {
+function AddPanel({ title, source, onClose }: { title: string; source: Source; onClose: () => void }) {
   const text = useText();
   const [error, setError] = useState('');
   return (
@@ -127,16 +84,8 @@ function AddPanel({
       className="card space-y-3"
       onSubmit={async (event) => {
         event.preventDefault();
-        const form = event.currentTarget;
-        const value = (name: string) => (form.elements.namedItem(name) as HTMLInputElement | null)?.value.trim() ?? '';
         try {
-          let chosen = source;
-          if (!chosen) {
-            const text = value('import');
-            chosen = /^https?:\/\//.test(text) ? { url: text } : { recipe: JSON.parse(text) };
-          }
-          const site = value('site');
-          await installTemplate({ ...chosen, ...(site ? { site, label: value('label') || labelFor(site) } : {}) });
+          await installRecipe(source);
           onClose();
         } catch (e) {
           setError(errorText(e));
@@ -149,83 +98,18 @@ function AddPanel({
           ✕
         </button>
       </div>
-      {intro && <p className="text-muted">{intro}</p>}
-      {children}
-      {needsSite && <SiteFields hint={hint} example={example} />}
       {error && (
         <p role="alert" className="card card-danger !p-2 text-error-text">
           {error}
         </p>
       )}
-      {ready && (
-        <div className="flex items-center gap-2">
-          <button type="submit" className="btn btn-primary">
-            {text.sidepanel.continue}
-          </button>
-          <span className="text-muted">{text.sidepanel.reviewFirst}</span>
-        </div>
-      )}
+      <div className="flex items-center gap-2">
+        <button type="submit" className="btn btn-primary">
+          {text.sidepanel.continue}
+        </button>
+        <span className="text-muted">{text.sidepanel.reviewFirst}</span>
+      </div>
     </form>
-  );
-}
-
-function AddSite({ onClose, onAskAi }: { onClose: () => void; onAskAi: () => void }) {
-  const [query, setQuery] = useState('');
-  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-  const text = useText();
-  const language = lang();
-  const templates = Object.values(bundledTemplates()).filter((t) => {
-    const l = localize(t, language);
-    const haystack = [t.name, l.name, t.description, l.description, ...Object.keys(t.tools).flatMap((name) => [t.tools[name].description, l.tool(name)])]
-      .join(' ')
-      .toLowerCase();
-    return words.every((word) => haystack.includes(word));
-  });
-  const [picked, setChoice] = useState('');
-  const choice = templates.some((t) => t.id === picked) ? picked : '';
-  const chosen = templates.find((t) => t.id === choice);
-  const site = chosen?.template?.site;
-  return (
-    <AddPanel
-      title={text.sidepanel.addSite}
-      intro={text.sidepanel.pickTemplate}
-      source={{ template: choice }}
-      needsSite={!!chosen?.template}
-      ready={!!choice}
-      hint={chosen && localize(chosen, language).site}
-      example={site?.example}
-      onClose={onClose}
-    >
-      <input
-        type="search"
-        value={query}
-        onChange={(event) => setQuery(event.currentTarget.value)}
-        onKeyDown={(event) => event.key === 'Enter' && event.preventDefault()}
-        placeholder={text.sidepanel.searchTemplates}
-        aria-label={text.sidepanel.searchTemplates}
-      />
-      <fieldset className="space-y-2">
-        <legend className="sr-only">{text.sidepanel.siteKind}</legend>
-        {templates.length === 0 && <p className="text-muted">{text.sidepanel.noTemplates}</p>}
-        {templates.map((t) => (
-          <label key={t.id} className={`card block cursor-pointer !p-3 ${choice === t.id ? 'outline-2 outline-primary' : ''}`}>
-            <input type="radio" name="kind" className="sr-only" checked={choice === t.id} onChange={() => setChoice(t.id)} />
-            <span className="flex items-center justify-between gap-2">
-              <span className="font-semibold">{localize(t, language).name}</span>
-              <ModeBadge mode={t.mode} />
-            </span>
-            <span className="mt-1 block text-xs text-muted">
-              {Object.keys(t.tools)
-                .map((name) => localize(t, language).tool(name).replace(/\.$/, ''))
-                .join(' · ')}
-            </span>
-          </label>
-        ))}
-      </fieldset>
-      <button type="button" onClick={onAskAi} className="text-xs text-primary-text underline">
-        {text.sidepanel.notInList}
-      </button>
-    </AddPanel>
   );
 }
 
@@ -241,10 +125,9 @@ function CardHeader({ title, onClose }: { title: string; onClose: () => void }) 
   );
 }
 
-function ChooseHow({ onPick, onClose }: { onPick: (how: 'site' | 'ai' | 'import') => void; onClose: () => void }) {
+function ChooseHow({ onPick, onClose }: { onPick: (how: 'ai' | 'import') => void; onClose: () => void }) {
   const t = useText().sidepanel;
   const choices = [
-    ['site', t.useTemplate, t.readyMadeHint],
     ['ai', t.askAi, t.askAiHint],
     ['import', t.importLink, t.sharedHint],
   ] as const;
@@ -290,15 +173,7 @@ function ImportAdapter({ onClose }: { onClose: () => void }) {
   const fileInput = useRef<HTMLInputElement>(null);
   if (recipe)
     return (
-      <AddPanel
-        title={t.importNamed(recipe.name ?? t.adapter)}
-        intro={recipe.template ? t.whichSite : undefined}
-        source={{ recipe }}
-        needsSite={!!recipe.template}
-        hint={recipe.template?.site?.description}
-        example={recipe.template?.site?.example}
-        onClose={onClose}
-      />
+      <AddPanel title={t.importNamed(recipe.name ?? t.adapter)} source={{ recipe }} onClose={onClose} />
     );
   return (
     <form
@@ -307,7 +182,7 @@ function ImportAdapter({ onClose }: { onClose: () => void }) {
         event.preventDefault();
         const text = (event.currentTarget.elements.namedItem('import') as HTMLTextAreaElement).value.trim();
         try {
-          setRecipe(/^https?:\/\//.test(text) ? await fetchTemplate(text) : JSON.parse(text));
+          setRecipe(/^https?:\/\//.test(text) ? await fetchRecipe(text) : JSON.parse(text));
         } catch (e) {
           setError(e instanceof SyntaxError ? t.notRecipe : errorText(e));
         }
@@ -356,7 +231,7 @@ export default function App() {
   const [settings, setSettings] = useItem(settingsItem);
   const [activity] = useItem(activityItem);
   const [panic] = useItem(panicItem);
-  const [adding, setAdding] = useState<null | 'choose' | 'site' | 'ai' | 'import'>(null);
+  const [adding, setAdding] = useState<null | 'choose' | 'ai' | 'import'>(null);
   const waiting = Object.values(approvals).filter((item) => !item.answer);
   const pending = Object.values(drafts).filter((draft) => draft.pending);
   const unsent = Object.values(drafts).filter((draft) => !draft.pending);
@@ -525,7 +400,6 @@ export default function App() {
         </div>
         <p className="text-xs text-muted">{t.installedHint}</p>
         {adding === 'choose' && <ChooseHow onPick={setAdding} onClose={() => setAdding(null)} />}
-        {adding === 'site' && <AddSite onClose={() => setAdding(null)} onAskAi={() => setAdding('ai')} />}
         {adding === 'ai' && <AskAi onClose={() => setAdding(null)} />}
         {adding === 'import' && <ImportAdapter onClose={() => setAdding(null)} />}
         {adapters.length === 0 && adding === null && (
