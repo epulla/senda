@@ -36,3 +36,14 @@ test('snapshot names icon-only buttons and links', async ({ mcp, fixtureUrl }) =
     expect(text).toMatch(new RegExp(`\\[\\d+\\] ${line.replace(/[?]/g, '\\$&')}`));
   expect(text).not.toMatch(/\] (button|a) ""/);
 });
+
+test('snapshot with ref reads only that element and rejects stale refs', async ({ mcp, fixtureUrl }) => {
+  const text = await open(mcp, `${fixtureUrl}/site/snapshot.html`, 'SOL-002');
+  const ref = text.match(/\[(\d+)\] table:/)![1];
+  const scoped = await read(mcp, { ref });
+  expect(scoped).toContain(`[${ref}] table:\nrow: Número | Estudiante | Estado`);
+  expect(scoped).toContain('SOL-002');
+  expect(scoped).not.toContain('Solicitudes Asignadas');
+  expect(scoped).not.toContain('Card Alpha');
+  expect(await read(mcp, { ref: '9999' })).toMatch(/REF_NOT_FOUND.*take a new snapshot/);
+});

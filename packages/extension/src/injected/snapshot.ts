@@ -1,5 +1,8 @@
 // Runs via scripting.executeScript, so everything it uses must live inside the function.
-export function snapshotPage(): string {
+// With scopeRef, only that element's subtree is printed; null means the ref is stale.
+export function snapshotPage(scopeRef?: string): string | null {
+  const scope = scopeRef === undefined ? document.body : document.querySelector(`[data-senda-ref="${CSS.escape(scopeRef)}"]`);
+  if (!scope) return null;
   document.querySelectorAll('[data-senda-ref]').forEach((el) => el.removeAttribute('data-senda-ref'));
   const visible = (el: Element) => {
     const r = el.getBoundingClientRect();
@@ -9,7 +12,7 @@ export function snapshotPage(): string {
   let n = 0;
   const refs = new Map<Element, number>();
   document
-    .querySelectorAll('a,button,input,select,textarea,[role],[contenteditable],[onclick],[tabindex]')
+    .querySelectorAll('a,button,input,select,textarea,[role],[contenteditable],[onclick],[tabindex],table,ul,ol,dl,form,dialog')
     .forEach((el) => {
       if (visible(el)) {
         const ref = ++n;
@@ -90,7 +93,8 @@ export function snapshotPage(): string {
   };
   const table = (t: Element) => {
     const caption = t.querySelector(':scope > caption');
-    lines.push(`table:${caption && visible(caption) ? ` ${esc(caption.textContent || '')}` : ''}`);
+    const ref = refs.get(t);
+    lines.push(`${ref ? `[${ref}] ` : ''}table:${caption && visible(caption) ? ` ${esc(caption.textContent || '')}` : ''}`);
     for (const row of t.querySelectorAll('tr')) {
       if (row.closest('table') !== t || !visible(row)) continue;
       const cells = [...row.children]
@@ -103,8 +107,8 @@ export function snapshotPage(): string {
           buf = saved;
           return text;
         });
-      const ref = refs.get(row);
-      if (cells.some(Boolean)) lines.push(`${ref ? `[${ref}] ` : ''}row: ${cells.join(' | ')}`);
+      const rowRef = refs.get(row);
+      if (cells.some(Boolean)) lines.push(`${rowRef ? `[${rowRef}] ` : ''}row: ${cells.join(' | ')}`);
     }
   };
   const frame = (el: Element, label: () => string, inline: boolean) => {
@@ -154,7 +158,8 @@ export function snapshotPage(): string {
       lines.splice(at, 0, `[${ref}] ${name}${aria ? ` "${aria}"` : ''}`);
     }
   }
-  walk(document.body, () => 'text', false);
+  if (scope === document.body) walk(scope, () => 'text', false);
+  else visit(scope, () => 'text', false);
   flush(() => 'text');
   const out = lines.join('\n');
   return out.length > 50000 ? `${out.slice(0, 50000)}\n[truncated: snapshot over 50000 characters]` : out;

@@ -48,7 +48,7 @@ export const PeerHello = z.object({ token: z.string() });
 const tabId = z.number().optional();
 export const methods = {
   navigate: z.object({ url: z.string().url(), tabId }).strict(),
-  snapshot: z.object({ tabId }).strict(),
+  snapshot: z.object({ ref: z.string().optional(), tabId }).strict(),
   click: z.object({ ref: z.string(), tabId }).strict(),
   type: z.object({ ref: z.string(), text: z.string(), submit: z.boolean().optional(), tabId }).strict(),
   scroll: z
