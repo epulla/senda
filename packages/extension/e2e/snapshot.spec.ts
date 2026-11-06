@@ -29,3 +29,10 @@ test('snapshot prints input values without doubled quotes', async ({ mcp, fixtur
   expect(text).toMatch(/\[\d+\] input "Filtro" value="abc"\n/);
   expect(text).toMatch(/\[\d+\] input "Clave" \(hidden\)/);
 });
+
+test('snapshot names icon-only buttons and links', async ({ mcp, fixtureUrl }) => {
+  const text = await open(mcp, `${fixtureUrl}/site/snapshot.html`, 'Labelled');
+  for (const line of ['a "Ver"', 'button "Gestionar"', 'button "icon:pencil"', 'a "href:/pro_especies?acc=1"', 'button "Labelled"', 'button "Borrar"'])
+    expect(text).toMatch(new RegExp(`\\[\\d+\\] ${line.replace(/[?]/g, '\\$&')}`));
+  expect(text).not.toMatch(/\] (button|a) ""/);
+});

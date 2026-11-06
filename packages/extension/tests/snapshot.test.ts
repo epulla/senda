@@ -46,6 +46,11 @@ describe('snapshot refs and actions', () => {
     document.body.innerHTML = fixture('site/injection.html');
     expect(looksLikeInjection(snapshotPage())).toBe(true);
   });
+  it('falls back to tooltips, icon classes and link paths for icon-only controls', () => {
+    document.body.innerHTML =
+      '<button title="Ver"><i class="fa fa-eye"></i></button><button data-original-title="Editar"></button><button><i class="glyphicon glyphicon-trash"></i></button><a href="/x?id=2"> </a>';
+    expect(snapshotPage()).toBe('[1] button "Ver"\n[2] button "Editar"\n[3] button "icon:trash"\n[4] a "href:/x?id=2"');
+  });
   it('lists table rows with header first and refs in cells', () => {
     document.body.innerHTML =
       '<table><thead><tr><th>Id</th><th>Name</th><th></th></tr></thead><tbody><tr><td>1</td><td>Ana <b>Ruiz</b></td><td><button>Open</button></td></tr><tr><td>2</td><td>Luis</td><td></td></tr></tbody></table>';

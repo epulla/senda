@@ -24,10 +24,44 @@ export function snapshotPage(): string {
   const controlRoles = /^(button|link|checkbox|radio|switch|tab|menuitem|menuitemcheckbox|menuitemradio|option|textbox|searchbox|combobox|slider|spinbutton)$/;
   const isControl = (el: Element) =>
     ['a', 'button', 'input', 'select', 'textarea'].includes(el.localName) || controlRoles.test(el.getAttribute('role') || '');
+  // Last-resort names for icon-only controls; the prefix tells the AI the name is guessed.
+  const guessName = (el: Element) => {
+    for (const node of [el, ...el.querySelectorAll('i,span,svg,em')])
+      for (const c of node.classList) {
+        const icon = /^(?:fa|bi|glyphicon|mdi|ti|icon|ion|la)-([a-z][a-z0-9-]*)$/.exec(c)?.[1];
+        if (icon && !/^(solid|regular|light|thin|duotone|brands|fw|lg|xs|sm|xl|spin|pulse|border|inverse|stack(-\dx)?|(pull|rotate|flip)-.*)$/.test(icon))
+          return `icon:${icon}`;
+      }
+    const href = el.localName === 'a' ? el.getAttribute('href') || '' : '';
+    if (!href || href.startsWith('#') || /^javascript:/i.test(href)) return '';
+    try {
+      const url = new URL(href, location.href);
+      return `href:${(url.pathname + url.search).slice(0, 100)}`;
+    } catch {
+      return '';
+    }
+  };
   const control = (el: Element) => {
     const ref = refs.get(el);
     const role = el.getAttribute('role') || el.localName;
-    const name = esc(el.getAttribute('aria-label') || el.textContent || el.getAttribute('placeholder') || '');
+    const attr = (a: string) => el.getAttribute(a) || '';
+    const labelledBy = attr('aria-labelledby')
+      .split(/\s+/)
+      .map((id) => (id && document.getElementById(id)?.textContent) || '')
+      .join(' ');
+    const name =
+      [
+        attr('aria-label'),
+        labelledBy,
+        el.textContent || '',
+        attr('placeholder'),
+        attr('title'),
+        attr('data-original-title'),
+        attr('data-bs-original-title'),
+        el.querySelector('img[alt]')?.getAttribute('alt') || '',
+      ]
+        .map(esc)
+        .find(Boolean) || guessName(el);
     let value = '';
     if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
       const hidden =
