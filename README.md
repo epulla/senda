@@ -1,8 +1,4 @@
-<p align="center"><img src="docs/assets/logo.png" alt="Senda logo" width="96" height="96"></p>
-
-<h1 align="center">Senda</h1>
-
-<p align="center"><strong>Trails for your AI through the web.</strong></p>
+<p align="center"><img src="docs/assets/brand/readme-banner-1600x480.png" alt="Senda — Trails for your AI through the web" width="100%"></p>
 
 Senda is a browser extension plus a local MCP server. Your AI assistant (Claude Code, Patio or any MCP client) can open pages, read them, click and type in your own browser, signed in as you. It works only in tabs it opens, inside a visible "🤖 MCP" tab group, and by default stops to ask you on the page before actions that look like sending, changing or deleting something.
 
