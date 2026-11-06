@@ -32,10 +32,11 @@ export function snapshotPage(scopeRef?: string): string | null {
   const blocks = new Set(
     'address article aside blockquote caption dd details dialog div dl dt fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 header label legend li main nav ol p pre section summary ul'.split(' '),
   );
-  // An ARIA widget wrapping native controls (e.g. a combobox around an input) is a container, not one control.
+  const controlSelector = `a,button,input,select,textarea,[contenteditable],${controlRoles.source.slice(2, -2).split('|').map((r) => `[role=${r}]`).join(',')}`;
+  // An ARIA widget wrapping other controls (e.g. a combobox around an input) is a container, not one control.
   const isControl = (el: Element) =>
     ['a', 'button', 'input', 'select', 'textarea'].includes(el.localName) ||
-    (controlRoles.test(el.getAttribute('role') || '') && !el.querySelector('a,button,input,select,textarea,[contenteditable]'));
+    (controlRoles.test(el.getAttribute('role') || '') && !el.querySelector(controlSelector));
   // Last-resort names for icon-only controls; the prefix tells the AI the name is guessed.
   const guessName = (el: Element) => {
     for (const node of [el, ...el.querySelectorAll('i,span,svg,em')]) {
@@ -133,7 +134,8 @@ export function snapshotPage(scopeRef?: string): string | null {
           walk(c, () => '', true);
           const text = join(buf);
           buf = saved;
-          return text;
+          const ref = refs.get(c);
+          return ref ? `[${ref}] ${text}` : text;
         });
       const rowRef = refs.get(row);
       if (cells.some(Boolean)) lines.push(`${rowRef ? `[${rowRef}] ` : ''}row: ${cells.join(' | ')}`);

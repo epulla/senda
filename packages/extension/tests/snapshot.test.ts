@@ -83,14 +83,24 @@ describe('snapshot refs and actions', () => {
     expect(snapshotPage('2')).toBe('[2] ul "Tasks"\nli: One\nli: Two [3] button "Edit"');
     expect(snapshotPage('99')).toBeNull();
   });
-  it('masks sensitive fields for screenshots and restores them', () => {
+  it('masks sensitive fields for screenshots and restores them', async () => {
     document.body.innerHTML =
       '<input type="password"><input autocomplete="cc-number"><input autocomplete="one-time-code"><input name="otp_code"><input name="q">';
-    maskSensitive(true);
+    await maskSensitive(true);
     expect([...document.querySelectorAll('input')].map((el) => el.hasAttribute('data-senda-mask'))).toEqual([true, true, true, true, false]);
-    expect(document.getElementById('senda-mask-style')).toBeTruthy();
-    maskSensitive(false);
-    expect(document.querySelectorAll('[data-senda-mask], #senda-mask-style')).toHaveLength(0);
+    expect(document.querySelector('style[data-senda-mask-style]')).toBeTruthy();
+    await maskSensitive(false);
+    expect(document.querySelectorAll('[data-senda-mask], style[data-senda-mask-style]')).toHaveLength(0);
+  });
+  it('masks sensitive fields inside shadow roots', async () => {
+    document.body.innerHTML = '<div id="host"></div>';
+    const shadow = document.getElementById('host')!.attachShadow({ mode: 'open' });
+    shadow.innerHTML = '<input autocomplete="cc-number" value="4111111111111111"><input name="q">';
+    await maskSensitive(true);
+    expect([...shadow.querySelectorAll('input')].map((el) => el.hasAttribute('data-senda-mask'))).toEqual([true, false]);
+    expect(shadow.querySelector('style[data-senda-mask-style]')).toBeTruthy();
+    await maskSensitive(false);
+    expect(shadow.querySelectorAll('[data-senda-mask], style[data-senda-mask-style]')).toHaveLength(0);
   });
   it('walks display: contents wrappers, combobox children and button cells', () => {
     document.body.innerHTML =
@@ -101,6 +111,14 @@ describe('snapshot refs and actions', () => {
     form.getBoundingClientRect = () => ({ width: 0, height: 0 }) as DOMRect;
     expect(snapshotPage()!).toBe(
       'p: Inside form\n[1] combobox "City"\n[2] input "City search"\n[3] button "Open"\n[4] table:\nrow: [5] button "Edit row" | Ana',
+    );
+  });
+  it('keeps refs of ARIA-only children and of clickable or focusable cells', () => {
+    document.body.innerHTML =
+      '<div role="combobox" aria-label="Country"><div role="textbox" aria-label="Country search"></div><div role="option">Peru</div></div>' +
+      '<table><tr><td onclick="go()">Open Ana</td><td tabindex="0">Focus Luis</td><td>Plain</td></tr></table>';
+    expect(snapshotPage()!).toBe(
+      '[1] combobox "Country"\n[2] textbox "Country search"\n[3] option "Peru"\n[4] table:\nrow: [5] Open Ana | [6] Focus Luis | Plain',
     );
   });
   it('reports missing refs', () => {
