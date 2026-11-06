@@ -31,9 +31,10 @@ export async function target(tabId?: number, create = false): Promise<number> {
   if (create) return -1;
   throw new CommandError(ErrorCode.TAB_GONE, 'No agent tab yet; call browser_navigate first.');
 }
-// Runs start, which loads a page and calls track with the tab id as soon as it knows it; resolves once that tab finishes loading.
+// Runs start, which loads a page and calls track with the tab id as soon as it knows it; resolves once start is done and that tab finishes loading.
 export function waitForLoad(start: (track: (id: number) => void) => Promise<unknown>, tabId?: number): Promise<number> {
   const completed = new Set<number>();
+  let started = false;
   return new Promise<number>((resolve, reject) => {
     const finish = (error?: unknown) => {
       clearTimeout(timer);
@@ -47,7 +48,7 @@ export function waitForLoad(start: (track: (id: number) => void) => Promise<unkn
     const updated = (id: number, change: { status?: string }) => {
       if (change.status !== 'complete') return;
       completed.add(id);
-      if (id === tabId) finish();
+      if (started && id === tabId) finish();
     };
     const removed = (closed: number) => {
       if (closed === tabId) finish(new CommandError(ErrorCode.TAB_GONE, `Tab ${closed} was closed during navigation.`));
@@ -56,7 +57,7 @@ export function waitForLoad(start: (track: (id: number) => void) => Promise<unkn
     const replaced = (added: number, old: number) => {
       if (old !== tabId) return;
       tabId = added;
-      if (completed.has(added)) finish();
+      if (started && completed.has(added)) finish();
     };
     browser.tabs.onUpdated.addListener(updated);
     browser.tabs.onRemoved.addListener(removed);
@@ -65,6 +66,7 @@ export function waitForLoad(start: (track: (id: number) => void) => Promise<unkn
       tabId = id;
     };
     start(track).then(() => {
+      started = true;
       if (completed.has(tabId!)) finish();
     }, finish);
   });

@@ -1,11 +1,7 @@
 import { test, expect } from './fixtures';
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
-// Right after navigate the agent tab is briefly not found by tab-group title (PROJ-268); wait like the other specs poll.
-const open = async (mcp: Client, url: string) => {
-  await mcp.callTool({ name: 'browser_navigate', arguments: { url } });
-  await expect.poll(async () => !(await mcp.callTool({ name: 'browser_snapshot', arguments: {} })).isError).toBe(true);
-};
+const open = (mcp: Client, url: string) => mcp.callTool({ name: 'browser_navigate', arguments: { url } });
 const shot = async (mcp: Client, args: Record<string, unknown> = {}) => {
   const result = await mcp.callTool({ name: 'browser_screenshot', arguments: args });
   const content = result.content as { type: string; data?: string; mimeType?: string; text?: string }[];
