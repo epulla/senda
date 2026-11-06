@@ -1,10 +1,28 @@
-<p align="center"><img src="docs/assets/brand/readme-banner-1600x480.png" alt="Senda — Trails for your AI through the web" width="100%"></p>
+<p align="center">
+  <img src="docs/assets/brand/icon-256.png" width="128" alt="Senda icon">
+</p>
+
+<h1 align="center">Senda</h1>
+
+<p align="center">
+  <b>Trails for your AI through the web.</b><br>
+  <a href="https://github.com/epulla/senda/actions/workflows/build.yml"><img src="https://github.com/epulla/senda/actions/workflows/build.yml/badge.svg" alt="Build"></a>
+</p>
 
 Senda is a browser extension plus a local MCP server. Your AI assistant (Claude Code, Patio or any MCP client) can open pages, read them, click and type in your own browser, signed in as you. It works only in tabs it opens, inside a visible "🤖 MCP" tab group, and by default stops to ask you on the page before actions that look like sending, changing or deleting something.
 
-<p align="center"><img src="docs/assets/approval.png" alt="Senda approval card on a compose page: your AI wants to click Send, with Allow and Deny buttons and the Send button highlighted" width="720"></p>
+<p align="center">
+  <a href="https://github.com/epulla/senda/releases/latest"><img src="https://img.shields.io/github/v/release/epulla/senda?style=for-the-badge&logo=googlechrome&logoColor=white&label=Download&color=2ea44f" height="48" alt="Download Senda"></a><br>
+  <sub>Chrome, Brave or Edge · <a href="#quick-start">install steps</a> · <a href="https://github.com/epulla/senda/releases">all releases</a></sub>
+</p>
+
+<p align="center">
+  <img src="docs/assets/brand/mascot.png" alt="Senda mascot: a small orange robot with a green backpack on a winding trail" width="320">
+</p>
 
 > **Status:** early release. It works and is tested end to end, but expect rough edges and breaking changes. Not yet in the Chrome Web Store; you load it unpacked.
+
+<p align="center"><img src="docs/assets/approval.png" alt="Senda approval card on a compose page: your AI wants to click Send, with Allow and Deny buttons and the Send button highlighted" width="720"></p>
 
 ## Why Senda
 
@@ -25,25 +43,20 @@ Many browser MCP servers drive a separate, automated browser. Senda takes a diff
 
 ## Quick start
 
-Needs Node.js 20+, [pnpm](https://pnpm.io) and a Chromium browser (Chrome, Brave or Edge).
+Needs [Node.js](https://nodejs.org) 20+ and a Chromium browser (Chrome, Brave or Edge).
 
-1. **Build**
+1. **Download** from the [latest release](https://github.com/epulla/senda/releases/latest):
+   - `senda-extension-<version>-chrome.zip`: the browser extension. Unzip it into a folder you will keep.
+   - [`senda-mcp.js`](https://github.com/epulla/senda/releases/latest/download/senda-mcp.js): the MCP server, a single file. Save it somewhere you will keep, for example `~/.senda/senda-mcp.js`.
 
-   ```sh
-   git clone https://github.com/epulla/senda.git
-   cd senda
-   pnpm install
-   pnpm build
-   ```
+2. **Load the extension.** Open `chrome://extensions` (or `brave://extensions`, `edge://extensions`), turn on Developer mode, click **Load unpacked** and pick the unzipped folder.
 
-2. **Load the extension.** Open `chrome://extensions` (or `brave://extensions`, `edge://extensions`), turn on Developer mode, click **Load unpacked** and pick `packages/extension/.output/chrome-mv3`.
-
-3. **Add the MCP server to your AI client.** Use the absolute path to your clone.
+3. **Add the MCP server to your AI client.** Use the absolute path to `senda-mcp.js`.
 
    Claude Code:
 
    ```sh
-   claude mcp add senda -- node /path/to/senda/packages/server/dist/index.js
+   claude mcp add senda -- node /path/to/senda-mcp.js
    ```
 
    Any MCP client that takes a JSON config:
@@ -53,7 +66,7 @@ Needs Node.js 20+, [pnpm](https://pnpm.io) and a Chromium browser (Chrome, Brave
      "mcpServers": {
        "senda": {
          "command": "node",
-         "args": ["/path/to/senda/packages/server/dist/index.js"]
+         "args": ["/path/to/senda-mcp.js"]
        }
      }
    }
@@ -64,10 +77,23 @@ Needs Node.js 20+, [pnpm](https://pnpm.io) and a Chromium browser (Chrome, Brave
 4. **Pair.** Print the pairing code and paste it into the Senda setup page that opened when you loaded the extension:
 
    ```sh
-   node packages/server/dist/index.js token
+   node /path/to/senda-mcp.js token
    ```
 
 5. **Try it.** The Senda icon shows a green "on" badge when connected. Ask your AI: "Open example.com and tell me the title."
+
+### Build from source
+
+Needs [pnpm](https://pnpm.io) as well.
+
+```sh
+git clone https://github.com/epulla/senda.git
+cd senda
+pnpm install
+pnpm build
+```
+
+Then follow the steps above with `packages/extension/.output/chrome-mv3` as the extension folder and `packages/server/dist/index.js` as the server file.
 
 The server listens on `127.0.0.1:18765` (set `SENDA_PORT` to change it) and keeps its token in `~/.senda/token`.
 
@@ -111,7 +137,7 @@ pnpm build
 
 `pnpm test` runs the unit tests. `pnpm e2e` builds the extension and server, then drives them end to end with Playwright: its own Chromium loads the extension, a temporary Senda server and the fixture site run on free ports, and the side panel opens as a normal page. Your real `~/.senda` token and running servers are untouched. First time only: `pnpm --filter @senda/extension exec playwright install chromium`.
 
-`pnpm --filter @senda/extension dev` runs the extension with live reload. To regenerate the screenshots above: `SENDA_SHOTS=1 pnpm e2e readme-shots`.
+`pnpm --filter @senda/extension dev` runs the extension with live reload. Release files: `pnpm build && pnpm --filter @senda/extension zip` makes `packages/extension/.output/senda-extension-<version>-chrome.zip`; `packages/server/dist/index.js` ships as `senda-mcp.js`. To regenerate the screenshots above: `SENDA_SHOTS=1 pnpm e2e readme-shots`.
 
 Layout:
 
