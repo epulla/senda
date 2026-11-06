@@ -1,10 +1,11 @@
-import { snapshotPage } from '../../injected/snapshot';
+import { settleDom, snapshotPage } from '../../injected/snapshot';
 import { wrapExternal } from '../../core/snapshot-format';
 import { ErrorCode } from '@senda/protocol';
 import { CommandError, target } from './shared';
 import { noteExternal } from '../approvals';
 export default async function snapshot(p: { ref?: string; tabId?: number }) {
   const tabId = await target(p.tabId);
+  await browser.scripting.executeScript({ target: { tabId }, func: settleDom });
   const tab = await browser.tabs.get(tabId);
   const [{ result = '' } = {}] = await browser.scripting.executeScript({
     target: { tabId },

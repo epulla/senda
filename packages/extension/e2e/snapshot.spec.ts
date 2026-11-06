@@ -63,3 +63,15 @@ test('snapshot keeps display: contents text, combobox children and button cells'
   expect(text).toMatch(/\[\d+\] combobox "City"\n\[\d+\] input "City search"\n\[\d+\] button "Open city"/);
   expect(text).toMatch(/row: \[\d+\] button "Edit row" \| Row Ana/);
 });
+
+test('snapshot right after navigate waits for rows filled in after load', async ({ mcp, fixtureUrl }) => {
+  await mcp.callTool({ name: 'browser_navigate', arguments: { url: `${fixtureUrl}/site/late.html` } });
+  expect(await read(mcp)).toContain('row: 2 | Late Luis');
+});
+
+test('snapshot of a page that never stops changing returns within about a second', async ({ mcp, fixtureUrl }) => {
+  await mcp.callTool({ name: 'browser_navigate', arguments: { url: `${fixtureUrl}/site/ticker.html` } });
+  const start = Date.now();
+  expect(await read(mcp)).toContain('Ticks:');
+  expect(Date.now() - start).toBeLessThan(1200);
+});
