@@ -47,16 +47,16 @@ Needs [Node.js](https://nodejs.org) 22.12+ or 20.19+ and a Chromium browser (Chr
 
 1. **Download** from the [latest release](https://github.com/epulla/senda/releases/latest):
    - `senda-extension-<version>-chrome.zip`: the browser extension. Unzip it into a folder you will keep.
-   - [`senda-mcp.js`](https://github.com/epulla/senda/releases/latest/download/senda-mcp.js): the MCP server, a single file. Save it somewhere you will keep, for example `~/.senda/senda-mcp.js`.
+   - [`senda-mcp.mjs`](https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs): the MCP server, a single file. Save it somewhere you will keep, for example `~/.senda/senda-mcp.mjs`.
 
 2. **Load the extension.** Open `chrome://extensions` (or `brave://extensions`, `edge://extensions`), turn on Developer mode, click **Load unpacked** and pick the unzipped folder.
 
-3. **Add the MCP server to your AI client.** Use the absolute path to `senda-mcp.js`.
+3. **Add the MCP server to your AI client.** Use the absolute path to `senda-mcp.mjs`.
 
    Claude Code:
 
    ```sh
-   claude mcp add senda -- node /path/to/senda-mcp.js
+   claude mcp add senda -- node /path/to/senda-mcp.mjs
    ```
 
    Any MCP client that takes a JSON config:
@@ -66,7 +66,7 @@ Needs [Node.js](https://nodejs.org) 22.12+ or 20.19+ and a Chromium browser (Chr
      "mcpServers": {
        "senda": {
          "command": "node",
-         "args": ["/path/to/senda-mcp.js"]
+         "args": ["/path/to/senda-mcp.mjs"]
        }
      }
    }
@@ -77,7 +77,7 @@ Needs [Node.js](https://nodejs.org) 22.12+ or 20.19+ and a Chromium browser (Chr
 4. **Pair.** Print the pairing code and paste it into the Senda setup page that opened when you loaded the extension:
 
    ```sh
-   node /path/to/senda-mcp.js token
+   node /path/to/senda-mcp.mjs token
    ```
 
 5. **Try it.** The Senda icon shows a green "on" badge when connected. Ask your AI: "Open example.com and tell me the title."
@@ -137,7 +137,7 @@ pnpm build
 
 `pnpm test` runs the unit tests. `pnpm e2e` builds the extension and server, then drives them end to end with Playwright: its own Chromium loads the extension, a temporary Senda server and the fixture site run on free ports, and the side panel opens as a normal page. Your real `~/.senda` token and running servers are untouched. First time only: `pnpm --filter @senda/extension exec playwright install chromium`.
 
-`pnpm --filter @senda/extension dev` runs the extension with live reload. Release files: `pnpm build && pnpm --filter @senda/extension zip` makes `packages/extension/.output/senda-extension-<version>-chrome.zip`; `packages/server/dist/index.js` ships as `senda-mcp.js`. To regenerate the screenshots above: `SENDA_SHOTS=1 pnpm e2e readme-shots`.
+`pnpm --filter @senda/extension dev` runs the extension with live reload. Release files: `pnpm build && pnpm --filter @senda/extension zip` makes `packages/extension/.output/senda-extension-<version>-chrome.zip`; `packages/server/dist/index.js` ships as `senda-mcp.mjs`. To regenerate the screenshots above: `SENDA_SHOTS=1 pnpm e2e readme-shots`.
 
 Layout:
 

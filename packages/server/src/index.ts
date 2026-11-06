@@ -559,7 +559,7 @@ async function main() {
   process.stdin.on('end', () => process.exit(0));
   process.stderr.write('Senda MCP server listening on 127.0.0.1\n');
 }
-if (/(index|senda-mcp)\.js$/.test(process.argv[1] ?? ''))
+if (/(index\.js|senda-mcp\.mjs)$/.test(process.argv[1] ?? ''))
   main().catch((e) => {
     process.stderr.write(`${e}\n`);
     process.exitCode = 1;
