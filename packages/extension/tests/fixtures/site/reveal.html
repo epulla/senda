@@ -1,0 +1,9 @@
+<!doctype html><meta charset="utf-8"><title>Reveal</title>
+<p id="spin" class="a">Loading</p>
+<table id="t" hidden><tr><th>Id</th><th>Name</th></tr><tr><td>1</td><td>Shown Ana</td></tr></table>
+<script>
+window.startReveal = () => {
+  const spin = setInterval(() => document.getElementById('spin').classList.toggle('a'), 100);
+  setTimeout(() => { clearInterval(spin); document.getElementById('t').hidden = false; }, 500);
+};
+</script>

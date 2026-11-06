@@ -75,3 +75,11 @@ test('snapshot of a page that never stops changing returns within about a second
   expect(await read(mcp)).toContain('Ticks:');
   expect(Date.now() - start).toBeLessThan(1200);
 });
+
+test('snapshot waits while an already-loaded page changes only attributes', async ({ context, mcp, fixtureUrl }) => {
+  await mcp.callTool({ name: 'browser_navigate', arguments: { url: `${fixtureUrl}/site/reveal.html` } });
+  const page = context.pages().find((p) => p.url().endsWith('/site/reveal.html'))!;
+  await page.waitForTimeout(1100);
+  await page.evaluate(() => (window as any).startReveal());
+  expect(await read(mcp)).toContain('row: 1 | Shown Ana');
+});
