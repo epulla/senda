@@ -21,3 +21,11 @@ test('snapshot lists table rows, plain div text once and same-origin iframes', a
   expect(text).toContain('div: owner: Ana');
   expect(text).toContain('frame "details":\n  table:\n  row: Campo | Valor\n  row: Carrera | Frame Ingeniería');
 });
+
+test('snapshot prints input values without doubled quotes', async ({ mcp, fixtureUrl }) => {
+  const text = await open(mcp, `${fixtureUrl}/site/snapshot.html`, 'Buscar modulo');
+  expect(text).not.toContain('""""');
+  expect(text).toMatch(/\[\d+\] input "Buscar modulo"\n/);
+  expect(text).toMatch(/\[\d+\] input "Filtro" value="abc"\n/);
+  expect(text).toMatch(/\[\d+\] input "Clave" \(hidden\)/);
+});

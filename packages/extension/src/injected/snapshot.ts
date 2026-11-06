@@ -28,13 +28,13 @@ export function snapshotPage(): string {
     const ref = refs.get(el);
     const role = el.getAttribute('role') || el.localName;
     const name = esc(el.getAttribute('aria-label') || el.textContent || el.getAttribute('placeholder') || '');
-    let detail = name;
+    let value = '';
     if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
       const hidden =
         el instanceof HTMLInputElement && (el.type === 'password' || /cc-number|cc-csc|cc-exp/i.test(el.autocomplete));
-      detail = `${name}${detail ? ' ' : ''}${hidden ? '(hidden)' : JSON.stringify(el.value)}`;
+      value = hidden ? ' (hidden)' : el.value ? ` value=${JSON.stringify(el.value)}` : '';
     }
-    return `${ref ? `[${ref}] ` : ''}${role} "${detail}"`;
+    return `${ref ? `[${ref}] ` : ''}${role} "${name}"${value}`;
   };
   type Part = { text: string; control?: boolean };
   const lines: string[] = [];

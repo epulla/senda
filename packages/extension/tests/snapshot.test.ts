@@ -18,6 +18,10 @@ describe('snapshot refs and actions', () => {
     expect(text).toContain('[4] a');
     expect(text).toContain('[5] button');
   });
+  it('prints input values once and omits empty ones', () => {
+    document.body.innerHTML = '<input placeholder="Buscar modulo"><input aria-label="Filtro" value="a&quot;b">';
+    expect(snapshotPage()).toBe('[1] input "Buscar modulo"\n[2] input "Filtro" value="a\\"b"');
+  });
   it('never exposes password or card values', () => {
     const text = snapshotPage();
     expect(text).not.toContain('secret');
