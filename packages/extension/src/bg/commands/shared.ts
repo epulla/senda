@@ -32,8 +32,8 @@ export async function target(tabId?: number, create = false): Promise<number> {
   throw new CommandError(ErrorCode.TAB_GONE, 'No agent tab yet; call browser_navigate first.');
 }
 // Runs start, which loads a page and calls track with the tab id as soon as it knows it; resolves once start is done and that tab finishes loading.
-// track also forgets earlier loads of that tab, so start can call it again right before loading the real page.
-export function waitForLoad(start: (track: (id: number) => void) => Promise<unknown>, tabId?: number): Promise<number> {
+// track(id, true) also forgets earlier loads of that tab, for when start loads another page in it (a new tab's blank page).
+export function waitForLoad(start: (track: (id: number, reload?: boolean) => void) => Promise<unknown>, tabId?: number): Promise<number> {
   const completed = new Set<number>();
   let started = false;
   return new Promise<number>((resolve, reject) => {
@@ -63,9 +63,9 @@ export function waitForLoad(start: (track: (id: number) => void) => Promise<unkn
     browser.tabs.onUpdated.addListener(updated);
     browser.tabs.onRemoved.addListener(removed);
     browser.tabs.onReplaced.addListener(replaced);
-    const track = (id: number) => {
+    const track = (id: number, reload = false) => {
       tabId = id;
-      completed.delete(id);
+      if (reload) completed.delete(id);
     };
     start(track).then(() => {
       started = true;

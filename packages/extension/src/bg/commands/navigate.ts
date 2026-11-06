@@ -44,7 +44,7 @@ export default async function navigate(p: { url: string; tabId?: number; newTab?
       await openedTabsItem.setValue([...new Set([...(await openedTabsItem.getValue()), id])]);
       await addAgentTab(id);
       if (p.url === 'about:blank') return;
-      track(id);
+      track(id, true);
     }
     const tab = await browser.tabs.update(id, { url: p.url });
     if (!tab?.id) throw new CommandError(ErrorCode.TAB_GONE, 'Could not open tab.');

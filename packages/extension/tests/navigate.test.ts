@@ -52,3 +52,16 @@ it('retries once in a new tab when the reused agent tab vanishes and no tabId wa
   await fakeBrowser.tabs.onUpdated.trigger(7, { status: 'complete' }, { id: 7 } as any);
   await expect(pending).resolves.toMatchObject({ tabId: 7 });
 });
+
+it('opens a blank new tab whose load finished before tabs.create returned', async () => {
+  stubBrowserWithoutTabGroups();
+  vi.spyOn(fakeBrowser.tabs, 'get').mockImplementation(async (id: number) => ({ id }) as any);
+  const update = vi.spyOn(fakeBrowser.tabs, 'update');
+  vi.spyOn(fakeBrowser.tabs, 'create').mockImplementation(async () => {
+    await fakeBrowser.tabs.onUpdated.trigger(7, { status: 'complete' }, { id: 7 } as any);
+    return { id: 7 } as any;
+  });
+  const { default: navigate } = await import('../src/bg/commands/navigate');
+  await expect(navigate({ url: 'about:blank', newTab: true, internal: true })).resolves.toMatchObject({ tabId: 7 });
+  expect(update).not.toHaveBeenCalled();
+});
