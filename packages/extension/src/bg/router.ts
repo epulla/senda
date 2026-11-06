@@ -5,6 +5,7 @@ import click from './commands/click';
 import typeCommand from './commands/type';
 import scroll from './commands/scroll';
 import tabs from './commands/tabs';
+import { back, forward } from './commands/history';
 import { installRecipe, list, removeAdapter, saveDraft, saveTestResult, setStatus, submitDraft } from './adapters/store';
 import { runAdapter } from './adapters/run';
 import { CommandError } from './commands/shared';
@@ -16,6 +17,8 @@ const commands: Record<string, (p: any) => Promise<unknown>> = {
   type: typeCommand,
   scroll,
   tabs,
+  back,
+  forward,
   'adapter.list': list,
   'adapter.install': installRecipe,
   'adapter.draft': (p: any) => saveDraft(p.recipe),

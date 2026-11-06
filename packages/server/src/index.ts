@@ -369,6 +369,8 @@ async function main() {
     type: 'Enter text into a page field.',
     scroll: 'Scroll the current page.',
     tabs: 'List or manage browser tabs.',
+    back: 'Go back to the previous page in the tab.',
+    forward: 'Go forward to the next page in the tab.',
   };
   let lastBrowser: string | undefined;
   mcp.registerTool(
@@ -403,7 +405,7 @@ async function main() {
               browser: browser as string | undefined,
               prefer: lastBrowser,
             },
-            ['click', 'type', 'navigate'].includes(method) ? 125_000 : 30_000,
+            ['click', 'type', 'navigate', 'back', 'forward'].includes(method) ? 125_000 : 30_000,
           );
           lastBrowser = response.browser?.id ?? lastBrowser;
           if (response.error)

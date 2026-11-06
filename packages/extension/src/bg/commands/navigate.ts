@@ -1,6 +1,6 @@
 import { ErrorCode } from '@senda/protocol';
 import { addAgentTab } from '../agent-tabs';
-import { CommandError, target } from './shared';
+import { CommandError, target, waitForLoad } from './shared';
 import { needsApproval } from '../../core/approvals';
 import { requestApproval, riskSource } from '../approvals';
 import { settingsItem, visitedHostsItem, openedTabsItem } from '../state';
@@ -33,40 +33,15 @@ export default async function navigate(p: { url: string; tabId?: number; newTab?
       allowAlways: true,
     });
   const id = p.newTab ? -1 : await target(p.tabId, true);
-  let tabId: number | undefined = id < 0 ? undefined : id;
-  const completed = new Set<number>();
-  const loaded = new Promise<void>((resolve, reject) => {
-    const finish = (error?: Error) => {
-      clearTimeout(timer);
-      browser.tabs.onUpdated.removeListener(listener);
-      browser.tabs.onRemoved.removeListener(removed);
-      if (error) reject(error);
-      else resolve();
-    };
-    const timer = setTimeout(() => finish(new CommandError(ErrorCode.TIMEOUT, 'Navigation timed out.')), 25000);
-    const listener = (updated: number, change: { status?: string }) => {
-      if (change.status === 'complete') {
-        completed.add(updated);
-        if (updated === tabId) finish();
-      }
-    };
-    const removed = (closed: number) => {
-      if (closed === tabId) finish(new CommandError(ErrorCode.TAB_GONE, `Tab ${closed} was closed during navigation.`));
-    };
-    browser.tabs.onUpdated.addListener(listener);
-    browser.tabs.onRemoved.addListener(removed);
-    void (async () => {
-      const created = id < 0;
-      const tab = created ? await browser.tabs.create({ url: p.url }) : await browser.tabs.update(id, { url: p.url });
-      if (!tab?.id) throw new CommandError(ErrorCode.TAB_GONE, 'Could not open tab.');
-      tabId = tab.id;
-      if (created) await openedTabsItem.setValue([...new Set([...(await openedTabsItem.getValue()), tab.id])]);
-      await addAgentTab(tab.id);
-      if (completed.has(tab.id)) finish();
-    })().catch(finish);
-  });
-  await loaded;
-  const done = await browser.tabs.get(tabId!);
+  const tabId = await waitForLoad(async (track) => {
+    const created = id < 0;
+    const tab = created ? await browser.tabs.create({ url: p.url }) : await browser.tabs.update(id, { url: p.url });
+    if (!tab?.id) throw new CommandError(ErrorCode.TAB_GONE, 'Could not open tab.');
+    track(tab.id);
+    if (created) await openedTabsItem.setValue([...new Set([...(await openedTabsItem.getValue()), tab.id])]);
+    await addAgentTab(tab.id);
+  }, id < 0 ? undefined : id);
+  const done = await browser.tabs.get(tabId);
   const hosts = await visitedHostsItem.getValue();
   if (!hosts.includes(host)) await visitedHostsItem.setValue([...hosts, host]);
   return { tabId: done.id, url: done.url, title: done.title };

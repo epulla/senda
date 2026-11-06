@@ -54,6 +54,8 @@ export const methods = {
   scroll: z
     .object({ dx: z.number().optional(), dy: z.number().optional(), ref: z.string().optional(), tabId })
     .strict(),
+  back: z.object({ tabId }).strict(),
+  forward: z.object({ tabId }).strict(),
   tabs: z
     .object({ action: z.enum(['list', 'new', 'select', 'close']), tabId, url: z.string().url().optional() })
     .strict(),
