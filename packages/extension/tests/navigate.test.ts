@@ -3,12 +3,8 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { stubBrowserWithoutTabGroups } from './no-tab-groups';
 import { ErrorCode } from '@senda/protocol';
 
-// fake-browser has no tabs.onReplaced; keep the listener so tests can fire it.
-let replaced: ((added: number, removed: number) => void) | undefined;
 beforeEach(() => {
   vi.restoreAllMocks();
-  vi.spyOn(fakeBrowser.tabs.onReplaced, 'addListener').mockImplementation((fn) => void (replaced = fn));
-  vi.spyOn(fakeBrowser.tabs.onReplaced, 'removeListener').mockImplementation(() => void (replaced = undefined));
 });
 
 it('fails a navigation right away when its tab closes', async () => {
@@ -31,7 +27,7 @@ it('follows a tab that Chrome replaces during navigation', async () => {
   const { default: navigate } = await import('../src/bg/commands/navigate');
   const pending = navigate({ url: 'https://example.com/', tabId: 5 });
   await vi.waitFor(() => expect(update).toHaveBeenCalled());
-  replaced!(6, 5);
+  await (fakeBrowser.tabs.onReplaced as any).trigger(6, 5);
   await fakeBrowser.tabs.onUpdated.trigger(6, { status: 'complete' }, { id: 6 } as any);
   await expect(pending).resolves.toMatchObject({ tabId: 6 });
 });

@@ -13,7 +13,7 @@ const viaPage = (back: boolean) => {
 const move = (direction: 'back' | 'forward') => async (p: { tabId?: number }) => {
   const tabId = await target(p.tabId);
   const back = direction === 'back';
-  await waitForLoad(async () => {
+  const loaded = await waitForLoad(async () => {
     try {
       await (back ? browser.tabs.goBack(tabId) : browser.tabs.goForward(tabId));
     } catch {
@@ -23,8 +23,8 @@ const move = (direction: 'back' | 'forward') => async (p: { tabId?: number }) =>
       if (!result) throw new CommandError(ErrorCode.INVALID_PARAMS, `No ${back ? 'previous' : 'next'} page in this tab.`);
     }
   }, tabId);
-  const tab = await browser.tabs.get(tabId);
-  return { tabId, url: tab.url, title: tab.title };
+  const tab = await browser.tabs.get(loaded);
+  return { tabId: loaded, url: tab.url, title: tab.title };
 };
 export const back = move('back');
 export const forward = move('forward');

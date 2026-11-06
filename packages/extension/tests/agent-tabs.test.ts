@@ -19,6 +19,17 @@ describe('agent tabs', () => {
     expect(await isAgentTab(7)).toBe(false);
   });
 
+  it('keeps a replaced agent tab as an agent tab and in the opened list', async () => {
+    const { trackAgentTab, isAgentTab } = await import('../src/bg/agent-tabs');
+    const { openedTabsItem } = await import('../src/bg/state');
+    trackAgentTab(7);
+    await openedTabsItem.setValue([7]);
+    await (fakeBrowser.tabs.onReplaced as any).trigger(8, 7);
+    expect(await isAgentTab(8)).toBe(true);
+    expect(await isAgentTab(7)).toBe(false);
+    expect(await openedTabsItem.getValue()).toEqual([8]);
+  });
+
   it('target skips closed agent tabs and falls back to a live one or a new tab', async () => {
     const { trackAgentTab } = await import('../src/bg/agent-tabs');
     const { target } = await import('../src/bg/commands/shared');

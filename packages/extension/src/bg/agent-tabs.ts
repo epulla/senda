@@ -36,6 +36,15 @@ export async function listAgentIds(): Promise<number[]> {
   return (await browser.tabs.query({})).filter((t) => t.id !== undefined && ids.has(t.groupId!))
     .sort((a, b) => (a.lastAccessed ?? 0) - (b.lastAccessed ?? 0)).map((t) => t.id!);
 }
+// Chrome can swap a tab for a new one (discarded or prerendered page); keep it as the same agent tab.
+browser.tabs.onReplaced?.addListener(async (added, removed) => {
+  if (agentTabs.has(removed)) {
+    untrackAgentTab(removed);
+    trackAgentTab(added);
+  }
+  const opened = await openedTabsItem.getValue();
+  if (opened.includes(removed)) await openedTabsItem.setValue(opened.map((id) => (id === removed ? added : id)));
+});
 browser.tabs.onRemoved.addListener(async (id) => {
   untrackAgentTab(id);
   const opened = await openedTabsItem.getValue();
