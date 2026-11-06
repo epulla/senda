@@ -1,0 +1,9 @@
+<!doctype html><meta charset="utf-8"><title>Ajax</title>
+<img src="/__slow?ms=1200" alt="">
+<table id="t"><tr><th>Id</th><th>Name</th></tr><tr><td colspan="2">Loading...</td></tr></table>
+<script>
+addEventListener('load', async () => {
+  const rows = await (await fetch('/__slow?ms=400')).json();
+  document.getElementById('t').innerHTML = '<tr><th>Id</th><th>Name</th></tr>' + rows.map(([id, name]) => `<tr><td>${id}</td><td>${name}</td></tr>`).join('');
+});
+</script>

@@ -13,6 +13,12 @@ const server = http.createServer(async (req, res) => {
     res.end('ok');
     return;
   }
+  if (u.pathname === '/__slow') {
+    await new Promise((r) => setTimeout(r, Number(u.searchParams.get('ms')) || 0));
+    res.setHeader('content-type', 'application/json');
+    res.end(JSON.stringify([['1', 'Ajax Ana'], ['2', 'Ajax Luis']]));
+    return;
+  }
   if (u.pathname === '/moodle/lib/ajax/service.php' && req.method === 'POST') {
     let b = '';
     for await (const c of req) b += c;

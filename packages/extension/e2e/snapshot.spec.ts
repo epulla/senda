@@ -69,6 +69,11 @@ test('snapshot right after navigate waits for rows filled in after load', async 
   expect(await read(mcp)).toContain('row: 2 | Late Luis');
 });
 
+test('snapshot right after a slow load waits for the table its load handler fetches', async ({ mcp, fixtureUrl }) => {
+  await mcp.callTool({ name: 'browser_navigate', arguments: { url: `${fixtureUrl}/site/ajax.html` } });
+  expect(await read(mcp)).toContain('row: 2 | Ajax Luis');
+});
+
 test('snapshot of a page that never stops changing returns within about a second', async ({ mcp, fixtureUrl }) => {
   await mcp.callTool({ name: 'browser_navigate', arguments: { url: `${fixtureUrl}/site/ticker.html` } });
   const start = Date.now();

@@ -196,11 +196,13 @@ export function snapshotPage(scopeRef?: string): string | null {
   const out = lines.join('\n');
   return out.length > 50000 ? `${out.slice(0, 50000)}\n[truncated: snapshot over 50000 characters]` : out;
 }
-// Waits until the page is at least 1 s old and the DOM (incl. attributes) has not changed for 300 ms, at most 1 s in total,
-// so content filled in after load (AJAX tables) is there. Timers are not nested, so background throttling stays mild.
+// Waits until the page finished loading at least 1 s ago and the DOM (incl. attributes) has not changed for 300 ms,
+// at most 1 s in total, so content fetched on load (AJAX tables) is there. Timers are not nested, so background throttling stays mild.
 export function settleDom(): Promise<void> {
   return new Promise((resolve) => {
-    const wait = () => setTimeout(done, Math.max(300, 1000 - performance.now()));
+    const loaded = () =>
+      (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.loadEventEnd || performance.now();
+    const wait = () => setTimeout(done, Math.max(300, loaded() + 1000 - performance.now()));
     let quiet = wait();
     const observer = new MutationObserver(() => {
       clearTimeout(quiet);
