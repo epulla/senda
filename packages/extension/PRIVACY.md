@@ -1,6 +1,6 @@
 # Senda Privacy
 
-Senda sends no data outside your machine except to the local Senda server on `127.0.0.1`, which your AI client runs. Page content read by the AI is sent by that client to your chosen AI provider. Senda stores its pairing token, random browser id, installed adapters, and adapter drafts in extension local storage; the id is sent only to the local server. Recipes stay on the device.
+Senda sends no data outside your machine except to the local Senda server on `127.0.0.1`, which your AI client runs. Page content read by the AI is sent by that client to your chosen AI provider. Screenshots the AI asks for are sent the same way; password, card and one-time-code fields are blurred first, and the agent tab is shown for a moment while it is captured. Senda stores its pairing token, random browser id, installed adapters, and adapter drafts in extension local storage; the id is sent only to the local server. Recipes stay on the device.
 
 When the user or AI asks to import a site shortcut recipe by URL, Senda fetches that URL only.
 

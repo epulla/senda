@@ -54,6 +54,7 @@ export const methods = {
   scroll: z
     .object({ dx: z.number().optional(), dy: z.number().optional(), ref: z.string().optional(), tabId })
     .strict(),
+  screenshot: z.object({ ref: z.string().optional(), fullPage: z.boolean().optional(), tabId }).strict(),
   back: z.object({ tabId }).strict(),
   forward: z.object({ tabId }).strict(),
   tabs: z

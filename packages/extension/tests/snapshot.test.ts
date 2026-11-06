@@ -6,6 +6,7 @@ import { clickRef, typeRef } from '../src/injected/actions';
 import { pressKey, realClick, typeText } from '../src/injected/input';
 (globalThis as any).__sendaInput = { realClick, typeText, pressKey };
 import { looksLikeInjection } from '../src/core/injection';
+import { maskSensitive } from '../src/injected/screenshot';
 const fixture = (name: string) => readFileSync(`tests/fixtures/${name}`, 'utf8');
 beforeEach(() => {
   document.body.innerHTML = fixture('login-form.html');
@@ -81,6 +82,15 @@ describe('snapshot refs and actions', () => {
     expect(snapshotPage()!).toContain('[2] ul');
     expect(snapshotPage('2')).toBe('[2] ul "Tasks"\nli: One\nli: Two [3] button "Edit"');
     expect(snapshotPage('99')).toBeNull();
+  });
+  it('masks sensitive fields for screenshots and restores them', () => {
+    document.body.innerHTML =
+      '<input type="password"><input autocomplete="cc-number"><input autocomplete="one-time-code"><input name="otp_code"><input name="q">';
+    maskSensitive(true);
+    expect([...document.querySelectorAll('input')].map((el) => el.hasAttribute('data-senda-mask'))).toEqual([true, true, true, true, false]);
+    expect(document.getElementById('senda-mask-style')).toBeTruthy();
+    maskSensitive(false);
+    expect(document.querySelectorAll('[data-senda-mask], #senda-mask-style')).toHaveLength(0);
   });
   it('reports missing refs', () => {
     expect(clickRef('999')).toBe(false);
