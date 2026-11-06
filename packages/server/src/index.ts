@@ -355,7 +355,7 @@ async function main() {
   const { McpServer } = await import('@modelcontextprotocol/sdk/server/mcp.js');
   const { StdioServerTransport } = await import('@modelcontextprotocol/sdk/server/stdio.js');
   const mcp = new McpServer(
-    { name: 'senda', version: '1.0.0' },
+    { name: 'senda', version: '0.1.0' },
     {
       capabilities: { tools: { listChanged: true } },
       instructions:
@@ -559,7 +559,7 @@ async function main() {
   process.stdin.on('end', () => process.exit(0));
   process.stderr.write('Senda MCP server listening on 127.0.0.1\n');
 }
-if (process.argv[1]?.endsWith('index.js'))
+if (/(index|senda-mcp)\.js$/.test(process.argv[1] ?? ''))
   main().catch((e) => {
     process.stderr.write(`${e}\n`);
     process.exitCode = 1;
