@@ -52,22 +52,22 @@ Before finishing a change, run `pnpm compile && pnpm test`. Run e2e only for the
 - Any request for more permissions (new domain, write mode, new endpoint) always requires approval even for official adapters.
 - Update `PRIVACY.md` when adding a permission, storage item or network call.
 
-## Maintain senda-mcp.js
+## Maintain senda-mcp.mjs
 
-- The released server is one standalone file, `senda-mcp.js` (= `packages/server/dist/index.js`), that runs with `node senda-mcp.js` on Node 20.19+ or 22.12+ (older 20.x and 22.0–22.11 cannot load an ESM `.js` file without a package.json) with no `node_modules`.
+- The released server is one standalone file, `senda-mcp.mjs` (= `packages/server/dist/index.js`), that runs with `node senda-mcp.mjs` on Node 20+ with no `node_modules`. Keep the `.mjs` name: it makes Node load the file as ESM without a package.json (a `.js` file fails on Node 20.0–20.18 and 22.0–22.11).
 - Bundle every runtime dependency. Never add `--external` for a runtime dependency or a native-only package; the only externals are ws's optional `bufferutil` / `utf-8-validate`.
 - If a new dependency cannot be bundled, stop and ask.
-- Any server change: before release, copy `senda-mcp.js` to an empty temp dir and check `node senda-mcp.js token`, pairing with the extension, and one tool call.
+- Any server change: before release, copy `senda-mcp.mjs` to an empty temp dir and check `node senda-mcp.mjs token`, pairing with the extension, and one tool call.
 - README install steps and the release asset names stay in sync.
 
 ## Release
 
 - Tags and releases need Erick's approval of the version and the release notes.
 - Version lives in `packages/extension/package.json` (`version`, also the manifest version), `packages/server/package.json` (`version`) and `packages/server/src/index.ts` (`McpServer` version).
-- Build assets: `pnpm build && pnpm --filter @senda/extension zip` → `packages/extension/.output/senda-extension-<version>-chrome.zip`; copy `packages/server/dist/index.js` to `senda-mcp.js`.
-- Before tagging, test both assets from an empty temp dir: unzip and Load unpacked, `node senda-mcp.js token`, pair, one tool call.
-- Publish: `git tag v<version> && git push origin v<version>`, then `gh release create v<version> senda-extension-<version>-chrome.zip senda-mcp.js --title "Senda v<version>" --notes-file <notes>` (personal account `epulla`).
-- The README Download button points to `releases/latest`; `senda-mcp.js` is linked via `releases/latest/download/senda-mcp.js`.
+- Build assets: `pnpm build && pnpm --filter @senda/extension zip` → `packages/extension/.output/senda-extension-<version>-chrome.zip`; copy `packages/server/dist/index.js` to `senda-mcp.mjs`.
+- Before tagging, test both assets from an empty temp dir: unzip and Load unpacked, `node senda-mcp.mjs token`, pair, one tool call.
+- Publish: `git tag v<version> && git push origin v<version>`, then `gh release create v<version> senda-extension-<version>-chrome.zip senda-mcp.mjs --title "Senda v<version>" --notes-file <notes>` (personal account `epulla`).
+- The README Download button points to `releases/latest`; `senda-mcp.mjs` is linked via `releases/latest/download/senda-mcp.mjs`.
 - No store publishing without a separate go.
 
 ## UI copy
