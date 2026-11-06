@@ -240,7 +240,7 @@ export default function App() {
   return (
     <main className="space-y-5 p-4 text-sm leading-relaxed">
       <div className="flex items-center justify-between gap-2 border-b border-line pb-3">
-        <h1 className="text-lg font-bold tracking-tight text-primary-text">Senda</h1>
+        <h1 className="flex items-center gap-2 text-lg font-bold tracking-tight text-primary-text"><img src="/icon/48.png" alt="" className="size-6" />Senda</h1>
         <div className="flex items-center gap-1">
           <LanguageToggle />
           <ThemeToggle />
