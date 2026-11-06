@@ -54,7 +54,7 @@ Before finishing a change, run `pnpm compile && pnpm test`. Run e2e only for the
 
 ## Maintain senda-mcp.js
 
-- The released server is one standalone file, `senda-mcp.js` (= `packages/server/dist/index.js`), that runs with `node senda-mcp.js` on Node 20.19+ with no `node_modules`.
+- The released server is one standalone file, `senda-mcp.js` (= `packages/server/dist/index.js`), that runs with `node senda-mcp.js` on Node 20.19+ or 22.12+ (older 20.x and 22.0–22.11 cannot load an ESM `.js` file without a package.json) with no `node_modules`.
 - Bundle every runtime dependency. Never add `--external` for a runtime dependency or a native-only package; the only externals are ws's optional `bufferutil` / `utf-8-validate`.
 - If a new dependency cannot be bundled, stop and ask.
 - Any server change: before release, copy `senda-mcp.js` to an empty temp dir and check `node senda-mcp.js token`, pairing with the extension, and one tool call.
