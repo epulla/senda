@@ -33,14 +33,22 @@ export default async function navigate(p: { url: string; tabId?: number; newTab?
       allowAlways: true,
     });
   const id = p.newTab ? -1 : await target(p.tabId, true);
-  const tabId = await waitForLoad(async (track) => {
-    const created = id < 0;
-    const tab = created ? await browser.tabs.create({ url: p.url }) : await browser.tabs.update(id, { url: p.url });
+  const open = (reuse: number) => waitForLoad(async (track) => {
+    const created = reuse < 0;
+    const tab = created ? await browser.tabs.create({ url: p.url }) : await browser.tabs.update(reuse, { url: p.url });
     if (!tab?.id) throw new CommandError(ErrorCode.TAB_GONE, 'Could not open tab.');
     track(tab.id);
     if (created) await openedTabsItem.setValue([...new Set([...(await openedTabsItem.getValue()), tab.id])]);
     await addAgentTab(tab.id);
-  }, id < 0 ? undefined : id);
+  }, reuse < 0 ? undefined : reuse);
+  let tabId: number;
+  try {
+    tabId = await open(id);
+  } catch (error) {
+    // The reused agent tab can vanish while loading; when the AI named no tab, start over once in a new one.
+    if (id < 0 || p.tabId !== undefined || (await browser.tabs.get(id).then(() => true, () => false))) throw error;
+    tabId = await open(-1);
+  }
   const done = await browser.tabs.get(tabId);
   const hosts = await visitedHostsItem.getValue();
   if (!hosts.includes(host)) await visitedHostsItem.setValue([...hosts, host]);

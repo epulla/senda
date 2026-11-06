@@ -39,6 +39,7 @@ export function waitForLoad(start: (track: (id: number) => void) => Promise<unkn
       clearTimeout(timer);
       browser.tabs.onUpdated.removeListener(updated);
       browser.tabs.onRemoved.removeListener(removed);
+      browser.tabs.onReplaced.removeListener(replaced);
       if (error) reject(error);
       else resolve(tabId!);
     };
@@ -51,8 +52,15 @@ export function waitForLoad(start: (track: (id: number) => void) => Promise<unkn
     const removed = (closed: number) => {
       if (closed === tabId) finish(new CommandError(ErrorCode.TAB_GONE, `Tab ${closed} was closed during navigation.`));
     };
+    // Chrome can swap a tab for a new one (e.g. a discarded or prerendered page); keep following it.
+    const replaced = (added: number, old: number) => {
+      if (old !== tabId) return;
+      tabId = added;
+      if (completed.has(added)) finish();
+    };
     browser.tabs.onUpdated.addListener(updated);
     browser.tabs.onRemoved.addListener(removed);
+    browser.tabs.onReplaced.addListener(replaced);
     const track = (id: number) => {
       tabId = id;
     };
