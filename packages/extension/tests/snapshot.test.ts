@@ -14,9 +14,9 @@ beforeEach(() => {
 describe('snapshot refs and actions', () => {
   it('assigns sequential refs and describes controls', () => {
     const text = snapshotPage()!;
-    expect(text).toContain('[2] input');
-    expect(text).toContain('[5] a');
-    expect(text).toContain('[6] button');
+    expect(text).toContain('[1] input');
+    expect(text).toContain('[4] a');
+    expect(text).toContain('[5] button');
   });
   it('prints input values once and omits empty ones', () => {
     document.body.innerHTML = '<input placeholder="Buscar modulo"><input aria-label="Filtro" value="a&quot;b">';
@@ -30,7 +30,7 @@ describe('snapshot refs and actions', () => {
   });
   it('renumbers and actions target current refs', () => {
     snapshotPage()!;
-    expect(typeRef('2', 'new value')).toBe(true);
+    expect(typeRef('1', 'new value')).toBe(true);
     expect(document.querySelector('input[type=text]')?.getAttribute('value')).toBe('old');
     expect((document.querySelector('input[type=text]') as HTMLInputElement).value).toBe('new value');
     let clicked = false;
@@ -38,7 +38,7 @@ describe('snapshot refs and actions', () => {
       clicked = true;
     });
     snapshotPage()!;
-    expect(clickRef('6')).toBe(true);
+    expect(clickRef('5')).toBe(true);
     expect(clicked).toBe(true);
   });
   it('flags injection in snapshot-formatted text', () => {
@@ -51,6 +51,14 @@ describe('snapshot refs and actions', () => {
       '<button title="Ver"><i class="fa fa-eye"></i></button><button data-original-title="Editar"></button><button><i class="glyphicon glyphicon-trash"></i></button><a href="/x?id=2"> </a>';
     expect(snapshotPage()!).toBe('[1] button "Ver"\n[2] button "Editar"\n[3] button "icon:trash"\n[4] a "href:/x?id=2"');
   });
+  it('names dropdown toggles and icon fonts and skips unnamed containers', () => {
+    document.body.innerHTML =
+      '<div tabindex="0"><ul id="menu"><li><a href="/x">Home</a></li></ul></div><ol class="breadcrumb"><li>Inicio</li></ol>' +
+      '<div class="dropdown"><a href="#" role="button" data-toggle="dropdown" class="btn btn-link dropdown-toggle"><i class="dw dw-more"></i></a>' +
+      '<div class="dropdown-menu"><a class="dropdown-item" onclick="go()"><i class="dw dw-computer-1"></i> Ingresar Gestión</a></div></div>';
+    document.querySelector<HTMLElement>('.dropdown-menu')!.getBoundingClientRect = () => ({ width: 0, height: 0 }) as DOMRect;
+    expect(snapshotPage()!).toBe('[1] a "Home"\nli: Inicio\n[2] button "icon:more" (menu: Ingresar Gestión)');
+  });
   it('lists table rows with header first and refs in cells', () => {
     document.body.innerHTML =
       '<table><thead><tr><th>Id</th><th>Name</th><th></th></tr></thead><tbody><tr><td>1</td><td>Ana <b>Ruiz</b></td><td><button>Open</button></td></tr><tr><td>2</td><td>Luis</td><td></td></tr></tbody></table>';
@@ -60,7 +68,7 @@ describe('snapshot refs and actions', () => {
     document.body.innerHTML =
       '<div class="card"><div><span>Request 42</span> <span>Pending</span></div><label>Owner</label><dl><dt>Due</dt><dd>Friday</dd></dl></div>';
     const text = snapshotPage()!;
-    expect(text).toBe('div: Request 42 Pending\nlabel: Owner\n[1] dl\ndt: Due\ndd: Friday');
+    expect(text).toBe('div: Request 42 Pending\nlabel: Owner\ndt: Due\ndd: Friday');
   });
   it('caps long snapshots with a marker', () => {
     document.body.innerHTML = `<p>${'x '.repeat(30000)}</p>`;
@@ -69,9 +77,9 @@ describe('snapshot refs and actions', () => {
     expect(text).toMatch(/\[truncated: snapshot over 50000 characters\]$/);
   });
   it('prints only the subtree of a ref and returns null for stale refs', () => {
-    document.body.innerHTML = '<nav><a href="/a">Menu</a></nav><ul><li>One</li><li>Two <button>Edit</button></li></ul>';
+    document.body.innerHTML = '<nav><a href="/a">Menu</a></nav><ul aria-label="Tasks"><li>One</li><li>Two <button>Edit</button></li></ul>';
     expect(snapshotPage()!).toContain('[2] ul');
-    expect(snapshotPage('2')).toBe('[2] ul\nli: One\nli: Two [3] button "Edit"');
+    expect(snapshotPage('2')).toBe('[2] ul "Tasks"\nli: One\nli: Two [3] button "Edit"');
     expect(snapshotPage('99')).toBeNull();
   });
   it('reports missing refs', () => {

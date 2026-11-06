@@ -9,12 +9,20 @@ export function snapshotPage(scopeRef?: string): string | null {
     return r.width > 0 && r.height > 0;
   };
   const esc = (s: string) => s.replace(/\s+/g, ' ').trim();
+  const controlRoles = /^(button|link|checkbox|radio|switch|tab|menuitem|menuitemcheckbox|menuitemradio|option|textbox|searchbox|combobox|slider|spinbutton)$/;
+  // Containers (lists, forms, focusable wrappers) only get a ref when it would mean something to the AI.
+  const wantsRef = (el: Element) =>
+    el.matches('a,button,input,select,textarea,[contenteditable],[onclick],table,dialog,[role=dialog],[role=alertdialog]') ||
+    controlRoles.test(el.getAttribute('role') || '') ||
+    (el.getAttribute('tabindex') !== '-1' &&
+      (['aria-label', 'aria-labelledby', 'title'].some((a) => el.getAttribute(a)?.trim()) ||
+        [...el.childNodes].some((c) => c.nodeType === Node.TEXT_NODE && c.textContent?.trim())));
   let n = 0;
   const refs = new Map<Element, number>();
   document
     .querySelectorAll('a,button,input,select,textarea,[role],[contenteditable],[onclick],[tabindex],table,ul,ol,dl,form,dialog')
     .forEach((el) => {
-      if (visible(el)) {
+      if (visible(el) && wantsRef(el)) {
         const ref = ++n;
         el.setAttribute('data-senda-ref', String(ref));
         refs.set(el, ref);
@@ -24,17 +32,27 @@ export function snapshotPage(scopeRef?: string): string | null {
   const blocks = new Set(
     'address article aside blockquote caption dd details dialog div dl dt fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 header label legend li main nav ol p pre section summary ul'.split(' '),
   );
-  const controlRoles = /^(button|link|checkbox|radio|switch|tab|menuitem|menuitemcheckbox|menuitemradio|option|textbox|searchbox|combobox|slider|spinbutton)$/;
   const isControl = (el: Element) =>
     ['a', 'button', 'input', 'select', 'textarea'].includes(el.localName) || controlRoles.test(el.getAttribute('role') || '');
   // Last-resort names for icon-only controls; the prefix tells the AI the name is guessed.
   const guessName = (el: Element) => {
-    for (const node of [el, ...el.querySelectorAll('i,span,svg,em')])
-      for (const c of node.classList) {
-        const icon = /^(?:fa|bi|glyphicon|mdi|ti|icon|ion|la)-([a-z][a-z0-9-]*)$/.exec(c)?.[1];
-        if (icon && !/^(solid|regular|light|thin|duotone|brands|fw|lg|xs|sm|xl|spin|pulse|border|inverse|stack(-\dx)?|(pull|rotate|flip)-.*)$/.test(icon))
-          return `icon:${icon}`;
-      }
+    for (const node of [el, ...el.querySelectorAll('i,span,svg,em')]) {
+      if (node !== el && esc(node.textContent || '')) continue;
+      const classes = [...node.classList];
+      // Icon fonts pair a base class with a name class: "fa fa-eye", "dw dw-more", "bi bi-gear".
+      const pick = (prefix: (p: string) => boolean) =>
+        classes
+          .map((c) => /^([a-z]+)-([a-z][a-z0-9-]*)$/.exec(c))
+          .find(
+            (m) =>
+              m &&
+              prefix(m[1]!) &&
+              !/^(btn|badge|text|bg|col|row|label|pull|float|d|m|p)$/.test(m[1]!) &&
+              !/^(solid|regular|light|thin|duotone|brands|fw|lg|xs|sm|xl|spin|pulse|border|inverse|white|stack(-\dx)?|(pull|rotate|flip)-.*)$/.test(m[2]!),
+          )?.[2];
+      const icon = pick((p) => classes.includes(p)) || pick((p) => /^(fa|bi|glyphicon|mdi|ti|icon|ion|la)$/.test(p));
+      if (icon) return `icon:${icon}`;
+    }
     const href = el.localName === 'a' ? el.getAttribute('href') || '' : '';
     if (!href || href.startsWith('#') || /^javascript:/i.test(href)) return '';
     try {
@@ -65,13 +83,20 @@ export function snapshotPage(scopeRef?: string): string | null {
       ]
         .map(esc)
         .find(Boolean) || guessName(el);
+    // Dropdown toggles: list the (usually hidden) menu items so the AI knows what the button opens.
+    let menu = '';
+    if (/dropdown/.test(attr('data-toggle') + attr('data-bs-toggle')) || /^(true|menu)$/.test(attr('aria-haspopup'))) {
+      const list = el.parentElement?.querySelector('.dropdown-menu, [role=menu]');
+      const items = [...new Set([...(list?.querySelectorAll('a,button,[role=menuitem],.dropdown-item') ?? [])].map((i) => esc(i.textContent || '')))].filter(Boolean);
+      menu = items.length ? ` (menu: ${items.join(', ').slice(0, 120)})` : ' (menu)';
+    }
     let value = '';
     if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
       const hidden =
         el instanceof HTMLInputElement && (el.type === 'password' || /cc-number|cc-csc|cc-exp/i.test(el.autocomplete));
       value = hidden ? ' (hidden)' : el.value ? ` value=${JSON.stringify(el.value)}` : '';
     }
-    return `${ref ? `[${ref}] ` : ''}${role} "${name}"${value}`;
+    return `${ref ? `[${ref}] ` : ''}${role} "${name}"${menu}${value}`;
   };
   type Part = { text: string; control?: boolean };
   const lines: string[] = [];

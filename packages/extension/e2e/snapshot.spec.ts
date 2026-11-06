@@ -47,3 +47,12 @@ test('snapshot with ref reads only that element and rejects stale refs', async (
   expect(scoped).not.toContain('Card Alpha');
   expect(await read(mcp, { ref: '9999' })).toMatch(/REF_NOT_FOUND.*take a new snapshot/);
 });
+
+test('snapshot names SGA-style icon-font and dropdown buttons and skips unnamed containers', async ({ mcp, fixtureUrl }) => {
+  const text = await open(mcp, `${fixtureUrl}/site/sga.html`, '60131');
+  expect(text).toMatch(/\[\d+\] a "icon:half-moon"/);
+  expect(text).toMatch(/\[\d+\] button "icon:calendar-1" \(menu: Agenda\)/);
+  expect(text).toMatch(/row: 60131 \| \[\d+\] button "icon:more" \(menu: Ingresar Gestión\)/);
+  expect(text).not.toMatch(/\] (button|a) ""/);
+  expect(text).not.toMatch(/^\[\d+\] (div|ul|ol)$/m);
+});
