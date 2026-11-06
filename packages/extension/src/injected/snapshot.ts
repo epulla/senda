@@ -32,8 +32,10 @@ export function snapshotPage(scopeRef?: string): string | null {
   const blocks = new Set(
     'address article aside blockquote caption dd details dialog div dl dt fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 header label legend li main nav ol p pre section summary ul'.split(' '),
   );
+  // An ARIA widget wrapping native controls (e.g. a combobox around an input) is a container, not one control.
   const isControl = (el: Element) =>
-    ['a', 'button', 'input', 'select', 'textarea'].includes(el.localName) || controlRoles.test(el.getAttribute('role') || '');
+    ['a', 'button', 'input', 'select', 'textarea'].includes(el.localName) ||
+    (controlRoles.test(el.getAttribute('role') || '') && !el.querySelector('a,button,input,select,textarea,[contenteditable]'));
   // Last-resort names for icon-only controls; the prefix tells the AI the name is guessed.
   const guessName = (el: Element) => {
     for (const node of [el, ...el.querySelectorAll('i,span,svg,em')]) {
@@ -125,6 +127,7 @@ export function snapshotPage(scopeRef?: string): string | null {
       const cells = [...row.children]
         .filter((c) => (c.localName === 'td' || c.localName === 'th') && visible(c))
         .map((c) => {
+          if (isControl(c)) return control(c);
           const saved = buf;
           buf = [];
           walk(c, () => '', true);
@@ -152,7 +155,9 @@ export function snapshotPage(scopeRef?: string): string | null {
   };
   function visit(el: Element, label: () => string, inline: boolean) {
     const tag = el.localName;
-    if (skip.has(tag) || !visible(el)) return;
+    if (skip.has(tag)) return;
+    // display: contents boxes have no size but their children render normally.
+    if (!visible(el)) return void (getComputedStyle(el).display === 'contents' && walk(el, label, inline));
     if (isControl(el)) return void buf.push({ text: control(el), control: true });
     if (tag === 'iframe' || tag === 'frame') return frame(el, label, inline);
     if (inline) {

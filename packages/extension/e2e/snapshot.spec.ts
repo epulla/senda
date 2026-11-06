@@ -56,3 +56,10 @@ test('snapshot names SGA-style icon-font and dropdown buttons and skips unnamed 
   expect(text).not.toMatch(/\] (button|a) ""/);
   expect(text).not.toMatch(/^\[\d+\] (div|ul|ol)$/m);
 });
+
+test('snapshot keeps display: contents text, combobox children and button cells', async ({ mcp, fixtureUrl }) => {
+  const text = await open(mcp, `${fixtureUrl}/site/snapshot.html`, 'Row Ana');
+  expect(text).toContain('p: Contents form text');
+  expect(text).toMatch(/\[\d+\] combobox "City"\n\[\d+\] input "City search"\n\[\d+\] button "Open city"/);
+  expect(text).toMatch(/row: \[\d+\] button "Edit row" \| Row Ana/);
+});

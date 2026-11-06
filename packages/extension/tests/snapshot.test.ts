@@ -92,6 +92,17 @@ describe('snapshot refs and actions', () => {
     maskSensitive(false);
     expect(document.querySelectorAll('[data-senda-mask], #senda-mask-style')).toHaveLength(0);
   });
+  it('walks display: contents wrappers, combobox children and button cells', () => {
+    document.body.innerHTML =
+      '<form style="display: contents"><p>Inside form</p></form>' +
+      '<div role="combobox" aria-label="City"><input aria-label="City search"><button>Open</button></div>' +
+      '<table><tr><td role="button" aria-label="Edit row">✎</td><td>Ana</td></tr></table>';
+    const form = document.querySelector('form')!;
+    form.getBoundingClientRect = () => ({ width: 0, height: 0 }) as DOMRect;
+    expect(snapshotPage()!).toBe(
+      'p: Inside form\n[1] combobox "City"\n[2] input "City search"\n[3] button "Open"\n[4] table:\nrow: [5] button "Edit row" | Ana',
+    );
+  });
   it('reports missing refs', () => {
     expect(clickRef('999')).toBe(false);
     expect(typeRef('999', 'x')).toBe(false);
