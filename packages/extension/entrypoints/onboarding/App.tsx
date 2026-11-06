@@ -38,7 +38,7 @@ export default function App() {
         <li>{t.step1}</li>
         <li>
           {t.step2Before}
-          <code>senda token</code>
+          <code>node senda-mcp.mjs token</code>
           {t.step2After}
         </li>
         <li>{t.step3}</li>
