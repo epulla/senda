@@ -1,6 +1,6 @@
 # Senda
 
-Browser extension and local MCP server that let an AI assistant navigate and use the web with user approval. Stack: WXT 0.21, React 19, Tailwind v4, TypeScript, Vitest, pnpm.
+Browser extension and local MCP server that let an AI assistant navigate and use the web with user approval. Stack: WXT 0.21, React 19, Tailwind v4, TypeScript, Vitest, Playwright, esbuild, pnpm.
 
 ## Commands
 
@@ -9,32 +9,37 @@ Use pnpm only. `pnpm-lock.yaml` is the only lockfile.
 | Task | Command |
 | --- | --- |
 | Install | `pnpm install` |
-| Compile all | `pnpm -r compile` |
-| Test all | `pnpm -r test` |
-| Build extension | `pnpm build` |
+| Compile all | `pnpm compile` |
+| Unit tests all | `pnpm test` |
+| Build extension + server | `pnpm build` |
+| E2E (builds, then Playwright) | `pnpm e2e` |
+| E2E, one spec | `pnpm e2e <spec>` e.g. `pnpm e2e approvals` |
+| E2E browser, first time | `pnpm --filter @senda/extension exec playwright install chromium` |
+| README screenshots | `SENDA_SHOTS=1 pnpm e2e readme-shots` |
+| Fixture site alone | `pnpm fixtures` (127.0.0.1:18766) |
 | Extension dev (Chrome/Firefox/Edge) | `pnpm --filter @senda/extension dev` / `dev:firefox` / `dev:edge` |
-| Package compile/test | `pnpm --filter @senda/protocol compile` / `test` (same filters for other packages) |
+| Extension release zip | `pnpm --filter @senda/extension zip` |
+| Package compile/test | `pnpm --filter <package> compile` / `test` (`@senda/protocol`, `@senda/adapter-schema`, `@senda/extension`, `senda-mcp`) |
 | Add dependency | `pnpm --filter <package> add <pkg>` / `add -D <pkg>` |
 | Run a binary | `pnpm exec <bin>` or `pnpm dlx <pkg>` |
 
-Before finishing a change, run `pnpm compile && pnpm test` (extension, server, adapter-schema).
+Before finishing a change, run `pnpm compile && pnpm test`. Run e2e only for the specs the change touches (`pnpm e2e <spec>`). E2E uses its own Chromium, a temporary server and token, and fixture ports; it never touches `~/.senda`.
 
 ## Layout
 
-- `packages/protocol/`: shared message types, schemas, and error codes.
-- `packages/adapter-schema/`: versioned adapter contract.
-- `packages/server/`: local MCP server and `senda` command.
-- `packages/extension/entrypoints/background.ts`: browser extension background entry.
-- `packages/extension/entrypoints/popup/`: compact extension popup.
-- `packages/extension/entrypoints/onboarding/`: setup page.
-- `packages/extension/entrypoints/sidepanel/`: adapter list and approvals.
-- `packages/extension/entrypoints/runner.ts` + `src/injected/runner.ts`: recipe runner injected into agent tabs.
-- `packages/extension/src/core/adapters/`: recipe validation, diff, permissions, `{{args.x}}` rendering (pure).
-- `packages/extension/src/bg/adapters/`: adapter storage and execution.
-- `packages/extension/tests/fixtures/server.mjs`: local fixture site (`pnpm fixtures`, 127.0.0.1:18766) with a chat page and a fake Moodle.
-- `packages/extension/src/core/`: pure logic; no browser API calls.
-- `packages/extension/src/bg/`: browser-facing logic; every storage item lives in `state.ts`.
+- `packages/protocol/`: shared message types, schemas, error codes, `DEFAULT_PORT` (18765).
+- `packages/adapter-schema/`: versioned adapter (site shortcut) recipe contract.
+- `packages/server/`: local MCP server (`src/index.ts`) and `senda` command; build output `dist/index.js`.
+- `packages/extension/entrypoints/`: `background.ts`, `popup/`, `onboarding/` (setup page), `sidepanel/` (approvals, shortcuts, settings), `adapter/` (shortcut detail page), `runner.ts`.
+- `packages/extension/src/core/`: pure logic; no browser API calls. `core/adapters/`: recipe validation, diff, permissions, `{{args.x}}` rendering. `core/text/`: UI strings (`en.ts`, `es.ts`).
+- `packages/extension/src/bg/`: browser-facing logic; `commands/` (one file per browser tool), `adapters/` (storage, run, recipe fetch); every storage item lives in `state.ts`.
+- `packages/extension/src/injected/`: code injected into agent tabs (runner, snapshot, actions, approval card, screenshot).
+- `packages/extension/src/ui/`: shared React bits (theme, language, i18n hooks).
+- `packages/extension/tests/`: Vitest unit tests. `tests/fixtures/server.mjs`: fixture site with a chat page, a fake Moodle and `site/*.html` test pages; `tests/fixtures/adapters/`: fixture recipes.
+- `packages/extension/e2e/`: Playwright specs; `fixtures.ts` starts Chromium with the built extension, the fixture site and a temporary server. `readme-shots.spec.ts` is skipped unless `SENDA_SHOTS=1`.
 - `packages/extension/PRIVACY.md`: update when adding a permission, storage item, or network call.
+- `docs/assets/`: README screenshots (`approval.png`, `sidepanel.png`, `adapter.png`), `brand/` (icon, mascot, wordmarks, logos, avatar, social preview, banner), `store/` (store promos, OG image).
+- `.github/workflows/build.yml`: CI (compile, test, build) on push to `main` and PRs.
 
 ## Domain rules
 
@@ -45,9 +50,25 @@ Before finishing a change, run `pnpm compile && pnpm test` (extension, server, a
 - Every recipe passes `validate.ts` before saving or running.
 - Adapters run only in agent tabs (the "🤖 MCP" group), never in the user's own tabs.
 - Any request for more permissions (new domain, write mode, new endpoint) always requires approval even for official adapters.
-- Before finishing a change run `pnpm compile && pnpm test` (extension, server, adapter-schema).
 - Update `PRIVACY.md` when adding a permission, storage item or network call.
-- Conventional Commits with scope e.g. `feat(runner): ...`.
+
+## Maintain senda-mcp.js
+
+- The released server is one standalone file, `senda-mcp.js` (= `packages/server/dist/index.js`), that runs with `node senda-mcp.js` on Node 20.19+ with no `node_modules`.
+- Bundle every runtime dependency. Never add `--external` for a runtime dependency or a native-only package; the only externals are ws's optional `bufferutil` / `utf-8-validate`.
+- If a new dependency cannot be bundled, stop and ask.
+- Any server change: before release, copy `senda-mcp.js` to an empty temp dir and check `node senda-mcp.js token`, pairing with the extension, and one tool call.
+- README install steps and the release asset names stay in sync.
+
+## Release
+
+- Tags and releases need Erick's approval of the version and the release notes.
+- Version lives in `packages/extension/package.json` (`version`, also the manifest version), `packages/server/package.json` (`version`) and `packages/server/src/index.ts` (`McpServer` version).
+- Build assets: `pnpm build && pnpm --filter @senda/extension zip` → `packages/extension/.output/senda-extension-<version>-chrome.zip`; copy `packages/server/dist/index.js` to `senda-mcp.js`.
+- Before tagging, test both assets from an empty temp dir: unzip and Load unpacked, `node senda-mcp.js token`, pair, one tool call.
+- Publish: `git tag v<version> && git push origin v<version>`, then `gh release create v<version> senda-extension-<version>-chrome.zip senda-mcp.js --title "Senda v<version>" --notes-file <notes>` (personal account `epulla`).
+- The README Download button points to `releases/latest`; `senda-mcp.js` is linked via `releases/latest/download/senda-mcp.js`.
+- No store publishing without a separate go.
 
 ## UI copy
 

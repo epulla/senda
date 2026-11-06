@@ -43,7 +43,7 @@ Many browser MCP servers drive a separate, automated browser. Senda takes a diff
 
 ## Quick start
 
-Needs [Node.js](https://nodejs.org) 20+ and a Chromium browser (Chrome, Brave or Edge).
+Needs [Node.js](https://nodejs.org) 20.19+ and a Chromium browser (Chrome, Brave or Edge).
 
 1. **Download** from the [latest release](https://github.com/epulla/senda/releases/latest):
    - `senda-extension-<version>-chrome.zip`: the browser extension. Unzip it into a folder you will keep.
