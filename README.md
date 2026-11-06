@@ -4,7 +4,7 @@
 
 <p align="center"><strong>Trails for your AI through the web.</strong></p>
 
-Senda is a browser extension plus a local MCP server. Your AI assistant (Claude Code, Patio or any MCP client) can open pages, read them, click and type in your own browser, signed in as you. It works only in tabs it opens, inside a visible "🤖 MCP" tab group, and stops to ask you on the page before anything that could send, change or delete something.
+Senda is a browser extension plus a local MCP server. Your AI assistant (Claude Code, Patio or any MCP client) can open pages, read them, click and type in your own browser, signed in as you. It works only in tabs it opens, inside a visible "🤖 MCP" tab group, and by default stops to ask you on the page before actions that look like sending, changing or deleting something.
 
 <p align="center"><img src="docs/assets/approval.png" alt="Senda approval card on a compose page: your AI wants to click Send, with Allow and Deny buttons and the Send button highlighted" width="720"></p>
 
@@ -17,7 +17,7 @@ Many browser MCP servers drive a separate, automated browser. Senda takes a diff
 - **Your real browser, your logins.** No new profile, no copied cookies. The AI uses the sites you are already signed into.
 - **Only its own tabs.** The AI works in a "🤖 MCP" tab group you can see. Your other tabs stay out of reach.
 - **Site shortcuts (adapters).** Your AI can write a small recipe for a site (for example "list my courses") so next time it is one tool call instead of dozens of clicks. Recipes are plain JSON, never code, and nothing is installed until you approve it in the side panel.
-- **Approvals on the page.** Clicks that may send, change or delete something, sharing data with a new site, and shortcut changes pause with a card on the page, with the target highlighted. Only real clicks count, so a page script cannot approve for you.
+- **Approvals on the page.** Clicks that look like sending, paying or deleting (judged by the button's label), form submits and sharing data with a new site pause with a card on the page, with the target highlighted. How much to ask is up to you (side panel → Ask me before). New or changed shortcuts are approved in the side panel. Only real clicks count, so a page script cannot approve for you.
 - **Prompt-injection defenses.** Page content is marked as untrusted data for the AI. Suspected injection is flagged ⚠️ and logged, and pages that try it trigger extra approvals.
 - **Private fields stay private.** Password, card and one-time-code fields are blurred in screenshots.
 - **One button to stop.** "Stop everything" in the side panel disconnects the AI, closes its tabs and pauses every shortcut.
@@ -99,10 +99,10 @@ Each approved shortcut tool also shows up as its own tool, named `<adapter>__<to
 
 - Senda pauses protected actions for approval with a card on the page your AI is using; the side panel shows the same requests. Only real clicks count, so a page script cannot approve for you.
 - Suspected prompt injection is marked ⚠️ and logged; pages can taint a site and trigger extra approval.
-- "Never ask" (side panel → Ask me before) skips every approval, including shortcut changes, until your AI reads untrusted content. It is not recommended and shows a red badge while on.
+- "Never ask" (side panel → Ask me before) skips on-page approvals until Senda suspects prompt injection on a page your AI read. New or changed shortcuts still need your approval. It is not recommended and shows a red badge while on.
 - Pages, emails and chats your AI reads (including other people's messages) are sent to your AI provider by your AI client.
 - Other MCP servers connected to your AI client (such as Slack or email) are outside Senda's protection. Keep client approvals on for tools that send things.
-- The extension talks only to the local server on `127.0.0.1`. Details, storage and permissions: [PRIVACY.md](packages/extension/PRIVACY.md).
+- The extension talks only to the local server on `127.0.0.1`, except when you or your AI import a shortcut recipe from an HTTPS URL: then it fetches that URL. Details, storage and permissions: [PRIVACY.md](packages/extension/PRIVACY.md).
 
 ## Development
 
