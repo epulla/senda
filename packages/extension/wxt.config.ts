@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
+  zip: { artifactTemplate: 'senda-extension-{{version}}-{{browser}}.zip' },
   vite: () => ({ plugins: [tailwindcss()] }),
   manifest: ({ browser }) => {
     const chromium = browser !== 'firefox' && browser !== 'safari';
