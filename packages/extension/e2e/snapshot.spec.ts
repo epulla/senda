@@ -49,10 +49,10 @@ test('snapshot with ref reads only that element and rejects stale refs', async (
 });
 
 test('snapshot names SGA-style icon-font and dropdown buttons and skips unnamed containers', async ({ mcp, fixtureUrl }) => {
-  const text = await open(mcp, `${fixtureUrl}/site/sga.html`, '60131');
+  const text = await open(mcp, `${fixtureUrl}/site/sga.html`, '10001');
   expect(text).toMatch(/\[\d+\] a "icon:half-moon"/);
   expect(text).toMatch(/\[\d+\] button "icon:calendar-1" \(menu: Agenda\)/);
-  expect(text).toMatch(/row: 60131 \| \[\d+\] button "icon:more" \(menu: Ingresar Gestión\)/);
+  expect(text).toMatch(/row: 10001 \| \[\d+\] button "icon:more" \(menu: Ingresar Gestión\)/);
   expect(text).not.toMatch(/\] (button|a) ""/);
   expect(text).not.toMatch(/^\[\d+\] (div|ul|ol)$/m);
 });
