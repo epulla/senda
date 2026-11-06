@@ -32,6 +32,7 @@ export async function target(tabId?: number, create = false): Promise<number> {
   throw new CommandError(ErrorCode.TAB_GONE, 'No agent tab yet; call browser_navigate first.');
 }
 // Runs start, which loads a page and calls track with the tab id as soon as it knows it; resolves once start is done and that tab finishes loading.
+// track also forgets earlier loads of that tab, so start can call it again right before loading the real page.
 export function waitForLoad(start: (track: (id: number) => void) => Promise<unknown>, tabId?: number): Promise<number> {
   const completed = new Set<number>();
   let started = false;
@@ -51,7 +52,7 @@ export function waitForLoad(start: (track: (id: number) => void) => Promise<unkn
       if (started && id === tabId) finish();
     };
     const removed = (closed: number) => {
-      if (closed === tabId) finish(new CommandError(ErrorCode.TAB_GONE, `Tab ${closed} was closed during navigation.`));
+      if (closed === tabId) finish(new CommandError(ErrorCode.TAB_GONE, `Tab ${closed} was closed during navigation; another extension (e.g. one that closes duplicate tabs) may have closed it.`));
     };
     // Chrome can swap a tab for a new one (e.g. a discarded or prerendered page); keep following it.
     const replaced = (added: number, old: number) => {
@@ -64,6 +65,7 @@ export function waitForLoad(start: (track: (id: number) => void) => Promise<unkn
     browser.tabs.onReplaced.addListener(replaced);
     const track = (id: number) => {
       tabId = id;
+      completed.delete(id);
     };
     start(track).then(() => {
       started = true;

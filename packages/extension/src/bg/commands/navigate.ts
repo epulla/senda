@@ -34,12 +34,22 @@ export default async function navigate(p: { url: string; tabId?: number; newTab?
     });
   const id = p.newTab ? -1 : await target(p.tabId, true);
   const open = (reuse: number) => waitForLoad(async (track) => {
-    const created = reuse < 0;
-    const tab = created ? await browser.tabs.create({ url: p.url }) : await browser.tabs.update(reuse, { url: p.url });
+    let id = reuse;
+    // New tabs join the agent group while still blank, so tab-reuse extensions never see an ungrouped duplicate.
+    if (reuse < 0) {
+      const created = await browser.tabs.create({ url: 'about:blank' });
+      if (!created?.id) throw new CommandError(ErrorCode.TAB_GONE, 'Could not open tab.');
+      id = created.id;
+      track(id);
+      await openedTabsItem.setValue([...new Set([...(await openedTabsItem.getValue()), id])]);
+      await addAgentTab(id);
+      if (p.url === 'about:blank') return;
+      track(id);
+    }
+    const tab = await browser.tabs.update(id, { url: p.url });
     if (!tab?.id) throw new CommandError(ErrorCode.TAB_GONE, 'Could not open tab.');
-    track(tab.id);
-    if (created) await openedTabsItem.setValue([...new Set([...(await openedTabsItem.getValue()), tab.id])]);
-    await addAgentTab(tab.id);
+    if (tab.id !== id) track(tab.id);
+    if (reuse >= 0) await addAgentTab(tab.id);
   }, reuse < 0 ? undefined : reuse);
   let tabId: number;
   try {
