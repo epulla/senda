@@ -1,0 +1,9 @@
+<!doctype html><meta charset="utf-8"><title>Shadow card</title>
+<style>body { margin: 0; background: #fff; } .host { display: block; width: 600px; height: 60px; margin: 10px; }</style>
+<div id="card" class="host"></div><div id="plain" class="host"></div>
+<script>
+  for (const [id, mode, attrs] of [['card', 'closed', 'autocomplete="cc-number"'], ['plain', 'open', 'name="q"']]) {
+    const root = document.getElementById(id).attachShadow({ mode });
+    root.innerHTML = `<input ${attrs} value="4111111111111111" style="border:0;outline:0;background:#fff;color:#000;font:bold 40px monospace;width:600px;height:60px;padding:0">`;
+  }
+</script>
