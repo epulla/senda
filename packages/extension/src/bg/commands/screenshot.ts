@@ -1,5 +1,5 @@
 import { ErrorCode } from '@senda/protocol';
-import { maskSensitive, pageMetrics, refRect } from '../../injected/screenshot';
+import { maskIntact, maskSensitive, pageMetrics, refRect } from '../../injected/screenshot';
 import { noteExternal } from '../approvals';
 import { settingsItem } from '../state';
 import { CommandError, target } from './shared';
@@ -38,12 +38,17 @@ async function take(p: { ref?: string; fullPage?: boolean; tabId?: number }) {
     throw new CommandError(ErrorCode.DOMAIN_BLOCKED, `Domain ${host} is blocked.`);
   const run = async <T>(func: (...args: any[]) => T, args: unknown[] = []) =>
     (await browser.scripting.executeScript({ target: { tabId }, func, args: args as any }))[0]?.result as T;
-  const mask = (on: boolean) => browser.scripting.executeScript({ target: { tabId, allFrames: true }, func: maskSensitive, args: [on] });
-  // captureVisibleTab grabs whatever tab is showing, so check before and after that it is still this page.
+  const token = crypto.randomUUID();
+  const mask = (on: boolean) => browser.scripting.executeScript({ target: { tabId, allFrames: true }, func: maskSensitive, args: [on, token] });
+  // captureVisibleTab grabs whatever tab is showing, so check before and after that it is still this page
+  // and that every frame still has its masks (a reload or new frame would not).
   const shown = async () => {
     const [active] = await browser.tabs.query({ active: true, windowId: tab.windowId });
     if (active?.id !== tabId || active.url !== tab.url)
       throw new CommandError(ErrorCode.TAB_GONE, 'The agent tab stopped showing during the screenshot; try again.');
+    const frames = await browser.scripting.executeScript({ target: { tabId, allFrames: true }, func: maskIntact, args: [token] }).catch(() => []);
+    if (!frames.length || frames.some((f) => f.result !== true))
+      throw new CommandError(ErrorCode.TAB_GONE, 'The page reloaded during the screenshot; try again.');
   };
   const capture = async () => {
     const wait = lastCapture + 550 - Date.now();

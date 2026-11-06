@@ -6,7 +6,7 @@ import { clickRef, typeRef } from '../src/injected/actions';
 import { pressKey, realClick, typeText } from '../src/injected/input';
 (globalThis as any).__sendaInput = { realClick, typeText, pressKey };
 import { looksLikeInjection } from '../src/core/injection';
-import { maskSensitive } from '../src/injected/screenshot';
+import { maskIntact, maskSensitive } from '../src/injected/screenshot';
 const fixture = (name: string) => readFileSync(`tests/fixtures/${name}`, 'utf8');
 beforeEach(() => {
   document.body.innerHTML = fixture('login-form.html');
@@ -86,11 +86,14 @@ describe('snapshot refs and actions', () => {
   it('masks sensitive fields for screenshots and restores them', async () => {
     document.body.innerHTML =
       '<input type="password"><input autocomplete="cc-number"><input autocomplete="one-time-code"><input name="otp_code"><input name="q">';
-    await maskSensitive(true);
+    await maskSensitive(true, 't1');
+    expect(maskIntact('t1')).toBe(true);
+    expect(maskIntact('t2')).toBe(false);
     expect([...document.querySelectorAll('input')].map((el) => el.hasAttribute('data-senda-mask'))).toEqual([true, true, true, true, false]);
     expect(document.querySelector('style[data-senda-mask-style]')).toBeTruthy();
     await maskSensitive(false);
     expect(document.querySelectorAll('[data-senda-mask], style[data-senda-mask-style]')).toHaveLength(0);
+    expect(maskIntact('t1')).toBe(false);
   });
   it('masks sensitive fields inside shadow roots', async () => {
     document.body.innerHTML = '<div id="host"></div>';

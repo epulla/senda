@@ -1,6 +1,11 @@
 import { test, expect } from './fixtures';
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
+// Right after navigate the agent tab is briefly not found by tab-group title (PROJ-268); wait like the other specs poll.
+const open = async (mcp: Client, url: string) => {
+  await mcp.callTool({ name: 'browser_navigate', arguments: { url } });
+  await expect.poll(async () => !(await mcp.callTool({ name: 'browser_snapshot', arguments: {} })).isError).toBe(true);
+};
 const shot = async (mcp: Client, args: Record<string, unknown> = {}) => {
   const result = await mcp.callTool({ name: 'browser_screenshot', arguments: args });
   const content = result.content as { type: string; data?: string; mimeType?: string; text?: string }[];
@@ -9,11 +14,12 @@ const shot = async (mcp: Client, args: Record<string, unknown> = {}) => {
 };
 
 test('browser_screenshot returns a JPEG of the viewport, a ref or the full page', async ({ context, mcp, fixtureUrl }) => {
-  await mcp.callTool({ name: 'browser_navigate', arguments: { url: `${fixtureUrl}/site/long.html` } });
+  await open(mcp, `${fixtureUrl}/site/long.html`);
   const page = context.pages().find((p) => p.url().endsWith('/site/long.html'))!;
+  const worker = context.serviceWorkers()[0]!;
+  await worker.evaluate(() => (globalThis as any).chrome.storage.session.remove('taint'));
   const view = await shot(mcp);
   expect(view.result.isError).toBeFalsy();
-  const worker = context.serviceWorkers()[0]!;
   // A screenshot counts as reading the site, so later risky actions still ask first.
   expect(await worker.evaluate(async () => (await (globalThis as any).chrome.storage.session.get('taint')).taint)).toBe(new URL(fixtureUrl).host);
   expect(view.image?.mimeType).toBe('image/jpeg');
@@ -22,7 +28,7 @@ test('browser_screenshot returns a JPEG of the viewport, a ref or the full page'
   expect(full.info.height, full.text).toBeGreaterThan(view.info.height * 2);
   expect(await page.locator('[data-senda-mask], style[data-senda-mask-style]').count()).toBe(0);
 
-  await mcp.callTool({ name: 'browser_navigate', arguments: { url: `${fixtureUrl}/site/snapshot.html` } });
+  await open(mcp, `${fixtureUrl}/site/snapshot.html`);
   const snap = await mcp.callTool({ name: 'browser_snapshot', arguments: {} });
   const ref = String(JSON.parse((snap.content as { text: string }[])[0]!.text).snapshot).match(/\[(\d+)\] table:/)![1];
   const part = await shot(mcp, { ref });
@@ -41,7 +47,7 @@ test('browser_screenshot refuses tabs outside the agent group', async ({ context
 });
 
 test('browser_screenshot blurs card fields inside closed shadow roots and restores them', async ({ context, mcp, fixtureUrl }) => {
-  await mcp.callTool({ name: 'browser_navigate', arguments: { url: `${fixtureUrl}/site/shadow.html` } });
+  await open(mcp, `${fixtureUrl}/site/shadow.html`);
   const page = context.pages().find((p) => p.url().endsWith('/site/shadow.html'))!;
   const { image, info, text } = await shot(mcp);
   expect(image, text).toBeTruthy();
@@ -69,7 +75,7 @@ test('browser_screenshot blurs card fields inside closed shadow roots and restor
 });
 
 test('browser_screenshot fails instead of capturing another tab that comes to the front', async ({ context, mcp, fixtureUrl }) => {
-  await mcp.callTool({ name: 'browser_navigate', arguments: { url: `${fixtureUrl}/site/long.html` } });
+  await open(mcp, `${fixtureUrl}/site/long.html`);
   const userPage = await context.newPage();
   await userPage.goto(`${fixtureUrl}/site/mail.html`);
   const pending = shot(mcp, { fullPage: true });
@@ -78,4 +84,17 @@ test('browser_screenshot fails instead of capturing another tab that comes to th
   const { result, text } = await pending;
   expect(result.isError).toBe(true);
   expect(text).toContain('stopped showing');
+});
+
+test('browser_screenshot discards the image when the page reloads during capture', async ({ context, mcp, fixtureUrl }) => {
+  await open(mcp, `${fixtureUrl}/site/long.html`);
+  const page = context.pages().find((p) => p.url().endsWith('/site/long.html'))!;
+  const pending = shot(mcp, { fullPage: true });
+  await page.waitForTimeout(700);
+  await page.reload();
+  const { result, image, text } = await pending;
+  expect(result.isError, text).toBe(true);
+  expect(image).toBeUndefined();
+  // The token check or Chrome itself (frame removed, readback failed) stops it; every path discards the image.
+  expect(text).toMatch(/reloaded|was removed|readback failed/);
 });

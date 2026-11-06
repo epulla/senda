@@ -2,7 +2,10 @@
 
 // Hides passwords, card numbers, one-time codes and similar fields before a capture; on=false undoes it.
 // Walks shadow roots too (closed ones through the extension-only openOrClosedShadowRoot).
-export async function maskSensitive(on: boolean): Promise<void> {
+// token marks this document as masked; maskIntact checks it is still the same masked document (no reload).
+export async function maskSensitive(on: boolean, token = ''): Promise<void> {
+  if (on) document.documentElement.setAttribute('data-senda-mask-token', token);
+  else document.documentElement.removeAttribute('data-senda-mask-token');
   const shadowOf = (el: Element): ShadowRoot | null => {
     try {
       return (globalThis as any).chrome?.dom?.openOrClosedShadowRoot?.(el) ?? (el as any).openOrClosedShadowRoot ?? el.shadowRoot;
@@ -43,6 +46,10 @@ export async function maskSensitive(on: boolean): Promise<void> {
     requestAnimationFrame(() => requestAnimationFrame(resolve));
     setTimeout(resolve, 200);
   });
+}
+
+export function maskIntact(token: string): boolean {
+  return document.documentElement.getAttribute('data-senda-mask-token') === token;
 }
 
 export function refRect(ref: string) {
