@@ -42,6 +42,23 @@ describe('snapshot refs and actions', () => {
     document.body.innerHTML = fixture('site/injection.html');
     expect(looksLikeInjection(snapshotPage())).toBe(true);
   });
+  it('lists table rows with header first and refs in cells', () => {
+    document.body.innerHTML =
+      '<table><thead><tr><th>Id</th><th>Name</th><th></th></tr></thead><tbody><tr><td>1</td><td>Ana <b>Ruiz</b></td><td><button>Open</button></td></tr><tr><td>2</td><td>Luis</td><td></td></tr></tbody></table>';
+    expect(snapshotPage()).toBe('table:\nrow: Id | Name | \nrow: 1 | Ana Ruiz | [1] button "Open"\nrow: 2 | Luis | ');
+  });
+  it('prints plain div, span, label and dl text once', () => {
+    document.body.innerHTML =
+      '<div class="card"><div><span>Request 42</span> <span>Pending</span></div><label>Owner</label><dl><dt>Due</dt><dd>Friday</dd></dl></div>';
+    const text = snapshotPage();
+    expect(text).toBe('div: Request 42 Pending\nlabel: Owner\ndt: Due\ndd: Friday');
+  });
+  it('caps long snapshots with a marker', () => {
+    document.body.innerHTML = `<p>${'x '.repeat(30000)}</p>`;
+    const text = snapshotPage();
+    expect(text.length).toBeLessThan(50100);
+    expect(text).toMatch(/\[truncated: snapshot over 50000 characters\]$/);
+  });
   it('reports missing refs', () => {
     expect(clickRef('999')).toBe(false);
     expect(typeRef('999', 'x')).toBe(false);
