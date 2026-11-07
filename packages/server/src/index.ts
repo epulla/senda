@@ -355,7 +355,7 @@ async function main() {
   const { McpServer } = await import('@modelcontextprotocol/sdk/server/mcp.js');
   const { StdioServerTransport } = await import('@modelcontextprotocol/sdk/server/stdio.js');
   const mcp = new McpServer(
-    { name: 'senda', version: '0.1.0' },
+    { name: 'senda', version: '0.1.1' },
     {
       capabilities: { tools: { listChanged: true } },
       instructions:
