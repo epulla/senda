@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
-import { CLOSE_INVALID_TOKEN, EXTENSION_ID, PROTOCOL_VERSION } from '@senda/protocol';
+import { CLOSE_INVALID_TOKEN, EXTENSION_ID, EXTENSION_IDS, PROTOCOL_VERSION } from '@senda/protocol';
 import { createRelay } from '../src/index.js';
 
 const token = 'a'.repeat(64);
@@ -75,6 +75,10 @@ describe('Senda WebSocket relay', () => {
     const { port } = await setup();
     const ws = connect(port, 'http://localhost');
     await expect(connected(ws)).rejects.toBeDefined();
+  });
+  it.each(EXTENSION_IDS)('accepts extension origin %s', async (id) => {
+    const { port } = await setup();
+    await connected(connect(port, `chrome-extension://${id}`));
   });
   it('answers plain HTTP with an empty 426', async () => {
     const { port } = await setup();

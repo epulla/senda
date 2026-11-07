@@ -9,7 +9,7 @@ import { z } from 'zod';
 import {
   CLOSE_INVALID_TOKEN,
   DEFAULT_PORT,
-  EXTENSION_ID,
+  EXTENSION_IDS,
   ErrorCode,
   Hello,
   methods,
@@ -124,7 +124,7 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
   http.on('upgrade', (req, socket, head) => {
     // Browsers always send Origin, so only local processes can connect as peers (no Origin).
     const origin = req.headers.origin;
-    if (origin !== undefined && origin !== `chrome-extension://${EXTENSION_ID}`) {
+    if (origin !== undefined && !EXTENSION_IDS.some((id) => origin === `chrome-extension://${id}`)) {
       socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
       socket.destroy();
       return;

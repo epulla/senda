@@ -2,7 +2,9 @@ import { z } from 'zod';
 import { AdapterSummary } from '@senda/adapter-schema';
 
 export const PROTOCOL_VERSION = 1;
-export const EXTENSION_ID = 'ljggnmhahelgodcecefjnfijlgomcoce';
+export const EXTENSION_ID = 'cmcjkfkendenhffongjoefpiookiocpe';
+// v0.1.0 unpacked installs kept the old dev ID.
+export const EXTENSION_IDS = [EXTENSION_ID, 'ljggnmhahelgodcecefjnfijlgomcoce'];
 export const DEFAULT_PORT = 18765;
 export const CLOSE_INVALID_TOKEN = 4001;
 export enum ErrorCode {
