@@ -9,6 +9,8 @@
   <a href="https://github.com/epulla/senda/actions/workflows/build.yml"><img src="https://github.com/epulla/senda/actions/workflows/build.yml/badge.svg" alt="Build"></a>
 </p>
 
+**Why wire up API keys and a separate connector for every app, when you're already logged in to all of them in your browser?**
+
 Senda is a browser extension plus a local MCP server. Your AI assistant (Claude Code, Patio or any MCP client) can open pages, read them, click and type in your own browser, signed in as you. It works only in tabs it opens, inside a visible "🤖 MCP" tab group, and by default stops to ask you on the page before actions that look like sending, changing or deleting something.
 
 <p align="center">
