@@ -6,7 +6,7 @@ const store = process.env.SENDA_STORE ? '-store' : '';
 
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
-  outDirTemplate: `{{browser}}-mv{{manifestVersion}}${store}`,
+  outDirTemplate: `{{browser}}-mv{{manifestVersion}}{{modeSuffix}}${store}`,
   zip: { artifactTemplate: `senda-extension-{{version}}-{{browser}}${store}.zip` },
   vite: () => ({ plugins: [tailwindcss()] }),
   manifest: ({ browser }) => {
