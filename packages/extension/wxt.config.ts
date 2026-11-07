@@ -18,7 +18,7 @@ export default defineConfig({
       permissions: ['tabs', 'scripting', 'storage', 'alarms', ...(chromium ? ['tabGroups', 'sidePanel'] : [])],
       host_permissions: ['<all_urls>'],
       ...(chromium && !store && {
-        key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwKc7Zfj2zMhW85ScW0N1PnBvvKVwYl2VVkYINwrTigepzsEAI+gdWKncuBFIfpX2DOPcmIPnQf3JGnX5Xl5YBKOqovJlFWIb7LVfyeS3ZLYWNYrkIRFki4Rl1inUHaYev3vElFdQH6r7FlxuEtsk60hWxGHbyE/LrjcJ3AGUMfhBqlQYIz6ZfaomX+CK/dihezsNge6YixbAkJOaa6WtvShXxZ7lx2Z7aAY6we79mxW6z2D80TPxpcRUIGYKgMRwcgJ74qbnmklBxEfQZE/hTTgtF3PCCP8pBqPyoptZK9vNF5uz8e7iiwAaebEdNHUSNKPql546mTRkIW93DRwVrwIDAQAB',
+        key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApRsYRk1eQMJDV8X2DONcXlKVPXuGLsGETCsNZ8v59wFBLgSXliRXWROqB0ghWWUT5jyvWDBFQwWcKq6XuwuUTry9RuRx77nx4IC1vsRBLd4sDNv6Ly7WQeCRiaZ3Is2LWn8aWz+GnB3QI6Z8LSH4THcUzHpPNvcjRuEvlmw4x1k8YxpM539DGNByg+mFnOMN0HaRc5ks2893GedE46lZcKKtpoLgJmpLmEU6U4ot+rcERkLq/n3JgqobwOiOVSw68eTjriWKfRTEweiizddv/d83bK0vhNcxWAswXNypCKXpMaMJ0qf/JBsB4Uj2nj4RuCh3PD/givPnDZrQ+lWcBwIDAQAB',
       }),
       ...(browser === 'firefox' && { browser_specific_settings: { gecko: { id: 'senda@epulla' } } }),
     };
