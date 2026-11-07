@@ -15,10 +15,11 @@ Use pnpm only. `pnpm-lock.yaml` is the only lockfile.
 | E2E (builds, then Playwright) | `pnpm e2e` |
 | E2E, one spec | `pnpm e2e <spec>` e.g. `pnpm e2e approvals` |
 | E2E browser, first time | `pnpm --filter @senda/extension exec playwright install chromium` |
-| README screenshots | `SENDA_SHOTS=1 pnpm e2e readme-shots` |
+| README + store screenshots | `SENDA_SHOTS=1 pnpm e2e readme-shots` |
 | Fixture site alone | `pnpm fixtures` (127.0.0.1:18766) |
 | Extension dev (Chrome/Firefox/Edge) | `pnpm --filter @senda/extension dev` / `dev:firefox` / `dev:edge` |
 | Extension release zip | `pnpm --filter @senda/extension zip` |
+| Chrome Web Store zip (no `key`) | `pnpm --filter @senda/extension zip:store` |
 | Package compile/test | `pnpm --filter <package> compile` / `test` (`@senda/protocol`, `@senda/adapter-schema`, `@senda/extension`, `senda-mcp`) |
 | Add dependency | `pnpm --filter <package> add <pkg>` / `add -D <pkg>` |
 | Run a binary | `pnpm exec <bin>` or `pnpm dlx <pkg>` |
@@ -38,7 +39,7 @@ Before finishing a change, run `pnpm compile && pnpm test`. Run e2e only for the
 - `packages/extension/tests/`: Vitest unit tests. `tests/fixtures/server.mjs`: fixture site with a chat page, a fake Moodle and `site/*.html` test pages; `tests/fixtures/adapters/`: fixture recipes.
 - `packages/extension/e2e/`: Playwright specs; `fixtures.ts` starts Chromium with the built extension, the fixture site and a temporary server. `readme-shots.spec.ts` is skipped unless `SENDA_SHOTS=1`.
 - `packages/extension/PRIVACY.md`: update when adding a permission, storage item, or network call.
-- `docs/assets/`: README screenshots (`approval.png`, `sidepanel.png`, `adapter.png`), `brand/` (icon, mascot, wordmarks, logos, avatar, social preview, banner), `store/` (store promos, OG image).
+- `docs/assets/`: README screenshots (`approval.png`, `sidepanel.png`, `adapter.png`), `brand/` (icon, mascot, wordmarks, logos, avatar, social preview, banner), `store/` (store promos, OG image, 1280×800 `screenshots/`).
 - `.github/workflows/build.yml`: CI (compile, test, build) on push to `main` and PRs.
 
 ## Domain rules
@@ -68,6 +69,7 @@ Before finishing a change, run `pnpm compile && pnpm test`. Run e2e only for the
 - Before tagging, test both assets from an empty temp dir: unzip and Load unpacked, `node senda-mcp.mjs token`, pair, one tool call.
 - Publish: `git tag v<version> && git push origin v<version>`, then `gh release create v<version> senda-extension-<version>-chrome.zip senda-mcp.mjs --title "Senda v<version>" --notes-file <notes>` (personal account `epulla`).
 - The README Download button points to `releases/latest`; `senda-mcp.mjs` is linked via `releases/latest/download/senda-mcp.mjs`.
+- Chrome Web Store: `pnpm --filter @senda/extension zip:store` → `packages/extension/.output/senda-extension-<version>-chrome-store.zip` (same build, manifest without `key`; the store rejects it). Upload that zip, never the release zip. Screenshots: `docs/assets/store/screenshots/`.
 - No store publishing without a separate go.
 
 ## UI copy
