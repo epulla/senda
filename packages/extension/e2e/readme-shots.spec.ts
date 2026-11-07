@@ -1,10 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import { test, expect } from './fixtures';
 
-// Regenerates the README screenshots in docs/assets: SENDA_SHOTS=1 pnpm e2e readme-shots
+// Regenerates the README screenshots in docs/assets and the 1280×800 Chrome Web Store ones in docs/assets/store/screenshots: SENDA_SHOTS=1 pnpm e2e readme-shots
 test.skip(!process.env.SENDA_SHOTS, 'set SENDA_SHOTS=1 to regenerate README screenshots');
 
 const out = (name: string) => new URL(`../../../docs/assets/${name}`, import.meta.url).pathname;
+const store = { width: 1280, height: 800 };
 const style = `body{font:15px/1.5 system-ui,sans-serif;max-width:560px;margin:48px auto;color:#1f2937}
 form{display:grid;gap:12px;padding:24px;border:1px solid #e5e7eb;border-radius:12px}
 label{display:grid;gap:4px;font-weight:600}input,textarea{font:inherit;padding:8px;border:1px solid #d1d5db;border-radius:6px}
@@ -27,6 +28,8 @@ test('README screenshots', async ({ context, mcp, openSidepanel }) => {
   await detail.setViewportSize({ width: 900, height: 760 });
   await expect(detail.getByText('What your AI can do (3)')).toBeVisible();
   await detail.screenshot({ path: out('adapter.png') });
+  await detail.setViewportSize(store);
+  await detail.screenshot({ path: out('store/screenshots/adapter.png') });
   await detail.close();
 
   const mail = await readFile(new URL('../tests/fixtures/site/mail.html', import.meta.url), 'utf8');
@@ -50,8 +53,22 @@ test('README screenshots', async ({ context, mcp, openSidepanel }) => {
   await expect(tab.locator('senda-approval').locator('.hl')).toBeVisible();
   await tab.waitForTimeout(500);
   await tab.screenshot({ path: out('approval.png') });
+  await tab.setViewportSize(store);
+  await tab.waitForTimeout(500);
+  await tab.screenshot({ path: out('store/screenshots/approval.png') });
 
   await panel.bringToFront();
   await expect(panel.getByRole('button', { name: 'Deny', exact: true })).toBeVisible();
   await panel.screenshot({ path: out('sidepanel.png') });
+
+  // Chrome's side panel can't be captured, so place the real panel next to the page.
+  await panel.setViewportSize({ width: 400, height: store.height });
+  await tab.setViewportSize({ width: store.width - 400, height: store.height });
+  await tab.waitForTimeout(500);
+  const [page, side] = await Promise.all([tab.screenshot(), panel.screenshot()]);
+  const combo = await context.newPage();
+  await combo.setViewportSize(store);
+  const img = (png: Buffer) => `<img src="data:image/png;base64,${png.toString('base64')}">`;
+  await combo.setContent(`<body style="margin:0;display:flex">${img(page)}${img(side)}</body>`);
+  await combo.screenshot({ path: out('store/screenshots/sidepanel.png') });
 });
