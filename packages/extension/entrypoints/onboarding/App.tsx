@@ -8,6 +8,11 @@ import { useItem } from '@/src/ui/useItem';
 
 const RELEASE = 'https://github.com/epulla/senda/releases/latest/download';
 const SERVER_PATH = '/path/to/senda-mcp.mjs';
+const PATH_EXAMPLES = [
+  ['macOS', '/Users/you/.senda/senda-mcp.mjs'],
+  ['Linux', '/home/you/.senda/senda-mcp.mjs'],
+  ['Windows', 'C:\\Users\\you\\.senda\\senda-mcp.mjs'],
+];
 const APPS = ['patio', 'claudeCode', 'claude', 'cursor', 'vscode', 'other'] as const;
 type App = (typeof APPS)[number];
 
@@ -129,7 +134,17 @@ export default function App() {
                 }
               />
             )}
-            <p className="mt-1 text-sm text-muted">{t.replacePath}</p>
+            <div className="mt-1 text-sm text-muted">
+              {t.replacePath}
+              <ul className="mt-1 list-disc pl-5">
+                {PATH_EXAMPLES.map(([os, path]) => (
+                  <li key={os}>
+                    {os}: <code>{path}</code>
+                  </li>
+                ))}
+              </ul>
+              {(app === 'cursor' || app === 'other') && <p className="mt-1">{t.jsonWindows}</p>}
+            </div>
           </li>
         </>
       )}

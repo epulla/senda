@@ -47,9 +47,9 @@ export const es: Text = {
     downloadServer: 'Descarga senda-mcp.mjs',
     keepFile: ' y guárdalo en una carpeta que vayas a conservar.',
     patioAsk: 'Pídele a tu IA en Patio:',
-    patioPrompt: `Configura Senda en Patio por mí:
-1. Revisa que Node.js 20 o más reciente esté instalado (ejecuta node --version). Si no lo está, dime cómo instalarlo y detente.
-2. Descarga https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs en ~/.senda/senda-mcp.mjs (crea la carpeta si hace falta).
+    patioPrompt: `Configura Senda en Patio por mí (esta computadora puede ser macOS, Windows o Linux; usa comandos que funcionen aquí):
+1. Revisa que Node.js 20 o más reciente esté instalado (node --version). Si no lo está, dime cómo instalarlo en este sistema y detente.
+2. Descarga https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs en una carpeta llamada .senda dentro de mi carpeta personal (créala si hace falta).
 3. Agrega un servidor MCP de Patio llamado "senda": tipo stdio, comando node, y la ruta absoluta completa de ese archivo como su único argumento. Revisa que arranque.
 4. Llama a la herramienta senda_pairing_code de Senda y muéstrame el código. Si las herramientas de Senda aún no están disponibles en este chat, dime que abra un chat nuevo y diga "Conecta Senda".`,
     byHand: 'O configúralo a mano',
@@ -60,7 +60,8 @@ export const es: Text = {
     cursor: 'En los ajustes de Cursor, agrega un nuevo servidor MCP con:',
     vscode: 'En VS Code, abre la paleta de comandos, ejecuta "MCP: Add Server", elige Command (stdio), pega este comando y llama al servidor senda:',
     other: 'Agrega este servidor en los ajustes de tu app de IA:',
-    replacePath: 'Cambia /path/to/senda-mcp.mjs por la ubicación donde guardaste el archivo.',
+    replacePath: 'Cambia /path/to/senda-mcp.mjs por la ruta completa del archivo, por ejemplo:',
+    jsonWindows: 'En Windows, escribe cada \\ dos veces en esta configuración, por ejemplo C:\\\\Users\\\\you\\\\.senda\\\\senda-mcp.mjs.',
     sayConnect: 'En tu app de IA, escribe:',
     connectPrompt: 'Conecta Senda',
     pasteCode: '2. Pega el código',

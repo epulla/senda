@@ -53,7 +53,7 @@ Needs a Chromium browser (Chrome, Brave or Edge).
 
 2. **Add Senda to your AI app.** Pick your AI app on the setup page to see its steps. In short:
 
-   **Patio:** the setup page has a prompt to paste into Patio; your AI there installs and adds Senda for you. By hand: needs [Node.js](https://nodejs.org) 20+ and [`senda-mcp.mjs`](https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs), saved somewhere you will keep (for example `~/.senda/senda-mcp.mjs`). Open Settings › MCP servers › Add server, choose Local command, set Command to `node` and Arguments to the absolute path of `senda-mcp.mjs`.
+   **Patio:** the setup page has a prompt to paste into Patio; your AI there installs and adds Senda for you. By hand: needs [Node.js](https://nodejs.org) 20+ and [`senda-mcp.mjs`](https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs), saved somewhere you will keep, for example a `.senda` folder in your home folder: `/Users/you/.senda/senda-mcp.mjs` (macOS), `/home/you/.senda/senda-mcp.mjs` (Linux) or `C:\Users\you\.senda\senda-mcp.mjs` (Windows). Open Settings › MCP servers › Add server, choose Local command, set Command to `node` and Arguments to the absolute path of `senda-mcp.mjs`.
 
    **Claude Code:** needs Node.js 20+ and `senda-mcp.mjs` as above. Then:
 
@@ -76,6 +76,8 @@ Needs a Chromium browser (Chrome, Brave or Edge).
    }
    ```
 
+   On Windows, write each `\` twice in JSON, for example `"C:\\Users\\you\\.senda\\senda-mcp.mjs"`.
+
    **VS Code (GitHub Copilot):** needs Node.js 20+ and `senda-mcp.mjs` as above. Run **MCP: Add Server** from the Command Palette, choose **Command (stdio)**, enter `node /path/to/senda-mcp.mjs` and name it `senda`.
 
 3. **Pair.** Ask your AI: "Connect Senda". It shows a code; paste it into the Senda setup page and click Save. (Or print the code yourself: `node /path/to/senda-mcp.mjs token`.)
@@ -97,7 +99,7 @@ pnpm build
 
 Then follow the steps above with `packages/extension/.output/chrome-mv3` as the extension folder and `packages/server/dist/index.js` as the server file. `pnpm bundle:mcpb` builds the Claude Desktop bundle at `packages/server/dist/senda.mcpb`.
 
-The server listens on `127.0.0.1:18765` (set `SENDA_PORT` to change it) and keeps its token in `~/.senda/token`.
+The server listens on `127.0.0.1:18765` (set `SENDA_PORT` to change it) and keeps its token in `.senda/token` in your home folder.
 
 ## Tools
 
@@ -138,7 +140,7 @@ pnpm test
 pnpm build
 ```
 
-`pnpm test` runs the unit tests. `pnpm e2e` builds the extension and server, then drives them end to end with Playwright: its own Chromium loads the extension, a temporary Senda server and the fixture site run on free ports, and the side panel opens as a normal page. Your real `~/.senda` token and running servers are untouched. First time only: `pnpm --filter @senda/extension exec playwright install chromium`.
+`pnpm test` runs the unit tests. `pnpm e2e` builds the extension and server, then drives them end to end with Playwright: its own Chromium loads the extension, a temporary Senda server and the fixture site run on free ports, and the side panel opens as a normal page. Your real `.senda` token and running servers are untouched. First time only: `pnpm --filter @senda/extension exec playwright install chromium`.
 
 `pnpm --filter @senda/extension dev` runs the extension with live reload. Release files: `pnpm build && pnpm --filter @senda/extension zip` makes `packages/extension/.output/senda-extension-<version>-chrome.zip`; `packages/server/dist/index.js` ships as `senda-mcp.mjs`. To regenerate the screenshots above: `SENDA_SHOTS=1 pnpm e2e readme-shots`.
 

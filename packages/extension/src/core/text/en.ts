@@ -44,9 +44,9 @@ export const en = {
     downloadServer: 'Download senda-mcp.mjs',
     keepFile: ' and save it in a folder you will keep.',
     patioAsk: 'Ask your AI in Patio:',
-    patioPrompt: `Set up Senda in Patio for me:
-1. Check that Node.js 20 or newer is installed (run node --version). If it isn't, tell me how to install it and stop.
-2. Download https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs to ~/.senda/senda-mcp.mjs (create the folder if needed).
+    patioPrompt: `Set up Senda in Patio for me (this computer may be macOS, Windows or Linux; use commands that work here):
+1. Check that Node.js 20 or newer is installed (node --version). If it isn't, tell me how to install it on this system and stop.
+2. Download https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs into a folder named .senda in my home folder (create it if needed).
 3. Add a Patio MCP server named "senda": kind stdio, command node, and the full absolute path of that file as its only argument. Check that it starts.
 4. Call Senda's senda_pairing_code tool and show me the code. If Senda's tools aren't available in this chat yet, tell me to open a new chat and say "Connect Senda".`,
     byHand: 'Or set it up by hand',
@@ -57,7 +57,8 @@ export const en = {
     cursor: 'In Cursor settings, add a new MCP server with:',
     vscode: 'In VS Code, open the Command Palette, run "MCP: Add Server", choose Command (stdio), paste this command and name the server senda:',
     other: 'Add this server to your AI app settings:',
-    replacePath: 'Replace /path/to/senda-mcp.mjs with where you saved the file.',
+    replacePath: 'Replace /path/to/senda-mcp.mjs with the full path of the file, for example:',
+    jsonWindows: 'On Windows, write each \\ twice in this config, for example C:\\\\Users\\\\you\\\\.senda\\\\senda-mcp.mjs.',
     sayConnect: 'In your AI app, say:',
     connectPrompt: 'Connect Senda',
     pasteCode: '2. Paste the code',
