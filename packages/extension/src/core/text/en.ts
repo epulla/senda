@@ -37,12 +37,19 @@ export const en = {
     intro: 'Senda lets your AI assistant read and use this browser. It only talks to the Senda app on this computer.',
     chooseApp: '1. Which AI app do you use?',
     pickApp: 'Pick your AI app to see its steps.',
-    apps: { claudeCode: 'Claude Code', claude: 'Claude Desktop', cursor: 'Cursor', patio: 'Patio', vscode: 'VS Code', other: 'Other' },
+    apps: { patio: 'Patio', claudeCode: 'Claude Code', claude: 'Claude Desktop', cursor: 'Cursor', vscode: 'VS Code', other: 'Other' },
     claudeDownload: 'Download Senda for Claude',
     claudeInstall: 'Open the file you downloaded and click Install in Claude.',
     installNode: 'Install Node.js (version 20 or newer).',
     downloadServer: 'Download senda-mcp.mjs',
     keepFile: ' and save it in a folder you will keep.',
+    patioAsk: 'Ask your AI in Patio:',
+    patioPrompt: `Set up Senda in Patio for me:
+1. Check that Node.js 20 or newer is installed (run node --version). If it isn't, tell me how to install it and stop.
+2. Download https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs to ~/.senda/senda-mcp.mjs (create the folder if needed).
+3. Add a Patio MCP server named "senda": kind stdio, command node, and the full absolute path of that file as its only argument. Check that it starts.
+4. Call Senda's senda_pairing_code tool and show me the code. If Senda's tools aren't available in this chat yet, tell me to open a new chat and say "Connect Senda".`,
+    byHand: 'Or set it up by hand',
     patio: 'In Patio, open Settings › MCP servers › Add server, choose Local command and fill in:',
     command: 'Command',
     args: 'Arguments',

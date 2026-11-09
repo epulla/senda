@@ -40,12 +40,19 @@ export const es: Text = {
       'Senda permite que tu asistente de IA lea y use este navegador. Solo se comunica con la app de Senda en esta computadora.',
     chooseApp: '1. ¿Qué app de IA usas?',
     pickApp: 'Elige tu app de IA para ver sus pasos.',
-    apps: { claudeCode: 'Claude Code', claude: 'Claude Desktop', cursor: 'Cursor', patio: 'Patio', vscode: 'VS Code', other: 'Otra' },
+    apps: { patio: 'Patio', claudeCode: 'Claude Code', claude: 'Claude Desktop', cursor: 'Cursor', vscode: 'VS Code', other: 'Otra' },
     claudeDownload: 'Descargar Senda para Claude',
     claudeInstall: 'Abre el archivo que descargaste y haz clic en Instalar en Claude.',
     installNode: 'Instala Node.js (versión 20 o más reciente).',
     downloadServer: 'Descarga senda-mcp.mjs',
     keepFile: ' y guárdalo en una carpeta que vayas a conservar.',
+    patioAsk: 'Pídele a tu IA en Patio:',
+    patioPrompt: `Configura Senda en Patio por mí:
+1. Revisa que Node.js 20 o más reciente esté instalado (ejecuta node --version). Si no lo está, dime cómo instalarlo y detente.
+2. Descarga https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs en ~/.senda/senda-mcp.mjs (crea la carpeta si hace falta).
+3. Agrega un servidor MCP de Patio llamado "senda": tipo stdio, comando node, y la ruta absoluta completa de ese archivo como su único argumento. Revisa que arranque.
+4. Llama a la herramienta senda_pairing_code de Senda y muéstrame el código. Si las herramientas de Senda aún no están disponibles en este chat, dime que abra un chat nuevo y diga "Conecta Senda".`,
+    byHand: 'O configúralo a mano',
     patio: 'En Patio, abre Ajustes › Servidores MCP › Agregar servidor, elige Comando local y completa:',
     command: 'Comando',
     args: 'Argumentos',

@@ -8,7 +8,7 @@ import { useItem } from '@/src/ui/useItem';
 
 const RELEASE = 'https://github.com/epulla/senda/releases/latest/download';
 const SERVER_PATH = '/path/to/senda-mcp.mjs';
-const APPS = ['claudeCode', 'claude', 'cursor', 'patio', 'vscode', 'other'] as const;
+const APPS = ['patio', 'claudeCode', 'claude', 'cursor', 'vscode', 'other'] as const;
 type App = (typeof APPS)[number];
 
 function Copy({ value }: { value: string }) {
@@ -25,6 +25,42 @@ function Copy({ value }: { value: string }) {
         onClick={() => navigator.clipboard.writeText(value).then(() => setCopied(true))}
       >
         {copied ? t.copied : t.copy}
+      </button>
+    </div>
+  );
+}
+
+// Lucide copy/check paths (ISC).
+const COPY_ICON = ['M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2Z', 'M4 16a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2'];
+const CHECK_ICON = ['M20 6 9 17l-5-5'];
+
+function CopyPrompt({ value }: { value: string }) {
+  const t = useText().onboarding;
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="relative mt-1">
+      <p className="whitespace-pre-wrap rounded-lg bg-base-300 py-2 pr-11 pl-3 text-sm">{value}</p>
+      <button
+        type="button"
+        aria-label={copied ? t.copied : t.copy}
+        title={copied ? t.copied : t.copy}
+        className="btn btn-ghost absolute top-1 right-1 size-8 !p-0"
+        onClick={() => navigator.clipboard.writeText(value).then(() => setCopied(true))}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          className="size-4"
+        >
+          {(copied ? CHECK_ICON : COPY_ICON).map((d) => (
+            <path key={d} d={d} />
+          ))}
+        </svg>
       </button>
     </div>
   );
@@ -50,6 +86,59 @@ export default function App() {
   }
 
   const config = JSON.stringify({ mcpServers: { senda: { command: 'node', args: [SERVER_PATH] } } }, null, 2);
+
+  const steps = app && (
+    <ol className="list-decimal space-y-3 pl-6">
+      {app === 'claude' ? (
+        <>
+          <li>
+            <a className="btn btn-primary !no-underline" href={`${RELEASE}/senda.mcpb`}>
+              {t.claudeDownload}
+            </a>
+          </li>
+          <li>{t.claudeInstall}</li>
+        </>
+      ) : (
+        <>
+          <li>
+            <a href="https://nodejs.org" target="_blank" rel="noreferrer">
+              {t.installNode}
+            </a>
+          </li>
+          <li>
+            <a href={`${RELEASE}/senda-mcp.mjs`}>{t.downloadServer}</a>
+            {t.keepFile}
+          </li>
+          <li>
+            {t[app]}
+            {app === 'patio' ? (
+              <>
+                <div className="mt-2 text-sm font-medium">{t.command}</div>
+                <Copy value="node" />
+                <div className="mt-2 text-sm font-medium">{t.args}</div>
+                <Copy value={SERVER_PATH} />
+              </>
+            ) : (
+              <Copy
+                value={
+                  app === 'claudeCode'
+                    ? `claude mcp add senda -- node ${SERVER_PATH}`
+                    : app === 'vscode'
+                      ? `node ${SERVER_PATH}`
+                      : config
+                }
+              />
+            )}
+            <p className="mt-1 text-sm text-muted">{t.replacePath}</p>
+          </li>
+        </>
+      )}
+      <li>
+        {t.sayConnect}
+        <Copy value={t.connectPrompt} />
+      </li>
+    </ol>
+  );
 
   return (
     <main className="card mx-auto my-8 max-w-xl space-y-6 !p-8 text-base">
@@ -82,57 +171,19 @@ export default function App() {
         </div>
         {!app ? (
           <p className="text-muted">{t.pickApp}</p>
+        ) : app === 'patio' ? (
+          <>
+            <div>
+              {t.patioAsk}
+              <CopyPrompt value={t.patioPrompt} />
+            </div>
+            <details>
+              <summary className="text-sm text-muted">{t.byHand}</summary>
+              <div className="mt-2">{steps}</div>
+            </details>
+          </>
         ) : (
-          <ol className="list-decimal space-y-3 pl-6">
-            {app === 'claude' ? (
-              <>
-                <li>
-                  <a className="btn btn-primary !no-underline" href={`${RELEASE}/senda.mcpb`}>
-                    {t.claudeDownload}
-                  </a>
-                </li>
-                <li>{t.claudeInstall}</li>
-              </>
-            ) : (
-              <>
-                <li>
-                  <a href="https://nodejs.org" target="_blank" rel="noreferrer">
-                    {t.installNode}
-                  </a>
-                </li>
-                <li>
-                  <a href={`${RELEASE}/senda-mcp.mjs`}>{t.downloadServer}</a>
-                  {t.keepFile}
-                </li>
-                <li>
-                  {t[app]}
-                  {app === 'patio' ? (
-                    <>
-                      <div className="mt-2 text-sm font-medium">{t.command}</div>
-                      <Copy value="node" />
-                      <div className="mt-2 text-sm font-medium">{t.args}</div>
-                      <Copy value={SERVER_PATH} />
-                    </>
-                  ) : (
-                    <Copy
-                      value={
-                        app === 'claudeCode'
-                          ? `claude mcp add senda -- node ${SERVER_PATH}`
-                          : app === 'vscode'
-                            ? `node ${SERVER_PATH}`
-                            : config
-                      }
-                    />
-                  )}
-                  <p className="mt-1 text-sm text-muted">{t.replacePath}</p>
-                </li>
-              </>
-            )}
-            <li>
-              {t.sayConnect}
-              <Copy value={t.connectPrompt} />
-            </li>
-          </ol>
+          steps
         )}
       </section>
       <form onSubmit={save} className="space-y-3">

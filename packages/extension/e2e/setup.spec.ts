@@ -20,6 +20,13 @@ test('setup page guides by AI app and pairs with the code the AI shows', async (
     expect(new Set(boxes).size).toBe(1);
   }
 
+  await page.locator('label', { hasText: 'Patio' }).click();
+  await expect(page.getByText('Set up Senda in Patio for me:')).toBeVisible();
+  const byHand = page.locator('details', { hasText: 'Or set it up by hand' });
+  await expect(byHand.getByText('Command', { exact: true })).toBeHidden();
+  await byHand.locator('summary').click();
+  await expect(byHand.getByText('Command', { exact: true })).toBeVisible();
+
   await page.locator('label', { hasText: 'Claude Desktop' }).click();
   await expect(page.getByRole('link', { name: 'Download Senda for Claude' })).toHaveAttribute('href', /\/releases\/latest\/download\/senda\.mcpb$/);
   await expect(page.getByText('Node.js')).toHaveCount(0);
