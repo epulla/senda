@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Hello, methods } from '../src/index.js';
+import { compareVersions, Hello, isNewerServer, methods } from '../src/index.js';
 
 describe('protocol schemas', () => {
   it('accepts valid hello and rejects missing token', () => {
@@ -17,5 +17,22 @@ describe('protocol schemas', () => {
   });
   it.each(Object.entries(methods))('rejects unknown params for %s', (_name, schema) => {
     expect(schema.safeParse({ unexpected: true }).success).toBe(false);
+  });
+});
+
+describe('server versions', () => {
+  it.each([
+    ['0.2.0', '0.1.1', 1],
+    ['0.1.1', '0.2.0', -1],
+    ['0.10.0', '0.9.9', 1],
+    ['0.2.0', '0.2.0', 0],
+    ['1.0', '1.0.0', 0],
+  ])('compares %s with %s', (a, b, sign) => {
+    expect(Math.sign(compareVersions(a, b))).toBe(sign);
+  });
+  it('prefers the later build only when versions match', () => {
+    expect(isNewerServer({ version: '0.2.0', build: 2 }, { version: '0.2.0', build: 1 })).toBe(true);
+    expect(isNewerServer({ version: '0.2.0', build: 1 }, { version: '0.2.0', build: 1 })).toBe(false);
+    expect(isNewerServer({ version: '0.1.1', build: 9 }, { version: '0.2.0', build: 1 })).toBe(false);
   });
 });

@@ -33,6 +33,8 @@ export const es: Text = {
     openPanel: 'Abrir panel lateral',
     pasteCode: 'Pegar el código',
     setup: 'Configuración',
+    serverVersion: (version: string) => `App de Senda v${version}`,
+    serverOutdated: 'Tu app de Senda está desactualizada. Reinicia tu app de IA.',
   },
   browserName: {
     label: 'Nombre de este navegador',

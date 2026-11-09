@@ -3,7 +3,7 @@ import { detectCapabilities } from '../core/capabilities';
 import { browserName, detectBrowserName } from '../core/browser-name';
 import { nextDelay } from '../core/backoff';
 import { handle } from './router';
-import { adaptersItem, approvalsItem, browserNameItem, draftsItem, instanceIdItem, otherBrowsersItem, panicItem, portItem, settingsItem, statusItem, tokenItem } from './state';
+import { adaptersItem, approvalsItem, browserNameItem, draftsItem, instanceIdItem, otherBrowsersItem, serverVersionItem, panicItem, portItem, settingsItem, statusItem, tokenItem } from './state';
 import { summaries } from './adapters/store';
 
 let socket: WebSocket | undefined;
@@ -55,6 +55,7 @@ function clearSocket() {
   ping = undefined;
   socket = undefined;
   void otherBrowsersItem.setValue([]);
+  void serverVersionItem.setValue('');
 }
 async function connect() {
   const token = await tokenItem.getValue();
@@ -116,6 +117,11 @@ async function connect() {
     const message = request as unknown as { event?: string; data?: unknown };
     if (message.event === 'browsers' && Array.isArray(message.data)) {
       await otherBrowsersItem.setValue(message.data.filter((name): name is string => typeof name === 'string'));
+      return;
+    }
+    if (message.event === 'server') {
+      const version = (message.data as { version?: unknown } | undefined)?.version;
+      if (typeof version === 'string') await serverVersionItem.setValue(version);
       return;
     }
     if (typeof request.id !== 'string' || typeof request.method !== 'string') return;

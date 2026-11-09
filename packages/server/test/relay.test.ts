@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WebSocket } from 'ws';
 import { CLOSE_INVALID_TOKEN, EXTENSION_ID, EXTENSION_IDS, PROTOCOL_VERSION } from '@senda/protocol';
 import { createRelay } from '../src/index.js';
@@ -283,4 +283,46 @@ describe('Senda WebSocket relay', () => {
     await new Promise<void>((resolve) => second.http.once('listening', resolve));
     await expect(second.relay.call('navigate', {})).rejects.toThrow('NOT_CONNECTED: Open your browser');
   }, 10000);
+  it('a newer server takes over from an older leader; an older one never does', async () => {
+    const { server: old, port } = await (async () => {
+      const probe = await setup();
+      const free = probe.port;
+      probe.server.close();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      const server = createRelay(token, free, 5000, { version: '0.1.1', build: 5 });
+      servers.push(server);
+      await new Promise<void>((resolve) => server.http.once('listening', resolve));
+      return { server, port: free };
+    })();
+    const origin = `chrome-extension://${EXTENSION_ID}`;
+    const before = connect(port, origin);
+    await connected(before);
+    before.send(JSON.stringify(hello(token, 'browser', 'Chrome')));
+    const newer = createRelay(token, port, 5000, { version: '0.2.0', build: 1 });
+    servers.push(newer);
+    await closed(before);
+    await vi.waitFor(() => expect(newer.http.listening).toBe(true), { timeout: 3000 });
+
+    const after = connect(port, origin);
+    await connected(after);
+    const events: string[] = [];
+    after.on('message', (raw) => events.push(JSON.parse(raw.toString()).event));
+    after.send(JSON.stringify(hello(token, 'browser', 'Chrome')));
+    await vi.waitFor(() => expect(events).toContain('server'));
+    await expect(newer.relay.call('list_browsers', {})).resolves.toMatchObject({ result: [{ id: 'browser' }] });
+    // The old one rejoins as a peer and reaches the browser through the new leader.
+    await vi.waitFor(
+      async () => {
+        expect(old.http.listening).toBe(false);
+        await expect(old.relay.call('list_browsers', {})).resolves.toMatchObject({ result: [{ id: 'browser' }] });
+      },
+      { timeout: 5000 },
+    );
+
+    const older = createRelay(token, port, 5000, { version: '0.1.0', build: 9 });
+    servers.push(older);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(newer.http.listening).toBe(true);
+    expect(after.readyState).toBe(WebSocket.OPEN);
+  }, 15000);
 });

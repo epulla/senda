@@ -6,7 +6,7 @@ When you ask your AI app to connect Senda, it gets the pairing code from the loc
 
 When the user or AI asks to import a site shortcut recipe by URL, Senda fetches that URL only.
 
-Approval cards, visited hosts, tabs opened by Senda, names of the other browsers connected to the same server, taint source, suspected-injection source and panic timestamp use session storage; approval preferences, appearance (light or dark), language (English or Spanish) and activity history use local storage.
+Approval cards, visited hosts, tabs opened by Senda, names of the other browsers connected to the same server, the Senda app version, taint source, suspected-injection source and panic timestamp use session storage; approval preferences, appearance (light or dark), language (English or Spanish) and activity history use local storage.
 
 ## Permissions
 

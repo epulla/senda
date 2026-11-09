@@ -11,6 +11,8 @@ export const statusItem = storage.defineItem<ConnectionStatus>('session:status',
 export const browserNameItem = storage.defineItem<string>('local:browserName', { fallback: '' });
 // Names of the other browsers connected to the same server; used to warn about duplicate names.
 export const otherBrowsersItem = storage.defineItem<string[]>('session:otherBrowsers', { fallback: [] });
+// Version of the Senda app (local server) this browser is connected to; empty when unknown.
+export const serverVersionItem = storage.defineItem<string>('session:serverVersion', { fallback: '' });
 export const instanceIdItem = storage.defineItem<string>('local:instanceId', { init: () => crypto.randomUUID() });
 export const adaptersItem = storage.defineItem<
   Record<string, { adapter: Adapter; status: 'active' | 'paused'; installed_at: string }>

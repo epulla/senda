@@ -31,6 +31,8 @@ export const en = {
     openPanel: 'Open side panel',
     pasteCode: 'Paste the code',
     setup: 'Setup',
+    serverVersion: (version: string) => `Senda app v${version}`,
+    serverOutdated: 'Your Senda app is out of date. Restart your AI app.',
   },
   browserName: {
     label: 'Name this browser',

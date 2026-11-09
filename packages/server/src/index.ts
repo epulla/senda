@@ -15,11 +15,18 @@ import {
   methods,
   AdaptersChanged,
   PeerHello,
+  isNewerServer,
+  type ServerStamp,
   PROTOCOL_VERSION,
   type Request,
   type Response,
 } from '@senda/protocol';
 import { adapterJsonSchema, STEP_KINDS, ENGINE_VERSION, type AdapterSummary } from '@senda/adapter-schema';
+
+export const SERVER_VERSION = '0.2.0';
+// Set by the esbuild build (seconds since 1970) so a rebuild of the same version still counts as newer.
+declare const __SENDA_BUILD__: number | undefined;
+const SELF: ServerStamp = { version: SERVER_VERSION, build: typeof __SENDA_BUILD__ === 'number' ? __SENDA_BUILD__ : 0 };
 
 export async function loadToken(dir = join(homedir(), '.senda')) {
   await mkdir(dir, { recursive: true, mode: 0o700 });
@@ -94,7 +101,12 @@ export function syncAdapterTools(
     }
 }
 
-export function createRelay(token: string, port = Number(process.env.SENDA_PORT ?? DEFAULT_PORT), helloTimeout = 5000) {
+export function createRelay(
+  token: string,
+  port = Number(process.env.SENDA_PORT ?? DEFAULT_PORT),
+  helloTimeout = 5000,
+  self: ServerStamp = SELF,
+) {
   const clients = new Map<string, { ws: WebSocket; name: string; adapters: AdapterSummary[] }>();
   const peers = new Set<WebSocket>();
   const adapterListeners = new Set<(adapters: AdapterSummary[]) => void>();
@@ -183,6 +195,8 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
         clearTimeout(timer);
         if (isPeer) {
           peers.add(ws);
+          // Only local processes with the token get here (no Origin); a newer one takes the port.
+          if (isNewerServer({ version: msg.data.version ?? '0.0.0', build: msg.data.build ?? 0 }, self)) stepDown(ws);
           return;
         }
         const id = msg.data.instanceId ?? randomUUID();
@@ -191,6 +205,7 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
         clients.set(id, { ws, name: msg.data.name ?? msg.data.browser, adapters: msg.data.adapters });
         notifyAdapters();
         notifyNames();
+        ws.send(JSON.stringify({ event: 'server', data: { version: self.version } }));
         return;
       }
       if (isPeer) {
@@ -235,6 +250,16 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
   // Several MCP clients can each start a server; extra ones follow the one on the port and take over when it exits.
   let portBusy = false;
   let retry: NodeJS.Timeout | undefined;
+  let takeOver = false;
+  // Hands the port to a newer peer: it listens right away, this one rejoins as a peer a bit later.
+  const stepDown = (newer: WebSocket) => {
+    newer.send(JSON.stringify({ event: 'step_down' }));
+    newer.close();
+    for (const ws of wss.clients) if (ws !== newer) ws.terminate();
+    http.close(() => {
+      if (!closed) retry = setTimeout(() => http.listen(port, '127.0.0.1'), 1500);
+    });
+  };
   http.on('error', (error: NodeJS.ErrnoException) => {
     if (error.code !== 'EADDRINUSE') throw error;
     portBusy = true;
@@ -242,7 +267,7 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
     const ws = new WebSocket(`ws://127.0.0.1:${port}`);
     leader = ws;
     ws.on('open', () => {
-      ws.send(JSON.stringify({ event: 'peer_hello', data: { token } }));
+      ws.send(JSON.stringify({ event: 'peer_hello', data: { token, ...self } }));
       setTimeout(() => {
         if (leader === ws) relay.call('list_adapters', {}).catch(() => {});
       }, 10);
@@ -250,7 +275,8 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
     ws.on('message', (raw) => {
       try {
         const message = JSON.parse(raw.toString());
-        if (message?.event === 'adapters_changed' && AdaptersChanged.safeParse(message.data).success) {
+        if (message?.event === 'step_down') takeOver = true;
+        else if (message?.event === 'adapters_changed' && AdaptersChanged.safeParse(message.data).success) {
           followerAdapters = message.data;
           adapterListeners.forEach((fn) => fn(followerAdapters));
         } else resolvePending(message);
@@ -260,7 +286,8 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
     ws.on('close', () => {
       leader = undefined;
       rejectPending();
-      if (!closed) retry = setTimeout(() => http.listen(port, '127.0.0.1'), 100 + Math.random() * 900);
+      if (!closed) retry = setTimeout(() => http.listen(port, '127.0.0.1'), takeOver ? 0 : 100 + Math.random() * 900);
+      takeOver = false;
     });
   });
   http.on('listening', () => {
@@ -384,7 +411,7 @@ async function main() {
   const { McpServer } = await import('@modelcontextprotocol/sdk/server/mcp.js');
   const { StdioServerTransport } = await import('@modelcontextprotocol/sdk/server/stdio.js');
   const mcp = new McpServer(
-    { name: 'senda', version: '0.2.0' },
+    { name: 'senda', version: SERVER_VERSION },
     {
       capabilities: { tools: { listChanged: true } },
       instructions:

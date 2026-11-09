@@ -46,7 +46,19 @@ export const Hello = z.object({
   instanceId: z.string().optional(),
   name: z.string().optional(),
 });
-export const PeerHello = z.object({ token: z.string() });
+// version/build are optional so servers older than 0.2.0 still join as peers.
+export const PeerHello = z.object({ token: z.string(), version: z.string().optional(), build: z.number().optional() });
+// Compares x.y.z versions; anything after the numbers is ignored.
+export function compareVersions(a: string, b: string) {
+  const parts = (value: string) => value.split('.').map((part) => parseInt(part, 10) || 0);
+  const [x, y] = [parts(a), parts(b)];
+  for (let i = 0; i < Math.max(x.length, y.length); i++) if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) - (y[i] ?? 0);
+  return 0;
+}
+export type ServerStamp = { version: string; build: number };
+// A higher version wins; with equal versions the later build (time stamped at build) wins.
+export const isNewerServer = (a: ServerStamp, b: ServerStamp) =>
+  compareVersions(a.version, b.version) > 0 || (compareVersions(a.version, b.version) === 0 && a.build > b.build);
 const tabId = z.number().optional();
 export const methods = {
   navigate: z.object({ url: z.string().url(), tabId }).strict(),

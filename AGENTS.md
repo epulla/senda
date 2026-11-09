@@ -60,13 +60,14 @@ Before finishing a change, run `pnpm compile && pnpm test`. Run e2e only for the
 - Bundle every runtime dependency. Never add `--external` for a runtime dependency or a native-only package; the only externals are ws's optional `bufferutil` / `utf-8-validate`.
 - If a new dependency cannot be bundled, stop and ask.
 - Any server change: before release, copy `senda-mcp.mjs` to an empty temp dir and check `node senda-mcp.mjs token`, pairing with the extension, and one tool call.
+- Each AI app starts its own server; the first binds the port and leads, the rest join as peers (no Origin, token required). A peer with a newer `SERVER_VERSION`, or the same version and a later build stamp (`__SENDA_BUILD__`, set by the esbuild build), makes the leader step down and takes the port; an older peer never does. Bump `SERVER_VERSION` with every release.
 - `senda.mcpb` wraps the same file as `server/senda-mcp.mjs`; the bundle adds only `manifest.json` and `icon.png`.
 - README install steps, the setup page download links and the release asset names stay in sync.
 
 ## Release
 
 - Tags and releases need Erick's approval of the version and the release notes.
-- Version lives in `packages/extension/package.json` (`version`, also the manifest version), `packages/server/package.json` (`version`) and `packages/server/src/index.ts` (`McpServer` version). The `.mcpb` manifest takes its version from `packages/server/package.json` when packed.
+- Version lives in `packages/extension/package.json` (`version`, also the manifest version), `packages/server/package.json` (`version`) and `packages/server/src/index.ts` (`SERVER_VERSION`). The `.mcpb` manifest takes its version from `packages/server/package.json` when packed.
 - Build assets: `pnpm build && pnpm --filter @senda/extension zip` → `packages/extension/.output/senda-extension-<version>-chrome.zip`; copy `packages/server/dist/index.js` to `senda-mcp.mjs`; `pnpm bundle:mcpb` and copy `packages/server/dist/senda.mcpb`.
 - Before tagging, test the assets from an empty temp dir: unzip and Load unpacked, `node senda-mcp.mjs token`, pair, one tool call; install `senda.mcpb` in Claude Desktop, say "Connect Senda", pair, one tool call.
 - Publish: `git tag v<version> && git push origin v<version>`, then `gh release create v<version> senda-extension-<version>-chrome.zip senda-mcp.mjs senda.mcpb --title "Senda v<version>" --notes-file <notes>` (personal account `epulla`).

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { stubBrowserWithoutTabGroups } from './no-tab-groups';
 import { CLOSE_INVALID_TOKEN, PROTOCOL_VERSION } from '@senda/protocol';
-import { tokenItem, statusItem, adaptersItem, panicItem, browserNameItem, otherBrowsersItem } from '../src/bg/state';
+import { tokenItem, statusItem, adaptersItem, panicItem, browserNameItem, otherBrowsersItem, serverVersionItem } from '../src/bg/state';
 
 class FakeSocket {
   static instances: FakeSocket[] = [];
@@ -165,15 +165,18 @@ describe('connection', () => {
     latestSocket().open();
     await vi.waitFor(() => expect(JSON.parse(latestSocket().sent[0]!).data.name).toBe('Personal'));
   });
-  it('keeps the names of the other connected browsers until the link closes', async () => {
+  it('keeps the other browsers\' names and the server version until the link closes', async () => {
     const { startConnection } = await import('../src/bg/connection');
     startConnection();
     await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
     const ws = latestSocket();
     ws.open();
     ws.onmessage?.({ data: JSON.stringify({ event: 'browsers', data: ['Work', 7] }) });
+    ws.onmessage?.({ data: JSON.stringify({ event: 'server', data: { version: '0.2.0' } }) });
     await vi.waitFor(async () => expect(await otherBrowsersItem.getValue()).toEqual(['Work']));
+    await vi.waitFor(async () => expect(await serverVersionItem.getValue()).toBe('0.2.0'));
     ws.close(1006);
     await vi.waitFor(async () => expect(await otherBrowsersItem.getValue()).toEqual([]));
+    expect(await serverVersionItem.getValue()).toBe('');
   });
 });

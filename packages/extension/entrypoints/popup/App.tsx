@@ -1,4 +1,5 @@
-import { approvalsItem, draftsItem, panicItem, settingsItem, statusItem } from '@/src/bg/state';
+import { compareVersions } from '@senda/protocol';
+import { approvalsItem, draftsItem, panicItem, serverVersionItem, settingsItem, statusItem } from '@/src/bg/state';
 import { requestPanic } from '@/src/bg/approvals';
 import { detectCapabilities } from '@/src/core/capabilities';
 import { useText } from '@/src/ui/i18n';
@@ -88,6 +89,8 @@ export default function App() {
   const [panic] = useItem(panicItem);
   const [settings, setSettings] = useItem(settingsItem);
   const { name, taken } = useBrowserName();
+  const [serverVersion] = useItem(serverVersionItem);
+  const outdated = serverVersion !== '' && compareVersions(serverVersion, browser.runtime.getManifest().version) < 0;
   const pending =
     Object.values(drafts).filter((draft) => draft.pending).length +
     Object.values(approvals).filter((item) => !item.answer).length;
@@ -105,6 +108,11 @@ export default function App() {
         {status === 'connected' ? <ConnectedAs /> : t.status[status]}
       </p>
       {status === 'connected' && taken && <NameTaken name={name} />}
+      {status === 'connected' && serverVersion && (
+        <p className={outdated ? 'text-error-text' : 'text-xs text-muted'}>
+          {outdated ? `${t.popup.serverOutdated} (${t.popup.serverVersion(serverVersion)})` : t.popup.serverVersion(serverVersion)}
+        </p>
+      )}
       {panic > 0 && <p className="font-medium text-error-text">{t.popup.stopped}</p>}
       {settings.askBefore === 'never' && (
         <p role="alert" className="card card-danger flex items-center justify-between gap-2 !p-2 text-xs font-semibold text-error-text">
