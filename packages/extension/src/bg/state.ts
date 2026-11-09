@@ -7,6 +7,8 @@ export type ConnectionStatus = 'connected' | 'disconnected' | 'invalid_token';
 export const tokenItem = storage.defineItem<string>('local:token', { fallback: '' });
 export const portItem = storage.defineItem<number>('local:port', { fallback: DEFAULT_PORT });
 export const statusItem = storage.defineItem<ConnectionStatus>('session:status', { fallback: 'disconnected' });
+// Empty means the detected brand (Chrome, Edge…).
+export const browserNameItem = storage.defineItem<string>('local:browserName', { fallback: '' });
 export const instanceIdItem = storage.defineItem<string>('local:instanceId', { init: () => crypto.randomUUID() });
 export const adaptersItem = storage.defineItem<
   Record<string, { adapter: Adapter; status: 'active' | 'paused'; installed_at: string }>

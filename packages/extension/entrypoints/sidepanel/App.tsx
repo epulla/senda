@@ -11,6 +11,7 @@ import { useText } from '@/src/ui/i18n';
 import { LanguageToggle } from '@/src/ui/LanguageToggle';
 import { ThemeToggle } from '@/src/ui/ThemeToggle';
 import { useItem } from '@/src/ui/useItem';
+import { BrowserNameField } from '@/src/ui/BrowserNameField';
 
 const askOptions = ['destructive', 'changes', 'everything', 'never'] as const;
 
@@ -454,6 +455,7 @@ export default function App() {
       <details className="card">
         <summary className="cursor-pointer font-semibold">{t.settings}</summary>
         <div className="mt-3 space-y-4">
+        <BrowserNameField />
         <fieldset className="space-y-2">
           <legend className="mb-1 font-semibold">{t.askBefore}</legend>
           {askOptions.map((value) => (

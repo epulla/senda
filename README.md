@@ -86,6 +86,10 @@ Needs a Chromium browser (Chrome, Brave or Edge).
 
 4. **Try it.** The Senda icon shows a green "on" badge when connected. Ask your AI: "Open example.com and tell me the title."
 
+### Several browsers or profiles
+
+Install Senda in each browser or Chrome profile you want your AI to use and paste the same code in each; one server serves them all. Give each one a name on the setup page or in side panel → Settings → **Name this browser** (for example "Work" and "Personal"); otherwise they all show up as "Chrome". Your AI sees them with `browser_list` and picks one by name, for example "Open my calendar in Work". If two browsers share a name, Senda asks the AI to use the id or to rename one.
+
 ### Build from source
 
 Needs [pnpm](https://pnpm.io) as well.

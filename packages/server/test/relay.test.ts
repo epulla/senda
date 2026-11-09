@@ -150,6 +150,21 @@ describe('Senda WebSocket relay', () => {
     await reply;
     expect(chrome.listenerCount('message')).toBe(0);
   });
+  it('rejects a name shared by two browsers and still routes by id', async () => {
+    const { port, server } = await setup();
+    const work = connect(port, `chrome-extension://${EXTENSION_ID}`);
+    const personal = connect(port, `chrome-extension://${EXTENSION_ID}`);
+    await Promise.all([connected(work), connected(personal)]);
+    work.send(JSON.stringify(hello(token, 'work-id', 'Chrome')));
+    personal.send(JSON.stringify(hello(token, 'personal-id', 'Chrome')));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    await expect(server.relay.call('snapshot', {}, { browser: 'chrome' })).rejects.toThrow(
+      '2 browsers are named "chrome": work-id, personal-id.',
+    );
+    const reply = replyOn(personal, { ok: true });
+    await expect(server.relay.call('snapshot', {}, { browser: 'personal-id' })).resolves.toMatchObject({ result: { ok: true } });
+    await reply;
+  });
   it('sends adapter calls for uninstalled ids to the preferred browser', async () => {
     const { port, server } = await setup();
     const chrome = connect(port, `chrome-extension://${EXTENSION_ID}`);

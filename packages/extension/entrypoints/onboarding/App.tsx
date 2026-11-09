@@ -4,6 +4,7 @@ import { useText } from '@/src/ui/i18n';
 import { STATUS_DOT } from '@/src/ui/status';
 import { LanguageToggle } from '@/src/ui/LanguageToggle';
 import { ThemeToggle } from '@/src/ui/ThemeToggle';
+import { BrowserNameField } from '@/src/ui/BrowserNameField';
 import { useItem } from '@/src/ui/useItem';
 
 const RELEASE = 'https://github.com/epulla/senda/releases/latest/download';
@@ -227,6 +228,7 @@ export default function App() {
             className="font-mono"
           />
         </label>
+        <BrowserNameField />
         <details>
           <summary className="text-sm text-muted">{t.advanced}</summary>
           <label className="mt-2 block text-sm">

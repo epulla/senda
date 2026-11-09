@@ -1,9 +1,9 @@
 import { CLOSE_INVALID_TOKEN, ErrorCode, PROTOCOL_VERSION, type Request } from '@senda/protocol';
 import { detectCapabilities } from '../core/capabilities';
-import { detectBrowserName } from '../core/browser-name';
+import { browserName, detectBrowserName } from '../core/browser-name';
 import { nextDelay } from '../core/backoff';
 import { handle } from './router';
-import { adaptersItem, approvalsItem, draftsItem, instanceIdItem, panicItem, portItem, settingsItem, statusItem, tokenItem } from './state';
+import { adaptersItem, approvalsItem, browserNameItem, draftsItem, instanceIdItem, panicItem, portItem, settingsItem, statusItem, tokenItem } from './state';
 import { summaries } from './adapters/store';
 
 let socket: WebSocket | undefined;
@@ -88,7 +88,7 @@ async function connect() {
         data: {
           token,
           instanceId,
-          name: detectBrowserName(navigator as never, import.meta.env.BROWSER),
+          name: browserName(await browserNameItem.getValue(), detectBrowserName(navigator as never, import.meta.env.BROWSER)),
           extensionVersion: browser.runtime.getManifest().version,
           protocolVersion: PROTOCOL_VERSION,
           engineVersion: 1,
@@ -197,6 +197,7 @@ export function startConnection() {
       socket.send(JSON.stringify({ event: 'adapters_changed', data: await summaries() }));
   });
   portItem.watch(reconnect);
+  browserNameItem.watch(reconnect);
   browser.alarms.create('reconnect', { periodInMinutes: 1 });
   browser.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === 'reconnect' && !stoppedForToken && (!socket || socket.readyState !== WebSocket.OPEN)) reconnect();

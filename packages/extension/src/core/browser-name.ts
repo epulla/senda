@@ -11,3 +11,7 @@ export function detectBrowserName(
   if (brands.includes('Google Chrome')) return 'Chrome';
   return 'Chromium';
 }
+
+export function browserName(custom: string, detected: string) {
+  return custom.trim().slice(0, 30) || detected;
+}

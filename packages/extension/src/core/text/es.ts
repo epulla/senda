@@ -34,6 +34,10 @@ export const es: Text = {
     pasteCode: 'Pegar el código',
     setup: 'Configuración',
   },
+  browserName: {
+    label: 'Nombre de este navegador',
+    placeholder: (name: string) => `Trabajo, Personal… (ahora ${name})`,
+  },
   onboarding: {
     title: 'Configura Senda',
     intro:

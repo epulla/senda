@@ -32,6 +32,10 @@ export const en = {
     pasteCode: 'Paste the code',
     setup: 'Setup',
   },
+  browserName: {
+    label: 'Name this browser',
+    placeholder: (name: string) => `Work, Personal… (now ${name})`,
+  },
   onboarding: {
     title: 'Set up Senda',
     intro: 'Senda lets your AI assistant read and use this browser. It only talks to the Senda app on this computer.',
