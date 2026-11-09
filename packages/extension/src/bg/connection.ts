@@ -197,7 +197,10 @@ export function startConnection() {
       socket.send(JSON.stringify({ event: 'adapters_changed', data: await summaries() }));
   });
   portItem.watch(reconnect);
-  browserNameItem.watch(reconnect);
+  // Stopped (Stop everything or wrong code) stays stopped; the new name goes out on the next hello.
+  browserNameItem.watch(() => {
+    if (!stoppedForToken) reconnect();
+  });
   browser.alarms.create('reconnect', { periodInMinutes: 1 });
   browser.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === 'reconnect' && !stoppedForToken && (!socket || socket.readyState !== WebSocket.OPEN)) reconnect();

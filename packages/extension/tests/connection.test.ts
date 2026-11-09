@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { stubBrowserWithoutTabGroups } from './no-tab-groups';
 import { CLOSE_INVALID_TOKEN, PROTOCOL_VERSION } from '@senda/protocol';
-import { tokenItem, statusItem, adaptersItem, panicItem } from '../src/bg/state';
+import { tokenItem, statusItem, adaptersItem, panicItem, browserNameItem } from '../src/bg/state';
 
 class FakeSocket {
   static instances: FakeSocket[] = [];
@@ -38,6 +38,8 @@ function latestSocket(): FakeSocket {
 describe('connection', () => {
   beforeEach(async () => {
     vi.resetModules();
+    // Drops storage and the watchers earlier tests' connection modules left behind.
+    fakeBrowser.reset();
     FakeSocket.instances = [];
     stubBrowserWithoutTabGroups();
     vi.stubGlobal('WebSocket', FakeSocket);
@@ -141,5 +143,26 @@ describe('connection', () => {
     startConnection();
     await vi.waitFor(async () => expect(await statusItem.getValue()).toBe('disconnected'));
     expect(FakeSocket.instances).toHaveLength(0);
+  });
+  it('reconnects with a new browser name, but not while stopped', async () => {
+    const { startConnection } = await import('../src/bg/connection');
+    startConnection();
+    await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
+    latestSocket().open();
+    await browserNameItem.setValue('Work');
+    await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(2));
+    latestSocket().open();
+    await vi.waitFor(() => expect(JSON.parse(latestSocket().sent[0]!).data.name).toBe('Work'));
+
+    await panicItem.setValue(Date.now());
+    const { stopConnection } = await import('../src/bg/connection');
+    stopConnection();
+    await browserNameItem.setValue('Personal');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(FakeSocket.instances).toHaveLength(2);
+    await panicItem.setValue(0);
+    await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(3));
+    latestSocket().open();
+    await vi.waitFor(() => expect(JSON.parse(latestSocket().sent[0]!).data.name).toBe('Personal'));
   });
 });
