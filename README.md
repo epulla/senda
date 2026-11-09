@@ -14,15 +14,15 @@
 Senda is a browser extension plus a local MCP server. Your AI assistant (Claude Code, Patio or any MCP client) can open pages, read them, click and type in your own browser, signed in as you. It works only in tabs it opens, inside a visible "🤖 MCP" tab group, and by default stops to ask you on the page before actions that look like sending, changing or deleting something.
 
 <p align="center">
-  <a href="https://github.com/epulla/senda/releases/latest"><img src="https://img.shields.io/github/v/release/epulla/senda?style=for-the-badge&logo=googlechrome&logoColor=white&label=Download&color=2ea44f" height="48" alt="Download Senda"></a><br>
-  <sub>Chrome, Brave or Edge · <a href="#quick-start">install steps</a> · <a href="https://github.com/epulla/senda/releases">all releases</a></sub>
+  <a href="https://chromewebstore.google.com/detail/senda/cmcjkfkendenhffongjoefpiookiocpe"><img src="https://img.shields.io/chrome-web-store/v/cmcjkfkendenhffongjoefpiookiocpe?style=for-the-badge&logo=googlechrome&logoColor=white&label=Download%20for%20Chrome&color=2ea44f" height="48" alt="Download Senda for Chrome"></a><br>
+  <sub>Chrome, Brave or Edge · server: <a href="https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs">senda-mcp.mjs</a> · <a href="#quick-start">install steps</a> · <a href="https://github.com/epulla/senda/releases">all releases</a></sub>
 </p>
 
 <p align="center">
   <img src="docs/assets/brand/mascot.png" alt="Senda mascot: a small orange robot with a green backpack on a winding trail" width="320">
 </p>
 
-> **Status:** early release. It works and is tested end to end, but expect rough edges and breaking changes. Not yet in the Chrome Web Store; you load it unpacked.
+> **Status:** early release. It works and is tested end to end, but expect rough edges and breaking changes.
 
 <p align="center"><img src="docs/assets/approval.png" alt="Senda approval card on a compose page: your AI wants to click Send, with Allow and Deny buttons and the Send button highlighted" width="720"></p>
 
@@ -47,11 +47,11 @@ Many browser MCP servers drive a separate, automated browser. Senda takes a diff
 
 Needs [Node.js](https://nodejs.org) 20+ and a Chromium browser (Chrome, Brave or Edge).
 
-1. **Download** from the [latest release](https://github.com/epulla/senda/releases/latest):
-   - `senda-extension-<version>-chrome.zip`: the browser extension. Unzip it into a folder you will keep.
-   - [`senda-mcp.mjs`](https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs): the MCP server, a single file. Save it somewhere you will keep, for example `~/.senda/senda-mcp.mjs`.
+1. **Install the extension** from the [Chrome Web Store](https://chromewebstore.google.com/detail/senda/cmcjkfkendenhffongjoefpiookiocpe) (works in Chrome, Brave and Edge).
 
-2. **Load the extension.** Open `chrome://extensions` (or `brave://extensions`, `edge://extensions`), turn on Developer mode, click **Load unpacked** and pick the unzipped folder.
+   Or load it unpacked: download `senda-extension-<version>-chrome.zip` from the [latest release](https://github.com/epulla/senda/releases/latest), unzip it into a folder you will keep, open `chrome://extensions` (or `brave://extensions`, `edge://extensions`), turn on Developer mode, click **Load unpacked** and pick the folder.
+
+2. **Download the server.** [`senda-mcp.mjs`](https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs) is the MCP server, a single file. Save it somewhere you will keep, for example `~/.senda/senda-mcp.mjs`.
 
 3. **Add the MCP server to your AI client.** Use the absolute path to `senda-mcp.mjs`.
 
@@ -76,7 +76,7 @@ Needs [Node.js](https://nodejs.org) 20+ and a Chromium browser (Chrome, Brave or
 
    Patio: add an MCP server with the same command and arguments.
 
-4. **Pair.** Print the pairing code and paste it into the Senda setup page that opened when you loaded the extension:
+4. **Pair.** Print the pairing code and paste it into the Senda setup page that opened when you installed the extension (or click the Senda toolbar icon):
 
    ```sh
    node /path/to/senda-mcp.mjs token
