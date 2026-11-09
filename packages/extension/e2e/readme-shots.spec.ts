@@ -12,6 +12,12 @@ label{display:grid;gap:4px;font-weight:600}input,textarea{font:inherit;padding:8
 textarea{height:96px}button{justify-self:start;padding:8px 20px;border:0;border-radius:6px;background:#2563eb;color:#fff;font:inherit}`;
 
 test('README screenshots', async ({ context, mcp, openSidepanel }) => {
+  const setup = context.pages().find((p) => p.url().endsWith('/onboarding.html'))!;
+  await setup.setViewportSize({ width: 900, height: 760 });
+  await setup.screenshot({ path: out('setup.png'), fullPage: true });
+  await setup.setViewportSize(store);
+  await setup.screenshot({ path: out('store/screenshots/setup.png') });
+
   const file = new URL('../tests/fixtures/adapters/fixturemoodle.json', import.meta.url);
   const recipe = { ...JSON.parse((await readFile(file, 'utf8')).replaceAll('http://127.0.0.1:18766', 'https://campus.example.edu')), name: 'Campus Moodle', description: 'Read your courses and deadlines, rename a course' };
   await mcp.callTool({ name: 'adapter_draft', arguments: { recipe } });
