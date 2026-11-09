@@ -71,7 +71,7 @@ Before finishing a change, run `pnpm compile && pnpm test`. Run e2e only for the
 - Before tagging, test the assets from an empty temp dir: unzip and Load unpacked, `node senda-mcp.mjs token`, pair, one tool call; install `senda.mcpb` in Claude Desktop, say "Connect Senda", pair, one tool call.
 - Publish: `git tag v<version> && git push origin v<version>`, then `gh release create v<version> senda-extension-<version>-chrome.zip senda-mcp.mjs senda.mcpb --title "Senda v<version>" --notes-file <notes>` (personal account `epulla`).
 - The README Download button points to `releases/latest`; `senda-mcp.mjs` and `senda.mcpb` are linked via `releases/latest/download/<file>` (README and setup page), so keep those names unversioned.
-- Chrome Web Store: `pnpm --filter @senda/extension zip:store` → `packages/extension/.output/senda-extension-<version>-chrome-store.zip` (same build, manifest without `key`; the store rejects it). Upload that zip, never the release zip. Screenshots: `docs/assets/store/screenshots/`. Listing setup line: "Install, then follow the setup page."
+- Chrome Web Store: `pnpm --filter @senda/extension zip:store` → `packages/extension/.output/senda-extension-<version>-chrome-store.zip` (same build, manifest without `key`; the store rejects it). Upload that zip, never the release zip. Screenshots: `docs/assets/store/screenshots/`. Listing setup line: "Install, then pick your AI app on the setup page." Keep app lists alphabetical and neutral everywhere (setup page, README, store): no app recommended or named first as easiest.
 - No store publishing without a separate go.
 
 ## UI copy

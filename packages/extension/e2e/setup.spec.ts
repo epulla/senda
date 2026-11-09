@@ -3,15 +3,28 @@ import { test, expect } from './fixtures';
 test('setup page guides by AI app and pairs with the code the AI shows', async ({ context, extensionId, server }) => {
   const page = await context.newPage();
   await page.goto(`chrome-extension://${extensionId}/onboarding.html`);
-  const claude = page.getByRole('radio', { name: /Claude Desktop/ });
-  await expect(claude).toBeChecked();
+  const radios = page.getByRole('radio');
+  await expect(radios).toHaveCount(6);
+  for (const radio of await radios.all()) await expect(radio).not.toBeChecked();
+  await expect(page.getByText('Pick your AI app to see its steps.')).toBeVisible();
+  await expect(page.getByText('Connect Senda')).toHaveCount(0);
+
+  for (const width of [900, 420]) {
+    await page.setViewportSize({ width, height: 900 });
+    const boxes = await page.locator('[role=radiogroup] label').evaluateAll((labels) =>
+      labels.map((label) => {
+        const { width, height } = label.getBoundingClientRect();
+        return `${Math.round(width)}x${Math.round(height)}`;
+      }),
+    );
+    expect(new Set(boxes).size).toBe(1);
+  }
+
+  await page.locator('label', { hasText: 'Claude Desktop' }).click();
   await expect(page.getByRole('link', { name: 'Download Senda for Claude' })).toHaveAttribute('href', /\/releases\/latest\/download\/senda\.mcpb$/);
   await expect(page.getByText('Node.js')).toHaveCount(0);
 
-  await claude.focus();
   await page.keyboard.press('ArrowRight');
-  await expect(page.getByRole('radio', { name: 'Patio' })).toBeChecked();
-  await page.locator('label', { hasText: 'Cursor' }).click();
   await expect(page.getByRole('radio', { name: 'Cursor' })).toBeChecked();
   await expect(page.getByRole('link', { name: /Node\.js/ })).toBeVisible();
   await expect(page.getByText('"mcpServers"')).toBeVisible();

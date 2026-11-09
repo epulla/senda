@@ -39,8 +39,8 @@ export const es: Text = {
     intro:
       'Senda permite que tu asistente de IA lea y use este navegador. Solo se comunica con la app de Senda en esta computadora.',
     chooseApp: '1. ¿Qué app de IA usas?',
-    recommended: 'Recomendado',
-    apps: { claude: 'Claude Desktop', patio: 'Patio', claudeCode: 'Claude Code', cursor: 'Cursor', other: 'Otra' },
+    pickApp: 'Elige tu app de IA para ver sus pasos.',
+    apps: { claudeCode: 'Claude Code', claude: 'Claude Desktop', cursor: 'Cursor', patio: 'Patio', vscode: 'VS Code', other: 'Otra' },
     claudeDownload: 'Descargar Senda para Claude',
     claudeInstall: 'Abre el archivo que descargaste y haz clic en Instalar en Claude.',
     installNode: 'Instala Node.js (versión 20 o más reciente).',
@@ -51,6 +51,7 @@ export const es: Text = {
     args: 'Argumentos',
     claudeCode: 'Agrega Senda a Claude Code:',
     cursor: 'En los ajustes de Cursor, agrega un nuevo servidor MCP con:',
+    vscode: 'En VS Code, abre la paleta de comandos, ejecuta "MCP: Add Server", elige Command (stdio), pega este comando y llama al servidor senda:',
     other: 'Agrega este servidor en los ajustes de tu app de IA:',
     replacePath: 'Cambia /path/to/senda-mcp.mjs por la ubicación donde guardaste el archivo.',
     sayConnect: 'En tu app de IA, escribe:',

@@ -14,10 +14,11 @@ textarea{height:96px}button{justify-self:start;padding:8px 20px;border:0;border-
 test('README screenshots', async ({ context, mcp, openSidepanel }) => {
   const setup = context.pages().find((p) => p.url().endsWith('/onboarding.html'))!;
   await setup.setViewportSize({ width: 900, height: 760 });
+  await setup.locator('label', { hasText: 'Patio' }).click();
   await setup.screenshot({ path: out('setup.png'), fullPage: true });
   await setup.setViewportSize(store);
   // The whole page is taller than 800 px; shrink it so the store shot shows every step.
-  await setup.evaluate(() => (document.body.style.zoom = '0.8'));
+  await setup.evaluate((height) => (document.body.style.zoom = String(height / document.documentElement.scrollHeight)), store.height);
   await setup.screenshot({ path: out('store/screenshots/setup.png') });
 
   const file = new URL('../tests/fixtures/adapters/fixturemoodle.json', import.meta.url);

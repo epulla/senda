@@ -11,11 +11,11 @@
 
 **Why wire up API keys and a separate connector for every app, when you're already logged in to all of them in your browser?**
 
-Senda is a browser extension plus a local MCP server. Your AI assistant (Claude Desktop, Claude Code, Patio or any MCP client) can open pages, read them, click and type in your own browser, signed in as you. It works only in tabs it opens, inside a visible "🤖 MCP" tab group, and by default stops to ask you on the page before actions that look like sending, changing or deleting something.
+Senda is a browser extension plus a local MCP server. Your AI assistant (Claude Code, Claude Desktop, Cursor, Patio, VS Code or any MCP client) can open pages, read them, click and type in your own browser, signed in as you. It works only in tabs it opens, inside a visible "🤖 MCP" tab group, and by default stops to ask you on the page before actions that look like sending, changing or deleting something.
 
 <p align="center">
   <a href="https://chromewebstore.google.com/detail/senda/cmcjkfkendenhffongjoefpiookiocpe"><img src="https://img.shields.io/chrome-web-store/v/cmcjkfkendenhffongjoefpiookiocpe?style=for-the-badge&logo=googlechrome&logoColor=white&label=Download%20for%20Chrome&color=2ea44f" height="48" alt="Download Senda for Chrome"></a><br>
-  <sub>Chrome, Brave or Edge · for Claude Desktop: <a href="https://github.com/epulla/senda/releases/latest/download/senda.mcpb">senda.mcpb</a> · server: <a href="https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs">senda-mcp.mjs</a> · <a href="#quick-start">install steps</a> · <a href="https://github.com/epulla/senda/releases">all releases</a></sub>
+  <sub>Chrome, Brave or Edge · server: <a href="https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs">senda-mcp.mjs</a> · Claude Desktop bundle: <a href="https://github.com/epulla/senda/releases/latest/download/senda.mcpb">senda.mcpb</a> · <a href="#quick-start">install steps</a> · <a href="https://github.com/epulla/senda/releases">all releases</a></sub>
 </p>
 
 <p align="center">
@@ -47,25 +47,21 @@ Many browser MCP servers drive a separate, automated browser. Senda takes a diff
 
 Needs a Chromium browser (Chrome, Brave or Edge).
 
-1. **Install the extension** from the [Chrome Web Store](https://chromewebstore.google.com/detail/senda/cmcjkfkendenhffongjoefpiookiocpe) (works in Chrome, Brave and Edge). A setup page opens; it walks you through the steps below for your AI app. You can reopen it from the Senda toolbar icon.
+1. **Install the extension** from the [Chrome Web Store](https://chromewebstore.google.com/detail/senda/cmcjkfkendenhffongjoefpiookiocpe) (works in Chrome, Brave and Edge). A setup page opens; pick your AI app there and it shows the steps. You can reopen it from the Senda toolbar icon.
 
    Or load it unpacked: download `senda-extension-<version>-chrome.zip` from the [latest release](https://github.com/epulla/senda/releases/latest), unzip it into a folder you will keep, open `chrome://extensions` (or `brave://extensions`, `edge://extensions`), turn on Developer mode, click **Load unpacked** and pick the folder.
 
-2. **Add Senda to your AI app.**
+2. **Add Senda to your AI app.** Pick your AI app on the setup page to see its steps. In short:
 
-   **Claude Desktop (easiest, no Node.js needed):** download [`senda.mcpb`](https://github.com/epulla/senda/releases/latest/download/senda.mcpb), open it and click **Install** in Claude.
-
-   **Patio:** needs [Node.js](https://nodejs.org) 20+. Download [`senda-mcp.mjs`](https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs) and save it somewhere you will keep, for example `~/.senda/senda-mcp.mjs`. In Patio, open Settings › MCP servers › Add server, choose Local command, set Command to `node` and Arguments to the absolute path of `senda-mcp.mjs`.
-
-   **Claude Code, Cursor and other MCP clients:** needs [Node.js](https://nodejs.org) 20+ and [`senda-mcp.mjs`](https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs) as above.
-
-   Claude Code:
+   **Claude Code:** needs [Node.js](https://nodejs.org) 20+ and [`senda-mcp.mjs`](https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs), saved somewhere you will keep (for example `~/.senda/senda-mcp.mjs`). Then:
 
    ```sh
    claude mcp add senda -- node /path/to/senda-mcp.mjs
    ```
 
-   Any MCP client that takes a JSON config:
+   **Claude Desktop:** download [`senda.mcpb`](https://github.com/epulla/senda/releases/latest/download/senda.mcpb), open it and click **Install** in Claude. No Node.js needed.
+
+   **Cursor and other MCP clients that take a JSON config:** needs Node.js 20+ and `senda-mcp.mjs` as above. Add:
 
    ```json
    {
@@ -77,6 +73,10 @@ Needs a Chromium browser (Chrome, Brave or Edge).
      }
    }
    ```
+
+   **Patio:** needs Node.js 20+ and `senda-mcp.mjs` as above. Open Settings › MCP servers › Add server, choose Local command, set Command to `node` and Arguments to the absolute path of `senda-mcp.mjs`.
+
+   **VS Code (GitHub Copilot):** needs Node.js 20+ and `senda-mcp.mjs` as above. Run **MCP: Add Server** from the Command Palette, choose **Command (stdio)**, enter `node /path/to/senda-mcp.mjs` and name it `senda`.
 
 3. **Pair.** Ask your AI: "Connect Senda". It shows a code; paste it into the Senda setup page and click Save. (Or print the code yourself: `node /path/to/senda-mcp.mjs token`.)
 

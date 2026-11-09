@@ -8,7 +8,7 @@ import { useItem } from '@/src/ui/useItem';
 
 const RELEASE = 'https://github.com/epulla/senda/releases/latest/download';
 const SERVER_PATH = '/path/to/senda-mcp.mjs';
-const APPS = ['claude', 'patio', 'claudeCode', 'cursor', 'other'] as const;
+const APPS = ['claudeCode', 'claude', 'cursor', 'patio', 'vscode', 'other'] as const;
 type App = (typeof APPS)[number];
 
 function Copy({ value }: { value: string }) {
@@ -38,7 +38,7 @@ export default function App() {
   const [status] = useItem(statusItem);
   const [draft, setDraft] = useState('');
   const [portDraft, setPortDraft] = useState('');
-  const [app, setApp] = useState<App>('claude');
+  const [app, setApp] = useState<App>();
   useEffect(() => setDraft(token), [token]);
   useEffect(() => setPortDraft(String(port)), [port]);
 
@@ -63,11 +63,11 @@ export default function App() {
       <p>{t.intro}</p>
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">{t.chooseApp}</h2>
-        <div role="radiogroup" aria-label={t.chooseApp} className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div role="radiogroup" aria-label={t.chooseApp} className="grid auto-rows-fr grid-cols-2 gap-2 sm:grid-cols-3">
           {APPS.map((id) => (
             <label
               key={id}
-              className="btn cursor-pointer !flex-col !items-start !gap-0 !whitespace-normal text-left has-checked:!border-primary has-checked:!bg-base-300 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary"
+              className="btn cursor-pointer !whitespace-normal text-center has-checked:!border-primary has-checked:!bg-base-300 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary"
             >
               <input
                 type="radio"
@@ -77,52 +77,63 @@ export default function App() {
                 onChange={() => setApp(id)}
               />
               {t.apps[id]}
-              {id === 'claude' && <span className="text-xs font-normal text-muted">{t.recommended}</span>}
             </label>
           ))}
         </div>
-        <ol className="list-decimal space-y-3 pl-6">
-          {app === 'claude' ? (
-            <>
-              <li>
-                <a className="btn btn-primary !no-underline" href={`${RELEASE}/senda.mcpb`}>
-                  {t.claudeDownload}
-                </a>
-              </li>
-              <li>{t.claudeInstall}</li>
-            </>
-          ) : (
-            <>
-              <li>
-                <a href="https://nodejs.org" target="_blank" rel="noreferrer">
-                  {t.installNode}
-                </a>
-              </li>
-              <li>
-                <a href={`${RELEASE}/senda-mcp.mjs`}>{t.downloadServer}</a>
-                {t.keepFile}
-              </li>
-              <li>
-                {t[app]}
-                {app === 'patio' ? (
-                  <>
-                    <div className="mt-2 text-sm font-medium">{t.command}</div>
-                    <Copy value="node" />
-                    <div className="mt-2 text-sm font-medium">{t.args}</div>
-                    <Copy value={SERVER_PATH} />
-                  </>
-                ) : (
-                  <Copy value={app === 'claudeCode' ? `claude mcp add senda -- node ${SERVER_PATH}` : config} />
-                )}
-                <p className="mt-1 text-sm text-muted">{t.replacePath}</p>
-              </li>
-            </>
-          )}
-          <li>
-            {t.sayConnect}
-            <Copy value={t.connectPrompt} />
-          </li>
-        </ol>
+        {!app ? (
+          <p className="text-muted">{t.pickApp}</p>
+        ) : (
+          <ol className="list-decimal space-y-3 pl-6">
+            {app === 'claude' ? (
+              <>
+                <li>
+                  <a className="btn btn-primary !no-underline" href={`${RELEASE}/senda.mcpb`}>
+                    {t.claudeDownload}
+                  </a>
+                </li>
+                <li>{t.claudeInstall}</li>
+              </>
+            ) : (
+              <>
+                <li>
+                  <a href="https://nodejs.org" target="_blank" rel="noreferrer">
+                    {t.installNode}
+                  </a>
+                </li>
+                <li>
+                  <a href={`${RELEASE}/senda-mcp.mjs`}>{t.downloadServer}</a>
+                  {t.keepFile}
+                </li>
+                <li>
+                  {t[app]}
+                  {app === 'patio' ? (
+                    <>
+                      <div className="mt-2 text-sm font-medium">{t.command}</div>
+                      <Copy value="node" />
+                      <div className="mt-2 text-sm font-medium">{t.args}</div>
+                      <Copy value={SERVER_PATH} />
+                    </>
+                  ) : (
+                    <Copy
+                      value={
+                        app === 'claudeCode'
+                          ? `claude mcp add senda -- node ${SERVER_PATH}`
+                          : app === 'vscode'
+                            ? `node ${SERVER_PATH}`
+                            : config
+                      }
+                    />
+                  )}
+                  <p className="mt-1 text-sm text-muted">{t.replacePath}</p>
+                </li>
+              </>
+            )}
+            <li>
+              {t.sayConnect}
+              <Copy value={t.connectPrompt} />
+            </li>
+          </ol>
+        )}
       </section>
       <form onSubmit={save} className="space-y-3">
         <h2 className="text-lg font-semibold">{t.pasteCode}</h2>
