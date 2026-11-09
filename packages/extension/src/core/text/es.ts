@@ -26,7 +26,7 @@ export const es: Text = {
     paused: 'En pausa',
   },
   popup: {
-    connectedAs: (name: string) => `Conectado como ${name}`,
+    connectedAs: 'Conectado como',
     stopped: 'Senda está detenido. Abre el panel lateral para volver a conectar.',
     neverAsk: 'Senda no te preguntará antes de actuar.',
     review: (count: number) => `Revisar ${count} pendiente${count === 1 ? '' : 's'} de aprobación`,
@@ -37,6 +37,8 @@ export const es: Text = {
   browserName: {
     label: 'Nombre de este navegador',
     placeholder: (name: string) => `Trabajo, Personal… (ahora ${name})`,
+    rename: 'Cambiar el nombre de este navegador',
+    taken: (name: string) => `Otro navegador ya se llama ${name}`,
   },
   onboarding: {
     title: 'Configura Senda',

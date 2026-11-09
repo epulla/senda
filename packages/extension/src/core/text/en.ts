@@ -24,7 +24,7 @@ export const en = {
     paused: 'Paused',
   },
   popup: {
-    connectedAs: (name: string) => `Connected as ${name}`,
+    connectedAs: 'Connected as',
     stopped: 'Senda is stopped. Open the side panel to reconnect.',
     neverAsk: "Senda won't ask before acting.",
     review: (count: number) => `Review ${count} waiting for approval`,
@@ -35,6 +35,8 @@ export const en = {
   browserName: {
     label: 'Name this browser',
     placeholder: (name: string) => `Work, Personal… (now ${name})`,
+    rename: 'Rename this browser',
+    taken: (name: string) => `Another browser is already named ${name}`,
   },
   onboarding: {
     title: 'Set up Senda',

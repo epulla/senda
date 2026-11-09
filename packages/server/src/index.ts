@@ -109,6 +109,14 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
     for (const peer of peers)
       if (peer.readyState === WebSocket.OPEN) peer.send(JSON.stringify({ event: 'adapters_changed', data: value }));
   };
+  // Tells each browser the names the others use, so Senda can warn about duplicates.
+  const notifyNames = () => {
+    for (const [id, client] of clients)
+      if (client.ws.readyState === WebSocket.OPEN)
+        client.ws.send(
+          JSON.stringify({ event: 'browsers', data: [...clients].filter(([other]) => other !== id).map(([, c]) => c.name) }),
+        );
+  };
   // Set while another server owns the port; calls go through it.
   let leader: WebSocket | undefined;
   let closed = false;
@@ -182,6 +190,7 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
         if (old && old.ws !== ws) old.ws.close();
         clients.set(id, { ws, name: msg.data.name ?? msg.data.browser, adapters: msg.data.adapters });
         notifyAdapters();
+        notifyNames();
         return;
       }
       if (isPeer) {
@@ -216,6 +225,7 @@ export function createRelay(token: string, port = Number(process.env.SENDA_PORT 
         if (client.ws === ws) {
           clients.delete(id);
           notifyAdapters();
+          notifyNames();
           rejectPending(id);
           break;
         }

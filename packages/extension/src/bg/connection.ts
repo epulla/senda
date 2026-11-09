@@ -3,7 +3,7 @@ import { detectCapabilities } from '../core/capabilities';
 import { browserName, detectBrowserName } from '../core/browser-name';
 import { nextDelay } from '../core/backoff';
 import { handle } from './router';
-import { adaptersItem, approvalsItem, browserNameItem, draftsItem, instanceIdItem, panicItem, portItem, settingsItem, statusItem, tokenItem } from './state';
+import { adaptersItem, approvalsItem, browserNameItem, draftsItem, instanceIdItem, otherBrowsersItem, panicItem, portItem, settingsItem, statusItem, tokenItem } from './state';
 import { summaries } from './adapters/store';
 
 let socket: WebSocket | undefined;
@@ -54,6 +54,7 @@ function clearSocket() {
   if (ping !== undefined) clearInterval(ping);
   ping = undefined;
   socket = undefined;
+  void otherBrowsersItem.setValue([]);
 }
 async function connect() {
   const token = await tokenItem.getValue();
@@ -110,6 +111,11 @@ async function connect() {
     try {
       request = JSON.parse(String(data)) as Request;
     } catch {
+      return;
+    }
+    const message = request as unknown as { event?: string; data?: unknown };
+    if (message.event === 'browsers' && Array.isArray(message.data)) {
+      await otherBrowsersItem.setValue(message.data.filter((name): name is string => typeof name === 'string'));
       return;
     }
     if (typeof request.id !== 'string' || typeof request.method !== 'string') return;
