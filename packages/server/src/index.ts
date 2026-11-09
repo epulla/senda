@@ -45,6 +45,20 @@ export function errorText(error: NonNullable<Response['error']>) {
   return `${error.code}: ${error.message}${error.data === undefined ? '' : `\n${JSON.stringify(error.data)}`}`;
 }
 
+export function registerPairingTool(mcp: any, token: string) {
+  mcp.registerTool(
+    'senda_pairing_code',
+    {
+      description:
+        'Show the code to connect Senda to this browser. Use when the user asks to connect or set up Senda; show them the code.',
+      inputSchema: {},
+    },
+    async () => ({
+      content: [{ type: 'text' as const, text: `${token}\nPaste this code into the Senda setup page.` }],
+    }),
+  );
+}
+
 export function syncAdapterTools(
   mcp: any,
   summaries: AdapterSummary[],
@@ -374,6 +388,7 @@ async function main() {
     forward: 'Go forward to the next page in the tab.',
   };
   let lastBrowser: string | undefined;
+  registerPairingTool(mcp, token);
   mcp.registerTool(
     'browser_list',
     { description: 'List connected browsers by name and id.', inputSchema: {} },

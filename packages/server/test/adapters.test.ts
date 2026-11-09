@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { errorText, syncAdapterTools } from '../src/index.js';
+import { errorText, registerPairingTool, syncAdapterTools } from '../src/index.js';
 
 const summary: any = {
   id: 'example',
@@ -56,5 +56,14 @@ describe('adapter MCP tools', () => {
     expect(
       errorText({ code: 'ADAPTER_BROKEN' as any, message: 'Recipe failed', data: { repair: 'check selector' } }),
     ).toBe('ADAPTER_BROKEN: Recipe failed\n{"repair":"check selector"}');
+  });
+});
+
+describe('pairing code tool', () => {
+  it('returns the token with a paste hint', async () => {
+    let callback: any;
+    registerPairingTool({ registerTool: (_name: string, _config: unknown, fn: unknown) => (callback = fn) }, 'abc123');
+    const result = await callback();
+    expect(result.content[0].text).toBe('abc123\nPaste this code into the Senda setup page.');
   });
 });
