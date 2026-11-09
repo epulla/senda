@@ -18,6 +18,7 @@ Use pnpm only. `pnpm-lock.yaml` is the only lockfile.
 | README + store screenshots | `SENDA_SHOTS=1 pnpm e2e readme-shots` |
 | Fixture site alone | `pnpm fixtures` (127.0.0.1:18766) |
 | Extension dev (Chrome/Firefox/Edge) | `pnpm --filter @senda/extension dev` / `dev:firefox` / `dev:edge` |
+| Claude Desktop bundle | `pnpm bundle:mcpb` → `packages/server/dist/senda.mcpb` |
 | Extension release zip | `pnpm --filter @senda/extension zip` |
 | Chrome Web Store zip (no `key`) | `pnpm --filter @senda/extension zip:store` |
 | Package compile/test | `pnpm --filter <package> compile` / `test` (`@senda/protocol`, `@senda/adapter-schema`, `@senda/extension`, `senda-mcp`) |
@@ -30,7 +31,7 @@ Before finishing a change, run `pnpm compile && pnpm test`. Run e2e only for the
 
 - `packages/protocol/`: shared message types, schemas, error codes, `DEFAULT_PORT` (18765).
 - `packages/adapter-schema/`: versioned adapter (site shortcut) recipe contract.
-- `packages/server/`: local MCP server (`src/index.ts`) and `senda` command; build output `dist/index.js`.
+- `packages/server/`: local MCP server (`src/index.ts`) and `senda` command; build output `dist/index.js`. `mcpb/`: Claude Desktop bundle manifest and `pack.mjs`.
 - `packages/extension/entrypoints/`: `background.ts`, `popup/`, `onboarding/` (setup page), `sidepanel/` (approvals, shortcuts, settings), `adapter/` (shortcut detail page), `runner.ts`.
 - `packages/extension/src/core/`: pure logic; no browser API calls. `core/adapters/`: recipe validation, diff, permissions, `{{args.x}}` rendering. `core/text/`: UI strings (`en.ts`, `es.ts`).
 - `packages/extension/src/bg/`: browser-facing logic; `commands/` (one file per browser tool), `adapters/` (storage, run, recipe fetch); every storage item lives in `state.ts`.
@@ -39,7 +40,7 @@ Before finishing a change, run `pnpm compile && pnpm test`. Run e2e only for the
 - `packages/extension/tests/`: Vitest unit tests. `tests/fixtures/server.mjs`: fixture site with a chat page, a fake Moodle and `site/*.html` test pages; `tests/fixtures/adapters/`: fixture recipes.
 - `packages/extension/e2e/`: Playwright specs; `fixtures.ts` starts Chromium with the built extension, the fixture site and a temporary server. `readme-shots.spec.ts` is skipped unless `SENDA_SHOTS=1`.
 - `packages/extension/PRIVACY.md`: update when adding a permission, storage item, or network call.
-- `docs/assets/`: README screenshots (`approval.png`, `sidepanel.png`, `adapter.png`), `brand/` (icon, mascot, wordmarks, logos, avatar, social preview, banner), `store/` (store promos, OG image, 1280×800 `screenshots/`).
+- `docs/assets/`: README screenshots (`approval.png`, `sidepanel.png`, `adapter.png`, `setup.png`), `brand/` (icon, mascot, wordmarks, logos, avatar, social preview, banner), `store/` (store promos, OG image, 1280×800 `screenshots/`).
 - `.github/workflows/build.yml`: CI (compile, test, build) on push to `main` and PRs.
 
 ## Domain rules
@@ -59,17 +60,18 @@ Before finishing a change, run `pnpm compile && pnpm test`. Run e2e only for the
 - Bundle every runtime dependency. Never add `--external` for a runtime dependency or a native-only package; the only externals are ws's optional `bufferutil` / `utf-8-validate`.
 - If a new dependency cannot be bundled, stop and ask.
 - Any server change: before release, copy `senda-mcp.mjs` to an empty temp dir and check `node senda-mcp.mjs token`, pairing with the extension, and one tool call.
-- README install steps and the release asset names stay in sync.
+- `senda.mcpb` wraps the same file as `server/senda-mcp.mjs`; the bundle adds only `manifest.json` and `icon.png`.
+- README install steps, the setup page download links and the release asset names stay in sync.
 
 ## Release
 
 - Tags and releases need Erick's approval of the version and the release notes.
-- Version lives in `packages/extension/package.json` (`version`, also the manifest version), `packages/server/package.json` (`version`) and `packages/server/src/index.ts` (`McpServer` version).
-- Build assets: `pnpm build && pnpm --filter @senda/extension zip` → `packages/extension/.output/senda-extension-<version>-chrome.zip`; copy `packages/server/dist/index.js` to `senda-mcp.mjs`.
-- Before tagging, test both assets from an empty temp dir: unzip and Load unpacked, `node senda-mcp.mjs token`, pair, one tool call.
-- Publish: `git tag v<version> && git push origin v<version>`, then `gh release create v<version> senda-extension-<version>-chrome.zip senda-mcp.mjs --title "Senda v<version>" --notes-file <notes>` (personal account `epulla`).
-- The README Download button points to `releases/latest`; `senda-mcp.mjs` is linked via `releases/latest/download/senda-mcp.mjs`.
-- Chrome Web Store: `pnpm --filter @senda/extension zip:store` → `packages/extension/.output/senda-extension-<version>-chrome-store.zip` (same build, manifest without `key`; the store rejects it). Upload that zip, never the release zip. Screenshots: `docs/assets/store/screenshots/`.
+- Version lives in `packages/extension/package.json` (`version`, also the manifest version), `packages/server/package.json` (`version`) and `packages/server/src/index.ts` (`McpServer` version). The `.mcpb` manifest takes its version from `packages/server/package.json` when packed.
+- Build assets: `pnpm build && pnpm --filter @senda/extension zip` → `packages/extension/.output/senda-extension-<version>-chrome.zip`; copy `packages/server/dist/index.js` to `senda-mcp.mjs`; `pnpm bundle:mcpb` and copy `packages/server/dist/senda.mcpb`.
+- Before tagging, test the assets from an empty temp dir: unzip and Load unpacked, `node senda-mcp.mjs token`, pair, one tool call; install `senda.mcpb` in Claude Desktop, say "Connect Senda", pair, one tool call.
+- Publish: `git tag v<version> && git push origin v<version>`, then `gh release create v<version> senda-extension-<version>-chrome.zip senda-mcp.mjs senda.mcpb --title "Senda v<version>" --notes-file <notes>` (personal account `epulla`).
+- The README Download button points to `releases/latest`; `senda-mcp.mjs` and `senda.mcpb` are linked via `releases/latest/download/<file>` (README and setup page), so keep those names unversioned.
+- Chrome Web Store: `pnpm --filter @senda/extension zip:store` → `packages/extension/.output/senda-extension-<version>-chrome-store.zip` (same build, manifest without `key`; the store rejects it). Upload that zip, never the release zip. Screenshots: `docs/assets/store/screenshots/`. Listing setup line: "Install, then follow the setup page."
 - No store publishing without a separate go.
 
 ## UI copy
