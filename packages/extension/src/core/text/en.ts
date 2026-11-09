@@ -43,6 +43,9 @@ export const en = {
     installNode: 'Install Node.js (version 20 or newer).',
     downloadServer: 'Download senda-mcp.mjs',
     keepFile: ' and save it in a folder you will keep.',
+    noPatio: "Don't have Patio yet? ",
+    downloadPatio: 'Download Patio',
+    brewPatio: 'On macOS you can also run:',
     patioAsk: 'Ask your AI in Patio:',
     patioPrompt: `Set up Senda in Patio for me (this computer may be macOS, Windows or Linux; use commands that work here):
 1. Check that Node.js 20 or newer is installed (node --version). If it isn't, tell me how to install it on this system and stop.

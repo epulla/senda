@@ -46,6 +46,9 @@ export const es: Text = {
     installNode: 'Instala Node.js (versión 20 o más reciente).',
     downloadServer: 'Descarga senda-mcp.mjs',
     keepFile: ' y guárdalo en una carpeta que vayas a conservar.',
+    noPatio: '¿Aún no tienes Patio? ',
+    downloadPatio: 'Descarga Patio',
+    brewPatio: 'En macOS también puedes ejecutar:',
     patioAsk: 'Pídele a tu IA en Patio:',
     patioPrompt: `Configura Senda en Patio por mí (esta computadora puede ser macOS, Windows o Linux; usa comandos que funcionen aquí):
 1. Revisa que Node.js 20 o más reciente esté instalado (node --version). Si no lo está, dime cómo instalarlo en este sistema y detente.

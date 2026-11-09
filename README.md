@@ -53,7 +53,7 @@ Needs a Chromium browser (Chrome, Brave or Edge).
 
 2. **Add Senda to your AI app.** Pick your AI app on the setup page to see its steps. In short:
 
-   **Patio:** the setup page has a prompt to paste into Patio; your AI there installs and adds Senda for you. By hand: needs [Node.js](https://nodejs.org) 20+ and [`senda-mcp.mjs`](https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs), saved somewhere you will keep, for example a `.senda` folder in your home folder: `/Users/you/.senda/senda-mcp.mjs` (macOS), `/home/you/.senda/senda-mcp.mjs` (Linux) or `C:\Users\you\.senda\senda-mcp.mjs` (Windows). Open Settings › MCP servers › Add server, choose Local command, set Command to `node` and Arguments to the absolute path of `senda-mcp.mjs`.
+   **Patio:** don't have it yet? [Download Patio](https://github.com/epulla/patio/releases/latest) (macOS, Windows, Linux; on macOS also `brew install --cask epulla/tap/patio`). The setup page has a prompt to paste into Patio; your AI there installs and adds Senda for you. By hand: needs [Node.js](https://nodejs.org) 20+ and [`senda-mcp.mjs`](https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs), saved somewhere you will keep, for example a `.senda` folder in your home folder: `/Users/you/.senda/senda-mcp.mjs` (macOS), `/home/you/.senda/senda-mcp.mjs` (Linux) or `C:\Users\you\.senda\senda-mcp.mjs` (Windows). Open Settings › MCP servers › Add server, choose Local command, set Command to `node` and Arguments to the absolute path of `senda-mcp.mjs`.
 
    **Claude Code:** needs Node.js 20+ and `senda-mcp.mjs` as above. Then:
 

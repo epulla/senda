@@ -189,6 +189,17 @@ export default function App() {
         ) : app === 'patio' ? (
           <>
             <div>
+              <p>
+                {t.noPatio}
+                <a href="https://github.com/epulla/patio/releases/latest" target="_blank" rel="noreferrer">
+                  {t.downloadPatio}
+                </a>
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                {t.brewPatio} <code>brew install --cask epulla/tap/patio</code>
+              </p>
+            </div>
+            <div>
               {t.patioAsk}
               <CopyPrompt value={t.patioPrompt} />
             </div>
