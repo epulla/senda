@@ -251,13 +251,22 @@ export function createRelay(
   let portBusy = false;
   let retry: NodeJS.Timeout | undefined;
   let takeOver = false;
+  let steppingDown = false;
+  // One pending listen at a time; several peers can trigger a retry at once.
+  const relisten = (delay: number) => {
+    clearTimeout(retry);
+    if (!closed) retry = setTimeout(() => !http.listening && http.listen(port, '127.0.0.1'), delay);
+  };
   // Hands the port to a newer peer: it listens right away, this one rejoins as a peer a bit later.
   const stepDown = (newer: WebSocket) => {
+    if (steppingDown) return newer.terminate();
+    steppingDown = true;
     newer.send(JSON.stringify({ event: 'step_down' }));
     newer.close();
     for (const ws of wss.clients) if (ws !== newer) ws.terminate();
     http.close(() => {
-      if (!closed) retry = setTimeout(() => http.listen(port, '127.0.0.1'), 1500);
+      steppingDown = false;
+      relisten(1500);
     });
   };
   http.on('error', (error: NodeJS.ErrnoException) => {
@@ -286,7 +295,7 @@ export function createRelay(
     ws.on('close', () => {
       leader = undefined;
       rejectPending();
-      if (!closed) retry = setTimeout(() => http.listen(port, '127.0.0.1'), takeOver ? 0 : 100 + Math.random() * 900);
+      relisten(takeOver ? 0 : 100 + Math.random() * 900);
       takeOver = false;
     });
   });

@@ -107,7 +107,7 @@ The server listens on `127.0.0.1:18765` (set `SENDA_PORT` to change it) and keep
 
 ### Troubleshooting
 
-- **Fixes from an update don't show up.** Each AI app starts its own Senda server, and the first one serves your browsers. A newer server takes over from an older one by itself within a few seconds. The Senda popup shows the version of the Senda app it is connected to and warns when it is out of date; if it does, restart your AI app.
+- **Fixes from an update don't show up.** Each AI app starts its own Senda server, and the first one serves your browsers. From 0.2.0 on, a newer server takes over from an older one by itself within a few seconds. Servers older than 0.2.0 can't hand over: after upgrading from 0.1.x, restart your AI apps once. The Senda popup shows the version of the Senda app it is connected to (0.2.0 and later) and warns when that app is older than the extension; if it does, restart your AI app.
 - **"2 browsers are named …".** Give each browser or profile its own name (see above).
 
 ## Tools

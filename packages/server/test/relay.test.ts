@@ -29,6 +29,22 @@ async function setup(timeout = 5000) {
   const port = (server.http.address() as any).port;
   return { server, port };
 }
+// Takeover tests need a fixed port: a relay on port 0 would re-listen on a new random port.
+async function onFreePort(...stamps: { version: string; build: number }[]) {
+  const probe = createRelay(token, 0);
+  await new Promise<void>((resolve) => probe.http.once('listening', resolve));
+  const port = (probe.http.address() as any).port;
+  probe.close();
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const [first, ...rest] = stamps.map((stamp) => () => createRelay(token, port, 5000, stamp));
+  const leader = first!();
+  servers.push(leader);
+  await new Promise<void>((resolve) => leader.http.once('listening', resolve));
+  // The rest start together while the first one leads.
+  const others = rest.map((start) => start());
+  servers.push(...others);
+  return { port, relays: [leader, ...others] };
+}
 function connect(port: number, origin?: string) {
   return new WebSocket(`ws://127.0.0.1:${port}`, { ...(origin ? { origin } : {}) });
 }
@@ -284,16 +300,10 @@ describe('Senda WebSocket relay', () => {
     await expect(second.relay.call('navigate', {})).rejects.toThrow('NOT_CONNECTED: Open your browser');
   }, 10000);
   it('a newer server takes over from an older leader; an older one never does', async () => {
-    const { server: old, port } = await (async () => {
-      const probe = await setup();
-      const free = probe.port;
-      probe.server.close();
-      await new Promise((resolve) => setTimeout(resolve, 20));
-      const server = createRelay(token, free, 5000, { version: '0.1.1', build: 5 });
-      servers.push(server);
-      await new Promise<void>((resolve) => server.http.once('listening', resolve));
-      return { server, port: free };
-    })();
+    const {
+      port,
+      relays: [old],
+    } = await onFreePort({ version: '0.1.1', build: 5 });
     const origin = `chrome-extension://${EXTENSION_ID}`;
     const before = connect(port, origin);
     await connected(before);
@@ -325,4 +335,28 @@ describe('Senda WebSocket relay', () => {
     expect(newer.http.listening).toBe(true);
     expect(after.readyState).toBe(WebSocket.OPEN);
   }, 15000);
+  it('several newer servers starting at once settle on the newest, and every server reaches the browser', async () => {
+    const { port, relays: all } = await onFreePort(...[1, 2, 3, 4].map((build) => ({ version: '0.2.0', build })));
+    const relisten = vi.spyOn(all[0]!.http, 'listen');
+    const newest = all[3]!;
+    await vi.waitFor(
+      () => expect(all.map((server) => server.http.listening)).toEqual([false, false, false, true]),
+      { timeout: 10000, interval: 100 },
+    );
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    expect(newest.http.listening).toBe(true);
+    // The first leader stepped down once and tried to listen again once, not once per newer peer.
+    expect(relisten).toHaveBeenCalledTimes(1);
+    const browser = connect(port, `chrome-extension://${EXTENSION_ID}`);
+    await connected(browser);
+    browser.send(JSON.stringify(hello(token, 'browser', 'Chrome')));
+    await vi.waitFor(
+      async () => {
+        for (const server of all)
+          await expect(server.relay.call('list_browsers', {})).resolves.toMatchObject({ result: [{ id: 'browser' }] });
+      },
+      { timeout: 5000 },
+    );
+    browser.close();
+  }, 20000);
 });
