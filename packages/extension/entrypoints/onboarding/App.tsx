@@ -65,17 +65,20 @@ export default function App() {
         <h2 className="text-lg font-semibold">{t.chooseApp}</h2>
         <div role="radiogroup" aria-label={t.chooseApp} className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {APPS.map((id) => (
-            <button
+            <label
               key={id}
-              type="button"
-              role="radio"
-              aria-checked={app === id}
-              onClick={() => setApp(id)}
-              className={`btn !flex-col !items-start !gap-0 !whitespace-normal text-left ${app === id ? '!border-primary !bg-base-300' : ''}`}
+              className="btn cursor-pointer !flex-col !items-start !gap-0 !whitespace-normal text-left has-checked:!border-primary has-checked:!bg-base-300 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary"
             >
+              <input
+                type="radio"
+                name="app"
+                className="sr-only"
+                checked={app === id}
+                onChange={() => setApp(id)}
+              />
               {t.apps[id]}
               {id === 'claude' && <span className="text-xs font-normal text-muted">{t.recommended}</span>}
-            </button>
+            </label>
           ))}
         </div>
         <ol className="list-decimal space-y-3 pl-6">

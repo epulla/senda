@@ -24,7 +24,7 @@ const ready = (child: ChildProcess) => new Promise<void>((resolve, reject) => {
   setTimeout(resolve, 500);
 });
 
-export const test = base.extend<{ context: BrowserContext; extensionId: string; fixtureUrl: string; mcp: Client; openSidepanel: () => Promise<Page> }>({
+export const test = base.extend<{ context: BrowserContext; extensionId: string; fixtureUrl: string; server: { client: Client; port: number; token: string }; mcp: Client; openSidepanel: () => Promise<Page> }>({
   context: async ({}, use) => {
     fixturePort = await freePort();
     const fixture = spawn('node', ['tests/fixtures/server.mjs'], { cwd: path.join(root, 'packages/extension'), env: { ...process.env, FIXTURE_PORT: String(fixturePort) } });
@@ -43,22 +43,25 @@ export const test = base.extend<{ context: BrowserContext; extensionId: string; 
     await use(new URL(worker.url()).host);
   },
   fixtureUrl: async ({}, use) => use(`http://127.0.0.1:${fixturePort}`),
-  mcp: async ({ context, extensionId }, use) => {
+  server: async ({}, use) => {
     const dir = await mkdtemp(path.join(os.tmpdir(), 'senda-mcp-'));
     const port = await freePort();
     const transport = new StdioClientTransport({ command: 'node', args: [path.join(root, 'packages/server/dist/index.js')], env: { ...process.env, HOME: dir, SENDA_PORT: String(port) } });
     const client = new Client({ name: 'senda-e2e', version: '1.0.0' });
     await client.connect(transport);
     try {
-      const page = await context.newPage();
-      await page.goto(`chrome-extension://${extensionId}/onboarding.html`);
-      await page.locator('details summary').click();
-      await page.locator('input[type=number]').fill(String(port));
-      await page.locator('input[type=password]').fill((await readFile(path.join(dir, '.senda/token'), 'utf8')).trim());
-      await page.locator('button[type=submit]').click();
-      await page.getByText('Connected to Senda on this computer').waitFor({ timeout: 15_000 });
-      await use(client);
+      await use({ client, port, token: (await readFile(path.join(dir, '.senda/token'), 'utf8')).trim() });
     } finally { await client.close(); await rm(dir, { recursive: true, force: true }); }
+  },
+  mcp: async ({ context, extensionId, server }, use) => {
+    const page = await context.newPage();
+    await page.goto(`chrome-extension://${extensionId}/onboarding.html`);
+    await page.locator('details summary').click();
+    await page.locator('input[type=number]').fill(String(server.port));
+    await page.locator('input[type=password]').fill(server.token);
+    await page.locator('button[type=submit]').click();
+    await page.getByText('Connected to Senda on this computer').waitFor({ timeout: 15_000 });
+    await use(server.client);
   },
   openSidepanel: async ({ context, extensionId }, use) => use(async () => {
     const page = await context.newPage();
