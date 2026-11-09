@@ -12,4 +12,4 @@ mkdirSync(at('../dist/mcpb/server/'), { recursive: true });
 copyFileSync(at('../dist/index.js'), at('../dist/mcpb/server/senda-mcp.mjs'));
 copyFileSync(at('../../../docs/assets/brand/avatar-512.png'), at('../dist/mcpb/icon.png'));
 writeFileSync(at('../dist/mcpb/manifest.json'), JSON.stringify({ ...manifest, version }, null, 2));
-execFileSync('mcpb', ['pack', stage.pathname, at('../dist/senda.mcpb').pathname], { stdio: 'inherit' });
+execFileSync('pnpm', ['dlx', '@anthropic-ai/mcpb@2.1.2', 'pack', stage.pathname, at('../dist/senda.mcpb').pathname], { stdio: 'inherit' });
