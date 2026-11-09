@@ -1,0 +1,43 @@
+{
+  "manifest_version": "0.3",
+  "name": "senda",
+  "display_name": "Senda",
+  "description": "Lets Claude read and use your browser, with your approval.",
+  "long_description": "Senda connects Claude to the Senda browser extension, so Claude can open pages, read them, click and type in your own browser, signed in as you. It works only in tabs it opens, inside a visible \"🤖 MCP\" tab group, and asks you on the page before actions that look like sending, changing or deleting something. Install the Senda extension first, then ask Claude: \"Connect Senda\".",
+  "author": { "name": "epulla", "url": "https://github.com/epulla" },
+  "repository": { "type": "git", "url": "https://github.com/epulla/senda.git" },
+  "homepage": "https://github.com/epulla/senda",
+  "support": "https://github.com/epulla/senda/issues",
+  "icon": "icon.png",
+  "license": "MIT",
+  "keywords": ["browser", "chrome", "automation"],
+  "server": {
+    "type": "node",
+    "entry_point": "server/senda-mcp.mjs",
+    "mcp_config": { "command": "node", "args": ["${__dirname}/server/senda-mcp.mjs"] }
+  },
+  "tools": [
+    { "name": "senda_pairing_code", "description": "Show the code to connect Senda to this browser." },
+    { "name": "browser_list", "description": "List connected browsers." },
+    { "name": "browser_navigate", "description": "Open a page." },
+    { "name": "browser_snapshot", "description": "Read the page." },
+    { "name": "browser_click", "description": "Click something on the page." },
+    { "name": "browser_type", "description": "Type into a field." },
+    { "name": "browser_scroll", "description": "Scroll the page." },
+    { "name": "browser_screenshot", "description": "Take a picture of the page, private fields blurred." },
+    { "name": "browser_back", "description": "Go back a page." },
+    { "name": "browser_forward", "description": "Go forward a page." },
+    { "name": "browser_tabs", "description": "List, open, select or close tabs." },
+    { "name": "adapter_schema", "description": "Show how to write a site shortcut." },
+    { "name": "adapter_draft", "description": "Save a site shortcut draft." },
+    { "name": "adapter_test", "description": "Test a site shortcut." },
+    { "name": "adapter_submit", "description": "Send a site shortcut to you for approval." },
+    { "name": "adapter_install", "description": "Install a shared site shortcut for approval." },
+    { "name": "adapter_list", "description": "List site shortcuts." },
+    { "name": "adapter_disable", "description": "Turn off a site shortcut." },
+    { "name": "adapter_remove", "description": "Remove a site shortcut." },
+    { "name": "adapter_call", "description": "Run a site shortcut." }
+  ],
+  "tools_generated": true,
+  "compatibility": { "runtimes": { "node": ">=20.0.0" } }
+}
