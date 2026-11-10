@@ -1,11 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { portItem, statusItem, tokenItem } from '@/src/bg/state';
+import { portItem, settingsItem, statusItem, tokenItem } from '@/src/bg/state';
 import { useText } from '@/src/ui/i18n';
 import { STATUS_DOT } from '@/src/ui/status';
 import { LanguageToggle } from '@/src/ui/LanguageToggle';
 import { ThemeToggle } from '@/src/ui/ThemeToggle';
 import { BrowserNameField } from '@/src/ui/BrowserNameField';
 import { useItem } from '@/src/ui/useItem';
+import { openSidePanel } from '@/src/ui/openSidePanel';
 
 const RELEASE = 'https://github.com/epulla/senda/releases/latest/download';
 const SERVER_PATH = '/path/to/senda-mcp.mjs';
@@ -16,6 +17,8 @@ const PATH_EXAMPLES = [
 ];
 const APPS = ['patio', 'claudeCode', 'claude', 'cursor', 'vscode', 'other'] as const;
 type App = (typeof APPS)[number];
+const TABS = ['settings', 'setup'] as const;
+type Tab = (typeof TABS)[number];
 
 function Copy({ value }: { value: string }) {
   const t = useText().onboarding;
@@ -78,9 +81,12 @@ export default function App() {
   const [token, setToken, loaded] = useItem(tokenItem);
   const [port, setPort] = useItem(portItem);
   const [status] = useItem(statusItem);
+  const [settings, setSettings, settingsLoaded] = useItem(settingsItem);
   const [draft, setDraft] = useState('');
   const [portDraft, setPortDraft] = useState('');
   const [app, setApp] = useState<App>();
+  // First run stays on the guide after saving the code, without changing the remembered tab.
+  const [tabOverride, setTabOverride] = useState<Tab>();
   useEffect(() => setDraft(token), [token]);
   useEffect(() => setPortDraft(String(port)), [port]);
 
@@ -88,8 +94,16 @@ export default function App() {
     e.preventDefault();
     const p = Number(portDraft);
     if (Number.isInteger(p) && p > 0 && p < 65536) await setPort(p);
+    if (!token) setTabOverride('setup');
     await setToken(draft.trim());
   }
+
+  if (!loaded || !settingsLoaded) return null;
+  const tab = token ? (tabOverride ?? settings.setupTab ?? 'settings') : 'setup';
+  const choose = (next: Tab) => {
+    setTabOverride(next);
+    void setSettings({ ...settings, setupTab: next });
+  };
 
   const config = JSON.stringify({ mcpServers: { senda: { command: 'node', args: [SERVER_PATH] } } }, null, 2);
 
@@ -156,108 +170,158 @@ export default function App() {
     </ol>
   );
 
+  const statusLine = (
+    <p role="status" className="flex items-center gap-2">
+      <span aria-hidden className={`size-2.5 shrink-0 rounded-full ${STATUS_DOT[status]}`} />
+      {status === 'disconnected' ? t.waiting : text.status[status]}
+    </p>
+  );
+
+  const codeForm = (
+    <form onSubmit={save} className="space-y-3">
+      {tab === 'setup' && <h2 className="text-lg font-semibold">{t.pasteCode}</h2>}
+      <label className="block">
+        <span>{t.pasteHint}</span>
+        <input
+          type="password"
+          aria-label={t.code}
+          autoComplete="off"
+          spellCheck={false}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          className="font-mono"
+        />
+      </label>
+      <BrowserNameField />
+      <details>
+        <summary className="text-sm text-muted">{t.advanced}</summary>
+        <label className="mt-2 block text-sm">
+          <span>{t.port}</span>
+          <input
+            type="number"
+            min={1}
+            max={65535}
+            value={portDraft}
+            onChange={(e) => setPortDraft(e.target.value)}
+            className="!w-32"
+          />
+        </label>
+        <p className="mt-2 text-sm">
+          {t.tokenCommand} <code>node senda-mcp.mjs token</code>
+        </p>
+      </details>
+      <button type="submit" className="btn btn-primary">
+        {t.save}
+      </button>
+    </form>
+  );
+
   return (
     <main className="card mx-auto my-8 max-w-xl space-y-6 !p-8 text-base">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t.title}</h1>
+        <h1 className="text-2xl font-semibold">{token ? 'Senda' : t.title}</h1>
         <div className="flex items-center gap-1">
           <LanguageToggle />
           <ThemeToggle />
         </div>
       </div>
-      <p>{t.intro}</p>
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">{t.chooseApp}</h2>
-        <div role="radiogroup" aria-label={t.chooseApp} className="grid auto-rows-fr grid-cols-2 gap-2 sm:grid-cols-3">
-          {APPS.map((id) => (
-            <label
+      {token && (
+        <div
+          role="tablist"
+          className="flex gap-4 border-b border-line"
+          onKeyDown={(e) => {
+            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+            const next = tab === 'settings' ? 'setup' : 'settings';
+            choose(next);
+            document.getElementById(`tab-${next}`)?.focus();
+          }}
+        >
+          {TABS.map((id) => (
+            <button
               key={id}
-              className="btn cursor-pointer !whitespace-normal text-center has-checked:!border-primary has-checked:!bg-base-300 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary"
+              id={`tab-${id}`}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
+              aria-controls="tab-panel"
+              tabIndex={tab === id ? 0 : -1}
+              onClick={() => choose(id)}
+              className={`-mb-px border-b-2 px-1 pb-2 font-medium focus-visible:outline-2 focus-visible:outline-primary ${tab === id ? 'border-primary text-primary-text' : 'border-transparent text-muted hover:text-content'}`}
             >
-              <input
-                type="radio"
-                name="app"
-                className="sr-only"
-                checked={app === id}
-                onChange={() => setApp(id)}
-              />
-              {t.apps[id]}
-            </label>
+              {t.tabs[id]}
+            </button>
           ))}
         </div>
-        {!app ? (
-          <p className="text-muted">{t.pickApp}</p>
-        ) : app === 'patio' ? (
-          <>
-            <div>
-              <p>
-                {t.noPatio}
-                <a href="https://github.com/epulla/patio/releases/latest" target="_blank" rel="noreferrer">
-                  {t.downloadPatio}
-                </a>
-              </p>
-              <p className="mt-1 text-sm text-muted">
-                {t.brewPatio} <code>brew install --cask epulla/tap/patio</code>
-              </p>
+      )}
+      {tab === 'settings' ? (
+        <div id="tab-panel" role="tabpanel" aria-labelledby="tab-settings" className="space-y-6">
+          {statusLine}
+          {codeForm}
+          <div>
+            <button type="button" onClick={() => void openSidePanel()} className="btn btn-ghost -ml-3.5 text-primary-text">
+              {t.openPanel}
+            </button>
+            <p className="text-sm text-muted">{t.panelHint}</p>
+          </div>
+        </div>
+      ) : (
+        <div id="tab-panel" role={token ? 'tabpanel' : undefined} aria-labelledby={token ? 'tab-setup' : undefined} className="space-y-6">
+          <p>{t.intro}</p>
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold">{t.chooseApp}</h2>
+            <div role="radiogroup" aria-label={t.chooseApp} className="grid auto-rows-fr grid-cols-2 gap-2 sm:grid-cols-3">
+              {APPS.map((id) => (
+                <label
+                  key={id}
+                  className="btn cursor-pointer !whitespace-normal text-center has-checked:!border-primary has-checked:!bg-base-300 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary"
+                >
+                  <input
+                    type="radio"
+                    name="app"
+                    className="sr-only"
+                    checked={app === id}
+                    onChange={() => setApp(id)}
+                  />
+                  {t.apps[id]}
+                </label>
+              ))}
             </div>
+            {!app ? (
+              <p className="text-muted">{t.pickApp}</p>
+            ) : app === 'patio' ? (
+              <>
+                <div>
+                  <p>
+                    {t.noPatio}
+                    <a href="https://github.com/epulla/patio/releases/latest" target="_blank" rel="noreferrer">
+                      {t.downloadPatio}
+                    </a>
+                  </p>
+                  <p className="mt-1 text-sm text-muted">
+                    {t.brewPatio} <code>brew install --cask epulla/tap/patio</code>
+                  </p>
+                </div>
+                <div>
+                  {t.patioAsk}
+                  <CopyPrompt value={t.patioPrompt} />
+                </div>
+                <details>
+                  <summary className="text-sm text-muted">{t.byHand}</summary>
+                  <div className="mt-2">{steps}</div>
+                </details>
+              </>
+            ) : (
+              steps
+            )}
+          </section>
+          {codeForm}
+          {statusLine}
+          {status === 'connected' && (
             <div>
-              {t.patioAsk}
-              <CopyPrompt value={t.patioPrompt} />
+              {t.tryIt}
+              <Copy value={t.tryPrompt} />
             </div>
-            <details>
-              <summary className="text-sm text-muted">{t.byHand}</summary>
-              <div className="mt-2">{steps}</div>
-            </details>
-          </>
-        ) : (
-          steps
-        )}
-      </section>
-      <form onSubmit={save} className="space-y-3">
-        <h2 className="text-lg font-semibold">{t.pasteCode}</h2>
-        <label className="block">
-          <span>{t.pasteHint}</span>
-          <input
-            type="password"
-            aria-label={t.code}
-            autoComplete="off"
-            spellCheck={false}
-            value={draft}
-            disabled={!loaded}
-            onChange={(e) => setDraft(e.target.value)}
-            className="font-mono"
-          />
-        </label>
-        <BrowserNameField />
-        <details>
-          <summary className="text-sm text-muted">{t.advanced}</summary>
-          <label className="mt-2 block text-sm">
-            <span>{t.port}</span>
-            <input
-              type="number"
-              min={1}
-              max={65535}
-              value={portDraft}
-              onChange={(e) => setPortDraft(e.target.value)}
-              className="!w-32"
-            />
-          </label>
-          <p className="mt-2 text-sm">
-            {t.tokenCommand} <code>node senda-mcp.mjs token</code>
-          </p>
-        </details>
-        <button type="submit" className="btn btn-primary">
-          {t.save}
-        </button>
-      </form>
-      <p role="status" className="flex items-center gap-2">
-        <span aria-hidden className={`size-2.5 shrink-0 rounded-full ${STATUS_DOT[status]}`} />
-        {status === 'disconnected' ? t.waiting : text.status[status]}
-      </p>
-      {status === 'connected' && (
-        <div>
-          {t.tryIt}
-          <Copy value={t.tryPrompt} />
+          )}
         </div>
       )}
       <p className="text-sm text-muted">{t.privacy}</p>

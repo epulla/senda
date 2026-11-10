@@ -44,6 +44,9 @@ export const es: Text = {
   },
   onboarding: {
     title: 'Configura Senda',
+    tabs: { settings: 'Ajustes', setup: 'Configuración' },
+    openPanel: 'Abrir el panel lateral',
+    panelHint: 'Ahí están los atajos de sitio y cuándo preguntarte.',
     intro:
       'Senda permite que tu asistente de IA lea y use este navegador. Solo se comunica con la app de Senda en esta computadora.',
     chooseApp: '1. ¿Qué app de IA usas?',

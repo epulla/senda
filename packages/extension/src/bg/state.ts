@@ -29,6 +29,7 @@ export const settingsItem = storage.defineItem<{
   alwaysSites: string[];
   theme?: 'system' | 'light' | 'dark';
   language?: Language;
+  setupTab?: 'settings' | 'setup';
 }>('local:settings', { fallback: { askBefore: 'destructive', allowedDomains: [], blockedDomains: [], alwaysSites: [] } });
 export const activityItem = storage.defineItem<
   Array<{

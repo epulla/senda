@@ -1,7 +1,7 @@
 import { compareVersions } from '@senda/protocol';
 import { approvalsItem, draftsItem, panicItem, serverVersionItem, settingsItem, statusItem } from '@/src/bg/state';
 import { requestPanic } from '@/src/bg/approvals';
-import { detectCapabilities } from '@/src/core/capabilities';
+import { openSidePanel } from '@/src/ui/openSidePanel';
 import { useText } from '@/src/ui/i18n';
 import { STATUS_DOT } from '@/src/ui/status';
 import { LanguageToggle } from '@/src/ui/LanguageToggle';
@@ -11,10 +11,7 @@ import { NameTaken, useBrowserName } from '@/src/ui/BrowserNameField';
 import { useRef, useState } from 'react';
 
 async function openAdapters() {
-  if (detectCapabilities(browser).includes('sidePanel')) {
-    const win = await browser.windows.getCurrent();
-    await browser.sidePanel.open({ windowId: win.id! });
-  } else await browser.tabs.create({ url: browser.runtime.getURL('/sidepanel.html' as never) });
+  await openSidePanel();
   window.close();
 }
 

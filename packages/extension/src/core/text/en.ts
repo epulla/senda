@@ -42,6 +42,9 @@ export const en = {
   },
   onboarding: {
     title: 'Set up Senda',
+    tabs: { settings: 'Settings', setup: 'Setup' },
+    openPanel: 'Open the side panel',
+    panelHint: 'Site shortcuts and when to ask you live there.',
     intro: 'Senda lets your AI assistant read and use this browser. It only talks to the Senda app on this computer.',
     chooseApp: '1. Which AI app do you use?',
     pickApp: 'Pick your AI app to see its steps.',

@@ -5,6 +5,7 @@ test('setup page guides by AI app and pairs with the code the AI shows', async (
   await page.goto(`chrome-extension://${extensionId}/onboarding.html`);
   const radios = page.getByRole('radio');
   await expect(radios).toHaveCount(6);
+  await expect(page.getByRole('tablist')).toHaveCount(0);
   for (const radio of await radios.all()) await expect(radio).not.toBeChecked();
   await expect(page.getByText('Pick your AI app to see its steps.')).toBeVisible();
   await expect(page.getByText('Connect Senda')).toHaveCount(0);
@@ -46,4 +47,15 @@ test('setup page guides by AI app and pairs with the code the AI shows', async (
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Connected to Senda on this computer')).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText('Open example.com and tell me the title')).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Setup' })).toHaveAttribute('aria-selected', 'true');
+
+  await page.reload();
+  await expect(page.getByRole('tab', { name: 'Settings' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByText('Connected to Senda on this computer')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole('radio')).toHaveCount(0);
+  await page.getByRole('tab', { name: 'Settings' }).press('ArrowRight');
+  await expect(page.getByRole('tab', { name: 'Setup' })).toBeFocused();
+  await expect(radios).toHaveCount(6);
+  await page.reload();
+  await expect(page.getByRole('tab', { name: 'Setup' })).toHaveAttribute('aria-selected', 'true');
 });
