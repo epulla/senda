@@ -24,8 +24,8 @@ export function showApprovalCard(card: PageCard, t: PageCardText): void {
   };
   const style = document.createElement('style');
   style.textContent = `
-    :host { --bg: #fcfdfc; --fg: #1f2b25; --muted: #5d6762; --line: #dde3df; --primary: #2f8a5f; --on-primary: #f4fbf7; --warn: #e0a526; --error: #b4372f; }
-    @media (prefers-color-scheme: dark) { :host { --bg: #1d2421; --fg: #eef3f0; --muted: #a5aea9; --line: #3a423e; --primary: #66c79a; --on-primary: #0d2318; --warn: #e6b74a; --error: #ef8a7f; } }
+    :host { --bg: #fcfdfc; --fg: #1f2b25; --muted: #5d6762; --line: #dde3df; --primary: #2f8a5f; --primary-text: #1f6f4a; --warn: #e0a526; --error: #b4372f; }
+    @media (prefers-color-scheme: dark) { :host { --bg: #1d2421; --fg: #eef3f0; --muted: #a5aea9; --line: #3a423e; --primary: #66c79a; --primary-text: #66c79a; --warn: #e6b74a; --error: #ef8a7f; } }
     .hl { position: fixed; border: 3px solid var(--warn); border-radius: 6px; box-shadow: 0 0 0 4px rgb(224 165 38 / 0.25); transition: all 80ms; }
     .card { pointer-events: auto; position: fixed; right: 16px; bottom: 16px; width: min(360px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; box-sizing: border-box;
       padding: 14px; border-radius: 12px; border: 1px solid var(--line); border-left: 4px solid var(--warn); background: var(--bg); color: var(--fg);
@@ -38,7 +38,8 @@ export function showApprovalCard(card: PageCard, t: PageCardText): void {
     dt { color: var(--muted); } dd { margin: 0; word-break: break-word; }
     .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
     button { font: inherit; cursor: pointer; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--fg); }
-    button.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); font-weight: 600; }
+    button.primary { border: 2px solid var(--primary); padding: 5px 11px; color: var(--primary-text); font-weight: 600; }
+    button.primary:hover { background: color-mix(in srgb, var(--primary) 12%, transparent); }
     button.link { border: 0; padding: 6px 0; color: var(--muted); text-decoration: underline; }
   `;
   const box = el('section', 'card');
