@@ -15,10 +15,19 @@ import { BrowserNameField } from '@/src/ui/BrowserNameField';
 
 const askOptions = ['destructive', 'changes', 'everything', 'never'] as const;
 
+// Shows on hover and keyboard focus; the parent needs `relative` so the text spans its width.
 const Info = ({ text }: { text: string }) => (
-  <span role="img" tabIndex={0} title={text} aria-label={text} className="cursor-help font-normal normal-case text-muted">
-    ⓘ
-  </span>
+  <>
+    <span role="img" tabIndex={0} aria-label={text} className="peer cursor-help font-normal normal-case text-muted">
+      ⓘ
+    </span>
+    <span
+      aria-hidden
+      className="card absolute top-full right-0 left-0 z-10 mt-1 hidden !p-2 text-xs font-normal tracking-normal normal-case text-content peer-hover:block peer-focus:block"
+    >
+      {text}
+    </span>
+  </>
 );
 
 function SiteList({
@@ -399,7 +408,7 @@ export default function App() {
       )}
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
+        <div className="relative flex items-center justify-between gap-2">
           <h2 className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted">
             {t.installed} <Info text={t.installedHint} />
           </h2>
@@ -486,7 +495,7 @@ export default function App() {
                 )}
                 {value === 'destructive' && <span className="block text-xs text-muted">{t.destructiveHint}</span>}
                 {value === 'never' && (
-                  <span className="flex items-center gap-1 text-xs text-error-text">
+                  <span className="relative flex items-center gap-1 text-xs text-error-text">
                     {t.neverHint} <Info text={t.neverWarning} />
                   </span>
                 )}

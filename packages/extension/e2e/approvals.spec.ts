@@ -55,3 +55,12 @@ test('click on a sensitive button fails when denied in the side panel', async ({
   await expect(tab.locator('#status')).toHaveText('');
   await expect(tab.locator('senda-approval')).toHaveCount(0);
 });
+
+test('approval and shortcut help shows on keyboard focus', async ({ openSidepanel }) => {
+  const panel = await openSidepanel();
+  await panel.getByText('Settings', { exact: true }).click();
+  const help = panel.getByText(/Your AI will send, delete, pay/);
+  await expect(help).toBeHidden();
+  await panel.getByRole('img', { name: /Your AI will send, delete, pay/ }).focus();
+  await expect(help).toBeVisible();
+});
