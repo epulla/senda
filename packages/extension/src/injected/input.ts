@@ -152,10 +152,7 @@ export function pressKeyAction(key: string): string {
           submitter.click();
         } else {
           const blockingFields = [...form!.elements].filter(
-            (item) =>
-              item instanceof HTMLInputElement &&
-              !item.disabled &&
-              item.matches(textInputSelector),
+            (item) => item instanceof HTMLInputElement && item.matches(textInputSelector),
           );
           if (blockingFields.length === 1) form!.requestSubmit();
         }

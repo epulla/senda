@@ -79,7 +79,7 @@ describe('press key', () => {
 
   it('submits without default button only for one blocking field', () => {
     let submissions = 0;
-    document.body.innerHTML = '<form id="many"><input><input type="search"></form><form id="one"><input type="date"></form>';
+    document.body.innerHTML = '<form id="many"><input><input type="search" disabled></form><form id="one"><input type="date"></form>';
     const forms = [...document.querySelectorAll('form')];
     for (const form of forms) {
       form.addEventListener('submit', (event) => {
