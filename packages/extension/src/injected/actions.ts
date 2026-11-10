@@ -30,11 +30,27 @@ export function probeKeyTarget(marker: string, ref?: string) {
 }
 export function pressKeyRef(key: string, marker: string): string {
   const marked = document.querySelector<HTMLElement>(`[data-senda-key-target="${CSS.escape(marker)}"]`);
+  if (!marked?.isConnected) return 'FOCUS_MOVED';
+  const active = document.activeElement;
+  const approvalFocused =
+    active instanceof HTMLElement &&
+    (active.matches('senda-approval') || !!active.closest('senda-approval'));
+  if (active !== marked) {
+    if (active !== document.body && active !== document.documentElement && !approvalFocused) {
+      marked.removeAttribute('data-senda-key-target');
+      return 'FOCUS_MOVED';
+    }
+    marked.focus();
+    if (document.activeElement !== marked) {
+      marked.removeAttribute('data-senda-key-target');
+      return 'FOCUS_MOVED';
+    }
+  }
   if (document.activeElement !== marked) {
-    marked?.removeAttribute('data-senda-key-target');
+    marked.removeAttribute('data-senda-key-target');
     return 'FOCUS_MOVED';
   }
-  marked!.removeAttribute('data-senda-key-target');
+  marked.removeAttribute('data-senda-key-target');
   return (globalThis as any).__sendaInput.pressKeyAction(key);
 }
 export function typeRef(ref: string, text: string, submit = false): boolean {

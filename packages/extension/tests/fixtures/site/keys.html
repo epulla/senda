@@ -3,3 +3,6 @@
 <button id="open" onclick="document.querySelector('dialog').showModal()">Open dialog</button>
 <dialog><button>First</button><input aria-label="Dialog input"><button>Last</button></dialog>
 <input placeholder="Outside"><button>Outside button</button>
+<button aria-label="Delete everything" onclick="document.querySelector('#enter-count').textContent = String(Number(document.querySelector('#enter-count').textContent) + 1)">Enter action</button><span id="enter-count">0</span>
+<label><input id="space-check" type="checkbox" aria-label="Delete everything"> Delete everything</label><span id="space-state">off</span>
+<script>document.querySelector('#space-check').addEventListener('change', event => { document.querySelector('#space-state').textContent = event.target.checked ? 'on' : 'off'; });</script>
