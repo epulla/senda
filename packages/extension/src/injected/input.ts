@@ -77,6 +77,10 @@ export function pressKeyAction(key: string): string {
     'input:not([type]),input[type=text],input[type=search],input[type=email],input[type=url],input[type=tel],input[type=password]';
   const form = active instanceof HTMLInputElement && active.matches(textInputSelector) ? active.form : null;
   const field = !!form;
+  const deepestContaining = <T extends Element>(elements: T[]) => {
+    const containing = elements.filter((element) => element.contains(document.activeElement));
+    return containing.find((element) => !containing.some((other) => other !== element && element.contains(other)));
+  };
   const keydownPrevented = !active.dispatchEvent(new KeyboardEvent('keydown', init));
   let keypressPrevented = false;
   if (!keydownPrevented && (code === 'Enter' || code === ' '))
@@ -85,7 +89,7 @@ export function pressKeyAction(key: string): string {
   if (runDefault) {
     if (code === 'Tab') {
       const modals = [...document.querySelectorAll<HTMLDialogElement>('dialog')].filter((dialog) => dialog.matches(':modal'));
-      const modal = modals.find((dialog) => dialog.contains(document.activeElement)) || modals.at(-1);
+      const modal = deepestContaining(modals) || modals.at(-1);
       const scope: ParentNode = modal || document;
       const els = [...scope.querySelectorAll<HTMLElement>('a[href],button,input:not([type=hidden]),select,textarea,summary,[tabindex],[contenteditable]')]
         .filter((e) => {
@@ -123,14 +127,17 @@ export function pressKeyAction(key: string): string {
         : undefined;
       next?.focus();
     } else if (code === 'Escape') {
-      const modals = [...document.querySelectorAll<HTMLDialogElement>('dialog')].filter((item) => item.matches(':modal'));
-      const dialog = modals.find((item) => item.contains(document.activeElement)) || modals.at(-1);
-      if (dialog) {
+      const popovers = [...document.querySelectorAll<HTMLElement>('[popover]:popover-open')];
+      const popover = deepestContaining(popovers) || popovers.find((item) => !popovers.some((other) => other !== item && item.contains(other))) || popovers.at(-1);
+      if (popover) {
+        popover.hidePopover();
+      } else {
+        const modals = [...document.querySelectorAll<HTMLDialogElement>('dialog')].filter((item) => item.matches(':modal'));
+        const dialog = deepestContaining(modals) || modals.at(-1);
+        if (dialog) {
         const event = new Event('cancel', { cancelable: true });
         if (dialog.dispatchEvent(event)) dialog.close();
-      } else {
-        const popovers = [...document.querySelectorAll<HTMLElement>('[popover]:popover-open')];
-        (popovers.find((item) => item.contains(document.activeElement)) || popovers.at(-1))?.hidePopover();
+        }
       }
     } else if (code === 'Enter' && (active.matches('a,button,summary,input[type=submit],input[type=button]') || field)) {
       if (code === 'Enter' && field) {

@@ -6,3 +6,12 @@
 <button aria-label="Delete everything" onclick="document.querySelector('#enter-count').textContent = String(Number(document.querySelector('#enter-count').textContent) + 1)">Enter action</button><span id="enter-count">0</span>
 <label><input id="space-check" type="checkbox" aria-label="Delete everything"> Delete everything</label><span id="space-state">off</span>
 <script>document.querySelector('#space-check').addEventListener('change', event => { document.querySelector('#space-state').textContent = event.target.checked ? 'on' : 'off'; });</script>
+<button onclick="document.querySelector('#outer').showModal()">Open nested dialogs</button>
+<dialog id="outer"><button id="open-inner" onclick="document.querySelector('#inner').showModal()">Open inner</button><dialog id="inner"><button>Inner action</button></dialog><button>Outer action</button></dialog>
+<button onclick="document.querySelector('#stack-b').showModal(); document.querySelector('#stack-a').showModal()">Open B then A</button>
+<dialog id="stack-b"><button>B inside</button></dialog><dialog id="stack-a"><button>A inside</button></dialog>
+<button onclick="document.querySelector('#popover-dialog').showModal()">Open popover dialog</button>
+<dialog id="popover-dialog"><button popovertarget="key-pop">Open popover</button><div id="key-pop" popover><button>Popover inside</button></div><button>Dialog outside pop</button></dialog>
+<button onclick="document.querySelector('#cancel-dialog').showModal()">Open cancel dialog</button>
+<dialog id="cancel-dialog"><button>Cancel target</button><button onclick="document.querySelector('#cancel-dialog').close()">Close cancel dialog</button></dialog>
+<script>document.querySelector('#cancel-dialog').addEventListener('cancel', event => event.preventDefault());</script>

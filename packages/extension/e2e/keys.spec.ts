@@ -3,7 +3,12 @@ import { test, expect } from './fixtures';
 test('press_key handles menus and traps focus in modal dialogs', async ({ mcp, fixtureUrl }) => {
   const call = (name: string, arguments_: Record<string, unknown> = {}) => mcp.callTool({ name, arguments: arguments_ });
   await call('browser_navigate', { url: `${fixtureUrl}/site/keys.html` });
-  const snap = async () => JSON.parse(((await call('browser_snapshot')).content as { text: string }[])[0]!.text).snapshot as string;
+  const snap = async () => {
+    const result = await call('browser_snapshot');
+    const raw = (result.content as { text: string }[])[0]!.text;
+    if (result.isError) throw new Error(raw);
+    return JSON.parse(raw).snapshot as string;
+  };
   let text = await snap();
   const summary = text.match(/\[(\d+)\] summary "Menu"/)![1];
   await call('browser_click', { ref: summary });
@@ -53,4 +58,55 @@ test('press_key resumes approved Enter and Space actions after card focus', asyn
   await allowPress('Space', checkboxRef);
   await expect(tab.locator('#space-check')).toBeChecked();
   await expect(tab.locator('#space-state')).toHaveText('on');
+});
+
+test('Escape closes top-layer popovers and innermost or focused dialogs', async ({ mcp, fixtureUrl }) => {
+  const call = (name: string, arguments_: Record<string, unknown> = {}) => mcp.callTool({ name, arguments: arguments_ });
+  await call('browser_navigate', { url: `${fixtureUrl}/site/keys.html` });
+  const read = async () => JSON.parse(((await call('browser_snapshot')).content as { text: string }[])[0]!.text).snapshot as string;
+  const key = async () => call('browser_press_key', { key: 'Escape' });
+  let snapshot = await read();
+  const nestedRef = snapshot.match(/\[(\d+)\] button "Open nested dialogs"/)![1]!;
+  await call('browser_click', { ref: nestedRef });
+  snapshot = await read();
+  const innerRef = snapshot.match(/\[(\d+)\] button "Open inner"/)![1]!;
+  await call('browser_click', { ref: innerRef });
+  let result = await key();
+  expect(JSON.parse((result.content as { text: string }[])[0]!.text).focused).toContain('Open inner');
+  snapshot = await read();
+  expect(snapshot).toContain('Outer action');
+  expect(snapshot).not.toContain('Inner action');
+  await key();
+
+  snapshot = await read();
+  const stackedRef = snapshot.match(/\[(\d+)\] button "Open B then A"/)![1]!;
+  await call('browser_click', { ref: stackedRef });
+  result = await key();
+  expect(JSON.parse((result.content as { text: string }[])[0]!.text).focused).toContain('B inside');
+  snapshot = await read();
+  expect(snapshot).toContain('B inside');
+  expect(snapshot).not.toContain('A inside');
+  await key();
+
+  snapshot = await read();
+  const popoverDialogRef = snapshot.match(/\[(\d+)\] button "Open popover dialog"/)![1]!;
+  await call('browser_click', { ref: popoverDialogRef });
+  snapshot = await read();
+  const popoverRef = snapshot.match(/\[(\d+)\] button "Open popover"/)![1]!;
+  await call('browser_click', { ref: popoverRef });
+  result = await key();
+  expect(JSON.parse((result.content as { text: string }[])[0]!.text).focused).toContain('Open popover');
+  snapshot = await read();
+  expect(snapshot).toContain('Dialog outside pop');
+  expect(snapshot).not.toContain('Popover inside');
+
+  snapshot = await read();
+  const cancelLauncher = snapshot.match(/\[(\d+)\] button "Open cancel dialog"/)![1]!;
+  await call('browser_click', { ref: cancelLauncher });
+  result = await key();
+  expect(JSON.parse((result.content as { text: string }[])[0]!.text).focused).toContain('Cancel target');
+  snapshot = await read();
+  expect(snapshot).toContain('Close cancel dialog');
+  const closeRef = snapshot.match(/\[(\d+)\] button "Close cancel dialog"/)![1]!;
+  await call('browser_click', { ref: closeRef });
 });
