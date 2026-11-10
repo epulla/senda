@@ -63,7 +63,12 @@ test('press_key resumes approved Enter and Space actions after card focus', asyn
 test('Escape closes top-layer popovers and innermost or focused dialogs', async ({ mcp, fixtureUrl }) => {
   const call = (name: string, arguments_: Record<string, unknown> = {}) => mcp.callTool({ name, arguments: arguments_ });
   await call('browser_navigate', { url: `${fixtureUrl}/site/keys.html` });
-  const read = async () => JSON.parse(((await call('browser_snapshot')).content as { text: string }[])[0]!.text).snapshot as string;
+  const read = async () => {
+    const result = await call('browser_snapshot');
+    const raw = (result.content as { text: string }[])[0]!.text;
+    if (result.isError) throw new Error(raw);
+    return JSON.parse(raw).snapshot as string;
+  };
   const key = async () => call('browser_press_key', { key: 'Escape' });
   let snapshot = await read();
   const nestedRef = snapshot.match(/\[(\d+)\] button "Open nested dialogs"/)![1]!;
