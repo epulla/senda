@@ -89,11 +89,14 @@ export const en = {
   },
   sidepanel: {
     ask: {
-      destructive: 'Sending, paying or deleting things, or sharing data with a new site (recommended)',
-      changes: 'Any click or typing',
-      everything: 'Everything, including opening and reading pages',
-      never: 'Never ask (not recommended)',
+      destructive: 'Important actions',
+      changes: 'Every click or typing',
+      everything: 'Everything, even reading',
+      never: 'Never',
     },
+    recommended: 'Recommended',
+    destructiveHint: 'Sending, paying, deleting or sharing',
+    neverHint: 'Your AI will act without asking you.',
     neverWarning:
       'Your AI will send, delete, pay, change things and share data with other sites without asking you. Senda only asks again after your AI reads pages or messages that could contain hidden instructions.',
     stopAsking: 'Stop asking?',
@@ -139,7 +142,7 @@ export const en = {
     askAiPrompt: 'Make a Senda site shortcut for https://example.com',
     sharedHint: 'A file, link or text from someone you trust.',
     notAdapter: 'That file is not a Senda site shortcut.',
-    empty: 'No site shortcuts yet. Use “+ Add a shortcut” to get one.',
+    empty: 'No shortcuts yet.',
     drafts: 'Drafts your AI is still working on',
     delete: 'Delete',
     settings: 'Settings',

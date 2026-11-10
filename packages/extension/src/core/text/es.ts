@@ -92,11 +92,14 @@ export const es: Text = {
   },
   sidepanel: {
     ask: {
-      destructive: 'Enviar, pagar o borrar cosas, o compartir datos con un sitio nuevo (recomendado)',
-      changes: 'Cualquier clic o texto escrito',
-      everything: 'Todo, incluso abrir y leer páginas',
-      never: 'Nunca preguntar (no recomendado)',
+      destructive: 'Acciones importantes',
+      changes: 'Cada clic o texto',
+      everything: 'Todo, incluso leer',
+      never: 'Nunca',
     },
+    recommended: 'Recomendado',
+    destructiveHint: 'Enviar, pagar, borrar o compartir',
+    neverHint: 'Tu IA actuará sin preguntarte.',
     neverWarning:
       'Tu IA enviará, borrará, pagará, cambiará cosas y compartirá datos con otros sitios sin preguntarte. Senda solo vuelve a preguntar después de que tu IA lea páginas o mensajes que podrían tener instrucciones ocultas.',
     stopAsking: '¿Dejar de preguntar?',
@@ -143,7 +146,7 @@ export const es: Text = {
     askAiPrompt: 'Crea un atajo de sitio de Senda para https://example.com',
     sharedHint: 'Un archivo, enlace o texto de alguien de confianza.',
     notAdapter: 'Ese archivo no es un atajo de sitio de Senda.',
-    empty: 'Aún no hay atajos de sitio. Usa “+ Agregar un atajo” para conseguir uno.',
+    empty: 'Sin atajos todavía.',
     drafts: 'Borradores en los que tu IA sigue trabajando',
     delete: 'Borrar',
     settings: 'Ajustes',

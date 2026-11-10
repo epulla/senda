@@ -15,6 +15,12 @@ import { BrowserNameField } from '@/src/ui/BrowserNameField';
 
 const askOptions = ['destructive', 'changes', 'everything', 'never'] as const;
 
+const Info = ({ text }: { text: string }) => (
+  <span role="img" tabIndex={0} title={text} aria-label={text} className="cursor-help font-normal normal-case text-muted">
+    ⓘ
+  </span>
+);
+
 function SiteList({
   title,
   hint,
@@ -246,7 +252,7 @@ export default function App() {
           <LanguageToggle />
           <ThemeToggle />
           {panic === 0 && (
-            <button type="button" onClick={() => void requestPanic()} className="btn btn-danger">
+            <button type="button" onClick={() => void requestPanic()} className="btn btn-danger-text">
               {text.common.stopEverything}
             </button>
           )}
@@ -394,12 +400,13 @@ export default function App() {
 
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{t.installed}</h2>
+          <h2 className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted">
+            {t.installed} <Info text={t.installedHint} />
+          </h2>
           <button type="button" onClick={() => setAdding('choose')} className="btn btn-sm">
             {t.addShortcut}
           </button>
         </div>
-        <p className="text-xs text-muted">{t.installedHint}</p>
         {adding === 'choose' && <ChooseHow onPick={setAdding} onClose={() => setAdding(null)} />}
         {adding === 'ai' && <AskAi onClose={() => setAdding(null)} />}
         {adding === 'import' && <ImportAdapter onClose={() => setAdding(null)} />}
@@ -472,7 +479,17 @@ export default function App() {
               />
               <span>
                 {t.ask[value]}
-                {value === 'never' && <span className="block text-error-text">{t.neverWarning}</span>}
+                {value === 'destructive' && (
+                  <span className="ml-1.5 rounded-full border border-primary-text/40 px-1.5 text-xs font-medium text-primary-text">
+                    {t.recommended}
+                  </span>
+                )}
+                {value === 'destructive' && <span className="block text-xs text-muted">{t.destructiveHint}</span>}
+                {value === 'never' && (
+                  <span className="flex items-center gap-1 text-xs text-error-text">
+                    {t.neverHint} <Info text={t.neverWarning} />
+                  </span>
+                )}
               </span>
             </label>
           ))}
