@@ -7,6 +7,7 @@ import { ThemeToggle } from '@/src/ui/ThemeToggle';
 import { BrowserNameField } from '@/src/ui/BrowserNameField';
 import { useItem } from '@/src/ui/useItem';
 import { openSidePanel } from '@/src/ui/openSidePanel';
+import { Settings } from '@/src/ui/Settings';
 
 const RELEASE = 'https://github.com/epulla/senda/releases/latest/download';
 const SERVER_PATH = '/path/to/senda-mcp.mjs';
@@ -170,56 +171,13 @@ export default function App() {
     </ol>
   );
 
-  const statusLine = (
-    <p role="status" className="flex items-center gap-2">
-      <span aria-hidden className={`size-2.5 shrink-0 rounded-full ${STATUS_DOT[status]}`} />
-      {status === 'disconnected' ? t.waiting : text.status[status]}
-    </p>
-  );
-
-  const codeForm = (
-    <form onSubmit={save} className="space-y-3">
-      {tab === 'setup' && <h2 className="text-lg font-semibold">{t.pasteCode}</h2>}
-      <label className="block">
-        <span>{t.pasteHint}</span>
-        <input
-          type="password"
-          aria-label={t.code}
-          autoComplete="off"
-          spellCheck={false}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          className="font-mono"
-        />
-      </label>
-      <BrowserNameField />
-      <details>
-        <summary className="text-sm text-muted">{t.advanced}</summary>
-        <label className="mt-2 block text-sm">
-          <span>{t.port}</span>
-          <input
-            type="number"
-            min={1}
-            max={65535}
-            value={portDraft}
-            onChange={(e) => setPortDraft(e.target.value)}
-            className="!w-32"
-          />
-        </label>
-        <p className="mt-2 text-sm">
-          {t.tokenCommand} <code>node senda-mcp.mjs token</code>
-        </p>
-      </details>
-      <button type="submit" className="btn btn-primary">
-        {t.save}
-      </button>
-    </form>
-  );
-
   return (
     <main className="card mx-auto my-8 max-w-xl space-y-6 !p-8 text-base">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{token ? 'Senda' : t.title}</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-semibold">
+          <img src="/icon/48.png" alt="" className="size-8" />
+          {token ? 'Senda' : t.title}
+        </h1>
         <div className="flex items-center gap-1">
           <LanguageToggle />
           <ThemeToggle />
@@ -255,14 +213,10 @@ export default function App() {
       )}
       {tab === 'settings' ? (
         <div id="tab-panel" role="tabpanel" aria-labelledby="tab-settings" className="space-y-6">
-          {statusLine}
-          {codeForm}
-          <div>
-            <button type="button" onClick={() => void openSidePanel()} className="btn btn-ghost -ml-3.5 text-primary-text">
-              {t.openPanel}
-            </button>
-            <p className="text-sm text-muted">{t.panelHint}</p>
-          </div>
+          <Settings />
+          <button type="button" onClick={() => void openSidePanel()} className="btn btn-ghost -ml-3.5 text-primary-text">
+            {t.openPanel}
+          </button>
         </div>
       ) : (
         <div id="tab-panel" role={token ? 'tabpanel' : undefined} aria-labelledby={token ? 'tab-setup' : undefined} className="space-y-6">
@@ -314,8 +268,46 @@ export default function App() {
               steps
             )}
           </section>
-          {codeForm}
-          {statusLine}
+      <form onSubmit={save} className="space-y-3">
+        <h2 className="text-lg font-semibold">{t.pasteCode}</h2>
+        <label className="block">
+          <span>{t.pasteHint}</span>
+          <input
+            type="password"
+            aria-label={t.code}
+            autoComplete="off"
+            spellCheck={false}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            className="font-mono"
+          />
+        </label>
+        <BrowserNameField />
+        <details>
+          <summary className="text-sm text-muted">{t.advanced}</summary>
+          <label className="mt-2 block text-sm">
+            <span>{t.port}</span>
+            <input
+              type="number"
+              min={1}
+              max={65535}
+              value={portDraft}
+              onChange={(e) => setPortDraft(e.target.value)}
+              className="!w-32"
+            />
+          </label>
+          <p className="mt-2 text-sm">
+            {t.tokenCommand} <code>node senda-mcp.mjs token</code>
+          </p>
+        </details>
+        <button type="submit" className="btn btn-primary">
+          {t.save}
+        </button>
+      </form>
+      <p role="status" className="flex items-center gap-2">
+        <span aria-hidden className={`size-2.5 shrink-0 rounded-full ${STATUS_DOT[status]}`} />
+        {status === 'disconnected' ? t.waiting : text.status[status]}
+      </p>
           {status === 'connected' && (
             <div>
               {t.tryIt}

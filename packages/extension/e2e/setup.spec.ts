@@ -52,7 +52,9 @@ test('setup page guides by AI app and pairs with the code the AI shows', async (
   await page.reload();
   await expect(page.getByRole('tab', { name: 'Settings' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByText('Connected to Senda on this computer')).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole('radio')).toHaveCount(0);
+  await expect(page.getByRole('radio', { name: 'Cursor' })).toHaveCount(0);
+  await expect(page.getByLabel('Code', { exact: true })).toBeVisible();
+  await expect(page.getByText('Trusted sites')).toBeVisible();
   await page.getByRole('tab', { name: 'Settings' }).press('ArrowRight');
   await expect(page.getByRole('tab', { name: 'Setup' })).toBeFocused();
   await expect(radios).toHaveCount(6);

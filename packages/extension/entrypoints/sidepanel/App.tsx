@@ -11,90 +11,7 @@ import { useText } from '@/src/ui/i18n';
 import { LanguageToggle } from '@/src/ui/LanguageToggle';
 import { ThemeToggle } from '@/src/ui/ThemeToggle';
 import { useItem } from '@/src/ui/useItem';
-import { BrowserNameField } from '@/src/ui/BrowserNameField';
-
-const askOptions = ['destructive', 'changes', 'everything', 'never'] as const;
-
-// The parent needs `relative` so the text spans its width.
-function Info({ text }: { text: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <button
-        type="button"
-        aria-label={text}
-        aria-expanded={open}
-        onClick={() => setOpen(!open)}
-        onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
-        onBlur={() => setOpen(false)}
-        className="cursor-help rounded font-normal normal-case text-muted hover:text-content focus-visible:outline-2 focus-visible:outline-primary"
-      >
-        ⓘ
-      </button>
-      {open && (
-        <span aria-hidden className="card absolute top-full right-0 left-0 z-10 mt-1 !p-2 text-xs font-normal tracking-normal normal-case text-content">
-          {text}
-        </span>
-      )}
-    </>
-  );
-}
-
-function SiteList({
-  title,
-  hint,
-  sites,
-  onChange,
-}: {
-  title: string;
-  hint: string;
-  sites: string[];
-  onChange: (sites: string[]) => void;
-}) {
-  const text = useText();
-  return (
-    <div className="space-y-1">
-      <h3 className="font-semibold">{title}</h3>
-      <p className="text-muted">{hint}</p>
-      {sites.map((site) => (
-        <p key={site} className="flex items-center justify-between gap-2">
-          <span>{site}</span>
-          <button
-            type="button"
-            onClick={() => onChange(sites.filter((s) => s !== site))}
-            className="btn btn-sm"
-          >
-            {text.common.remove}
-          </button>
-        </p>
-      ))}
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          const input = event.currentTarget.elements.namedItem('site') as HTMLInputElement;
-          const site = input.value
-            .trim()
-            .replace(/^https?:\/\//, '')
-            .replace(/\/.*$/, '')
-            .toLowerCase();
-          if (site && !sites.includes(site)) onChange([...sites, site]);
-          input.value = '';
-        }}
-        className="flex gap-2"
-      >
-        <input
-          name="site"
-          aria-label={text.sidepanel.addTo(title.toLowerCase())}
-          placeholder="example.com"
-          className="!mt-0 min-w-0 flex-1"
-        />
-        <button type="submit" className="btn btn-sm">
-          {text.sidepanel.add}
-        </button>
-      </form>
-    </div>
-  );
-}
+import { Info, Settings } from '@/src/ui/Settings';
 
 const errorText = (e: unknown) => {
   const data = (e as { data?: unknown }).data;
@@ -480,59 +397,8 @@ export default function App() {
 
       <details className="card">
         <summary className="cursor-pointer font-semibold">{t.settings}</summary>
-        <div className="mt-3 space-y-4">
-        <BrowserNameField />
-        <fieldset className="space-y-2">
-          <legend className="mb-1 font-semibold">{t.askBefore}</legend>
-          {askOptions.map((value) => (
-            <label key={value} className="flex items-start gap-2">
-              <input
-                type="radio"
-                name="askBefore"
-                checked={settings.askBefore === value}
-                onChange={() => {
-                  if (value === 'never' && !confirm(`${t.neverWarning}\n\n${t.stopAsking}`)) return;
-                  void setSettings({ ...settings, askBefore: value });
-                }}
-                className="mt-0.5"
-              />
-              <span>
-                {t.ask[value]}
-                {value === 'destructive' && (
-                  <span className="ml-1.5 rounded-full border border-primary-text/40 px-1.5 text-xs font-medium text-primary-text">
-                    {t.recommended}
-                  </span>
-                )}
-                {value === 'destructive' && <span className="block text-xs text-muted">{t.destructiveHint}</span>}
-                {value === 'never' && (
-                  <span className="relative flex items-center gap-1 text-xs text-error-text">
-                    {t.neverHint} <Info text={t.neverWarning} />
-                  </span>
-                )}
-              </span>
-            </label>
-          ))}
-        </fieldset>
-        <SiteList
-          title={t.trusted}
-          hint={t.trustedHint}
-          sites={settings.allowedDomains}
-          onChange={(allowedDomains) => void setSettings({ ...settings, allowedDomains })}
-        />
-        <SiteList
-          title={t.blocked}
-          hint={t.blockedHint}
-          sites={settings.blockedDomains}
-          onChange={(blockedDomains) => void setSettings({ ...settings, blockedDomains })}
-        />
-        {settings.alwaysSites.length > 0 && (
-          <SiteList
-            title={t.always}
-            hint={t.alwaysHint}
-            sites={settings.alwaysSites}
-            onChange={(alwaysSites) => void setSettings({ ...settings, alwaysSites })}
-          />
-        )}
+        <div className="mt-3">
+          <Settings />
         </div>
       </details>
 

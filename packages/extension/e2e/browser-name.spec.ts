@@ -8,6 +8,7 @@ const listed = async (mcp: Client) =>
 test('renaming the browser in Settings updates browser_list', async ({ mcp, openSidepanel }) => {
   const panel = await openSidepanel();
   await panel.getByText('Settings', { exact: true }).click();
+  await expect(panel.getByLabel('Code', { exact: true })).toBeVisible();
   await panel.getByLabel('Name this browser').fill('Work');
   await panel.getByLabel('Name this browser').press('Enter');
   await expect.poll(() => listed(mcp), { timeout: 15_000 }).toContain('"name":"Work"');
