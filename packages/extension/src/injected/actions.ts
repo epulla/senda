@@ -17,14 +17,27 @@ export function probeKeyTarget(marker: string, ref?: string) {
   active.setAttribute('data-senda-key-target', marker);
   const pageRoot = active === document.body || active === document.documentElement;
   const textInput = active.matches('input:not([type]),input[type=text],input[type=search],input[type=email],input[type=url],input[type=tel],input[type=password]');
+  const labelledBy = active
+    .getAttribute('aria-labelledby')
+    ?.split(/\s+/)
+    .map((id) => document.getElementById(id)?.textContent?.trim())
+    .filter(Boolean)
+    .join(' ');
+  const labels = active instanceof HTMLInputElement
+    ? [...(active.labels || [])].map((label) => label.textContent?.trim()).filter(Boolean).join(' ')
+    : '';
   return {
     missing: false,
     focusFailed: false,
     label: pageRoot
       ? ''
-      : [active.textContent, active.getAttribute('aria-label'), (active as HTMLInputElement).value, active.getAttribute('title')]
-          .filter(Boolean)
-          .join(' '),
+      : active.getAttribute('aria-label') ||
+        labelledBy ||
+        labels ||
+        active.textContent?.trim() ||
+        (active as HTMLInputElement).value ||
+        active.getAttribute('title') ||
+        '',
     formField: !!textInput && !!(active as HTMLInputElement).form,
   };
 }

@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { pressKeyRef, probeKeyTarget } from '../src/injected/actions';
 import { pressKeyAction, pressKey, realClick, typeText } from '../src/injected/input';
+import { needsApproval } from '../src/core/approvals';
 
 (globalThis as any).__sendaInput = { pressKeyAction, pressKey, realClick, typeText };
 
@@ -149,10 +150,29 @@ describe('press key', () => {
     const input = document.querySelector('input')!;
     input.focus();
     const probe = probeKeyTarget('token');
-    expect(probe.label).toBe('');
+    expect(probe.label).toBe('Query');
     expect(pressKeyAction('ArrowUp')).toContain('input "Query"');
     document.querySelector<HTMLButtonElement>('button')!.focus();
     expect(pressKeyRef('Tab', 'token')).toBe('FOCUS_MOVED');
     expect(document.querySelector('[data-senda-key-target]')).toBeNull();
+  });
+
+  it('uses associated checkbox label for sensitive-click approval', () => {
+    document.body.innerHTML = '<label><input type="checkbox">Delete everything</label>';
+    const checkbox = document.querySelector<HTMLInputElement>('input')!;
+    checkbox.focus();
+    const probe = probeKeyTarget('label-check');
+    const reason = needsApproval({
+      action: 'click',
+      label: probe.label,
+      url: 'https://example.com/',
+      visitedHosts: [],
+      allowedDomains: [],
+      alwaysSites: [],
+      askBefore: 'destructive',
+      tainted: false,
+    });
+    expect(probe.label).toContain('Delete everything');
+    expect(reason).toBeTruthy();
   });
 });
