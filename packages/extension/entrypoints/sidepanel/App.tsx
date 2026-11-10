@@ -15,20 +15,30 @@ import { BrowserNameField } from '@/src/ui/BrowserNameField';
 
 const askOptions = ['destructive', 'changes', 'everything', 'never'] as const;
 
-// Shows on hover and keyboard focus; the parent needs `relative` so the text spans its width.
-const Info = ({ text }: { text: string }) => (
-  <>
-    <span role="img" tabIndex={0} aria-label={text} className="peer cursor-help font-normal normal-case text-muted">
-      ⓘ
-    </span>
-    <span
-      aria-hidden
-      className="card absolute top-full right-0 left-0 z-10 mt-1 hidden !p-2 text-xs font-normal tracking-normal normal-case text-content peer-hover:block peer-focus:block"
-    >
-      {text}
-    </span>
-  </>
-);
+// The parent needs `relative` so the text spans its width.
+function Info({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        aria-label={text}
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+        onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
+        onBlur={() => setOpen(false)}
+        className="cursor-help rounded font-normal normal-case text-muted hover:text-content focus-visible:outline-2 focus-visible:outline-primary"
+      >
+        ⓘ
+      </button>
+      {open && (
+        <span aria-hidden className="card absolute top-full right-0 left-0 z-10 mt-1 !p-2 text-xs font-normal tracking-normal normal-case text-content">
+          {text}
+        </span>
+      )}
+    </>
+  );
+}
 
 function SiteList({
   title,

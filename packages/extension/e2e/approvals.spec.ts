@@ -56,11 +56,18 @@ test('click on a sensitive button fails when denied in the side panel', async ({
   await expect(tab.locator('senda-approval')).toHaveCount(0);
 });
 
-test('approval and shortcut help shows on keyboard focus', async ({ openSidepanel }) => {
+test('"Never" help opens from the keyboard, stays while read and closes with Escape', async ({ openSidepanel }) => {
   const panel = await openSidepanel();
   await panel.getByText('Settings', { exact: true }).click();
   const help = panel.getByText(/Your AI will send, delete, pay/);
+  const info = panel.getByRole('button', { name: /Your AI will send, delete, pay/ });
   await expect(help).toBeHidden();
-  await panel.getByRole('img', { name: /Your AI will send, delete, pay/ }).focus();
+  await info.focus();
+  await panel.keyboard.press('Enter');
   await expect(help).toBeVisible();
+  await help.hover();
+  await expect(help).toBeVisible();
+  await expect(panel.getByRole('radio', { name: /Never/ })).not.toBeChecked();
+  await panel.keyboard.press('Escape');
+  await expect(help).toBeHidden();
 });
