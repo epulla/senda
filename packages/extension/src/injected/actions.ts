@@ -6,6 +6,12 @@ export function clickRef(ref: string): boolean {
   (globalThis as any).__sendaInput.realClick(el);
   return true;
 }
+export function pressKeyRef(key: string, ref?: string): string | null {
+  const el = ref ? document.querySelector<HTMLElement>(`[data-senda-ref="${CSS.escape(ref)}"]`) : null;
+  if (ref && !el) return null;
+  el?.focus();
+  return (globalThis as any).__sendaInput.pressKeyAction(key);
+}
 export function typeRef(ref: string, text: string, submit = false): boolean {
   const el = document.querySelector(`[data-senda-ref="${CSS.escape(ref)}"]`) as HTMLElement | null;
   if (!el) return false;

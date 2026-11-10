@@ -119,6 +119,7 @@ The server listens on `127.0.0.1:18765` (set `SENDA_PORT` to change it) and keep
 | `browser_navigate` | Open a URL. |
 | `browser_snapshot` | Read the page (or one element) as text with element refs. |
 | `browser_click` / `browser_type` | Click an element or type into a field by ref. |
+| `browser_press_key` | Press a key; returns focused element. |
 | `browser_scroll` | Scroll the page. |
 | `browser_screenshot` | Capture the page or one element as an image, private fields blurred. |
 | `browser_back` / `browser_forward` | Move through the tab's history. |

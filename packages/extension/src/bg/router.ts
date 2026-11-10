@@ -2,6 +2,7 @@ import { ErrorCode, methods } from '@senda/protocol';
 import navigate from './commands/navigate';
 import snapshot from './commands/snapshot';
 import click from './commands/click';
+import pressKey from './commands/press-key';
 import typeCommand from './commands/type';
 import scroll from './commands/scroll';
 import tabs from './commands/tabs';
@@ -15,6 +16,7 @@ const commands: Record<string, (p: any) => Promise<unknown>> = {
   navigate,
   snapshot,
   click,
+  press_key: pressKey,
   type: typeCommand,
   scroll,
   tabs,

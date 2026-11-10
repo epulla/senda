@@ -64,6 +64,7 @@ export const methods = {
   navigate: z.object({ url: z.string().url(), tabId }).strict(),
   snapshot: z.object({ ref: z.string().optional(), tabId }).strict(),
   click: z.object({ ref: z.string(), tabId }).strict(),
+  press_key: z.object({ key: z.enum(['Tab','Shift+Tab','Escape','Enter','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home','End']), ref: z.string().optional(), tabId }).strict(),
   type: z.object({ ref: z.string(), text: z.string(), submit: z.boolean().optional(), tabId }).strict(),
   scroll: z
     .object({ dx: z.number().optional(), dy: z.number().optional(), ref: z.string().optional(), tabId })
