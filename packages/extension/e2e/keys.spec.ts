@@ -11,7 +11,6 @@ test('press_key handles menus and traps focus in modal dialogs', async ({ mcp, f
   expect(text).toContain('(open)');
   expect(text).toContain('a "One"');
   expect(text).toContain('a "Two"');
-  text = await snap();
   const open = text.match(/\[(\d+)\] button "Open dialog"/)![1];
   await call('browser_click', { ref: open });
   text = await snap();
@@ -27,6 +26,7 @@ test('press_key handles menus and traps focus in modal dialogs', async ({ mcp, f
   focused = (await call('browser_press_key', { key: 'Tab' })).content as { text: string }[];
   expect(JSON.parse(focused[0]!.text).focused).toContain('First');
   expect(JSON.parse(focused[0]!.text).focused).not.toContain('Outside');
-  await call('browser_press_key', { key: 'Escape' });
+  const escaped = await call('browser_press_key', { key: 'Escape' });
+  expect(JSON.parse((escaped.content as { text: string }[])[0]!.text).focused).toContain('Open dialog');
   expect(await snap()).not.toContain('Dialog input');
 });

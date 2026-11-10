@@ -73,18 +73,34 @@ export function pressKeyAction(key: string): string {
     cancelable: true,
     shiftKey: key === 'Shift+Tab',
   };
-  const textInputSelector = 'input:not([type]),input[type=text],input[type=search],input[type=email],input[type=url],input[type=tel],input[type=password]';
+  const textInputSelector =
+    'input:not([type]),input[type=text],input[type=search],input[type=email],input[type=url],input[type=tel],input[type=password]';
   const form = active instanceof HTMLInputElement && active.matches(textInputSelector) ? active.form : null;
   const field = !!form;
-  const prevented = !active.dispatchEvent(new KeyboardEvent('keydown', init));
-  if (code === 'Enter' || code === ' ') active.dispatchEvent(new KeyboardEvent('keypress', init));
-  active.dispatchEvent(new KeyboardEvent('keyup', init));
-  if (!prevented) {
+  const keydownPrevented = !active.dispatchEvent(new KeyboardEvent('keydown', init));
+  let keypressPrevented = false;
+  if (!keydownPrevented && (code === 'Enter' || code === ' '))
+    keypressPrevented = !active.dispatchEvent(new KeyboardEvent('keypress', init));
+  const runDefault = !keydownPrevented && !keypressPrevented;
+  if (runDefault) {
     if (code === 'Tab') {
-      const modal = [...document.querySelectorAll('dialog')].reverse().find((d) => d.matches(':modal'));
+      const modals = [...document.querySelectorAll<HTMLDialogElement>('dialog')].filter((dialog) => dialog.matches(':modal'));
+      const modal = modals.find((dialog) => dialog.contains(document.activeElement)) || modals.at(-1);
       const scope: ParentNode = modal || document;
       const els = [...scope.querySelectorAll<HTMLElement>('a[href],button,input:not([type=hidden]),select,textarea,summary,[tabindex],[contenteditable]')]
-        .filter((e) => !e.matches(':disabled') && e.tabIndex >= 0 && !e.closest('[inert]') && e.getClientRects().length)
+        .filter((e) => {
+          if (e.matches(':disabled') || e.tabIndex < 0 || e.closest('[inert]')) return false;
+          const visible = typeof e.checkVisibility === 'function'
+            ? e.checkVisibility({ visibilityProperty: true })
+            : !['hidden', 'collapse'].includes(getComputedStyle(e).visibility) && e.getClientRects().length > 0;
+          if (!visible) return false;
+          if (e instanceof HTMLInputElement && ['radio'].includes(e.type) && e.name) {
+            const radios = [...(e.form?.elements || document.querySelectorAll('input[type=radio]'))]
+              .filter((item): item is HTMLInputElement => item instanceof HTMLInputElement && item.type === 'radio' && item.name === e.name && item.form === e.form);
+            return radios.find((radio) => radio.checked) === e || (!radios.some((radio) => radio.checked) && radios[0] === e);
+          }
+          return true;
+        })
         .sort((a, b) =>
           a.tabIndex > 0 && b.tabIndex > 0
             ? a.tabIndex - b.tabIndex
@@ -94,38 +110,64 @@ export function pressKeyAction(key: string): string {
                 ? 1
                 : 0,
         );
-      const i = els.indexOf(active as HTMLElement);
+      let i = els.indexOf(active as HTMLElement);
+      if (i < 0 && active instanceof HTMLInputElement && active.type === 'radio' && active.name) {
+        const groupRadio = els.findIndex((candidate) =>
+          candidate instanceof HTMLInputElement && candidate.type === 'radio' && candidate.name === active.name && candidate.form === active.form,
+        );
+        i = groupRadio;
+      }
       const step = key === 'Shift+Tab' ? -1 : 1;
       const next = els.length
         ? els[i < 0 ? (step > 0 ? 0 : els.length - 1) : (i + step + els.length) % els.length]
         : undefined;
       next?.focus();
     } else if (code === 'Escape') {
-      const dialog = [...document.querySelectorAll<HTMLDialogElement>('dialog:modal')].pop();
+      const modals = [...document.querySelectorAll<HTMLDialogElement>('dialog')].filter((item) => item.matches(':modal'));
+      const dialog = modals.find((item) => item.contains(document.activeElement)) || modals.at(-1);
       if (dialog) {
         const event = new Event('cancel', { cancelable: true });
         if (dialog.dispatchEvent(event)) dialog.close();
       } else {
-        [...document.querySelectorAll<HTMLElement>('[popover]:popover-open')].pop()?.hidePopover();
+        const popovers = [...document.querySelectorAll<HTMLElement>('[popover]:popover-open')];
+        (popovers.find((item) => item.contains(document.activeElement)) || popovers.at(-1))?.hidePopover();
       }
-    } else if (
-      (code === 'Enter' && (active.matches('a,button,summary,input[type=submit],input[type=button]') || field)) ||
-      (code === ' ' && active.matches('button,summary,input[type=checkbox],input[type=radio],[role=button]'))
-    ) {
-      if (code === 'Enter' && field) form!.requestSubmit();
+    } else if (code === 'Enter' && (active.matches('a,button,summary,input[type=submit],input[type=button]') || field)) {
+      if (code === 'Enter' && field) {
+        const submitter = [...form!.elements].find((item) => {
+          if (!(item instanceof HTMLButtonElement || item instanceof HTMLInputElement)) return false;
+          const type = item.type.toLowerCase();
+          return item instanceof HTMLButtonElement ? type === 'submit' : type === 'submit' || type === 'image';
+        }) as HTMLButtonElement | HTMLInputElement | undefined;
+        if (submitter?.disabled) {
+          // Disabled default submitter prevents implicit submission.
+        } else if (submitter) {
+          submitter.click();
+        } else {
+          form!.requestSubmit();
+        }
+      }
       else (active as HTMLElement).click();
     }
   }
+  const keyupTarget = document.activeElement || document.body;
+  const keyupPrevented = !keyupTarget.dispatchEvent(new KeyboardEvent('keyup', init));
+  if (code === ' ' && runDefault && !keyupPrevented && active.matches('button,summary,input[type=checkbox],input[type=radio],[role=button]'))
+    (active as HTMLElement).click();
   const el = document.activeElement as HTMLElement || document.body;
   const ref = el.getAttribute('data-senda-ref');
   const role =
     el.getAttribute('role') ||
     (el instanceof HTMLInputElement && ['checkbox', 'radio'].includes(el.type) ? el.type : el.localName);
-  const name =
-    el.getAttribute('aria-label') ||
-    el.textContent?.trim().slice(0, 80) ||
-    el.getAttribute('placeholder') ||
-    el.title ||
-    (el instanceof HTMLInputElement && ['button', 'submit'].includes(el.type) ? el.value : '');
+  const labelledBy = el.getAttribute('aria-labelledby')
+    ?.split(/\s+/)
+    .map((id) => document.getElementById(id)?.textContent?.trim())
+    .filter(Boolean)
+    .join(' ');
+  const inputLabel = el instanceof HTMLInputElement ? [...(el.labels || [])].map((label) => label.textContent?.trim()).filter(Boolean).join(' ') : '';
+  const name = el.getAttribute('aria-label') || labelledBy || inputLabel ||
+    (el instanceof HTMLInputElement
+      ? el.getAttribute('placeholder') || el.title
+      : el.textContent?.trim().slice(0, 80));
   return `${ref ? `[${ref}] ` : ''}${role}${name ? ` "${name}"` : ''}`;
 }

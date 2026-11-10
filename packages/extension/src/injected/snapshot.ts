@@ -33,7 +33,7 @@ export function snapshotPage(scopeRef?: string): string | null {
   const blocks = new Set(
     'address article aside blockquote caption dd details dialog div dl dt fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 header label legend li main nav ol p pre section summary ul'.split(' '),
   );
-  const controlSelector = `a,button,input,select,textarea,[contenteditable],${controlRoles.source.slice(2, -2).split('|').map((r) => `[role=${r}]`).join(',')}`;
+  const controlSelector = `a,button,input,select,textarea,summary,[contenteditable],${controlRoles.source.slice(2, -2).split('|').map((r) => `[role=${r}]`).join(',')}`;
   // An ARIA widget wrapping other controls (e.g. a combobox around an input) is a container, not one control.
   const isControl = (el: Element) =>
     ['a', 'button', 'input', 'select', 'textarea'].includes(el.localName) ||
@@ -170,7 +170,9 @@ export function snapshotPage(scopeRef?: string): string | null {
     if (!visible(el)) return void (getComputedStyle(el).display === 'contents' && walk(el, label, inline));
     if (tag === 'label' && el.querySelector('input[type=checkbox],input[type=radio]')) {
       const input = el.querySelector('input[type=checkbox],input[type=radio]')!;
-      return void buf.push({ text: control(visible(input) ? input : el), control: true });
+      buf.push({ text: control(visible(input) ? input : el), control: true });
+      for (const action of el.querySelectorAll(controlSelector)) if (action !== input) visit(action, label, false);
+      return;
     }
     if (isControl(el)) return void buf.push({ text: control(el), control: true });
     if (tag === 'iframe' || tag === 'frame') return frame(el, label, inline);

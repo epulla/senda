@@ -40,6 +40,14 @@ describe('snapshot refs and actions', () => {
     document.querySelector('input')!.getBoundingClientRect = () => ({ width: 0, height: 0 }) as DOMRect;
     expect(snapshotPage()!).toBe('[1] label "Accept terms"');
   });
+  it('keeps summary ref inside focusable wrapper', () => {
+    document.body.innerHTML = '<div tabindex="0" aria-label="Wrapper"><details><summary>Menu</summary></details></div>';
+    expect(snapshotPage()!).toBe('[1] div "Wrapper"\n[2] summary "Menu" (closed)');
+  });
+  it('keeps actionable descendants of checkbox labels', () => {
+    document.body.innerHTML = '<label><input type="checkbox"> I accept the <a href="/terms">Terms</a></label>';
+    expect(snapshotPage()!).toBe('[1] checkbox "I accept the Terms"\n[2] a "Terms"');
+  });
   it('never exposes password or card values', () => {
     const text = snapshotPage()!;
     expect(text).not.toContain('secret');

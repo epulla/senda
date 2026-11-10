@@ -6,10 +6,35 @@ export function clickRef(ref: string): boolean {
   (globalThis as any).__sendaInput.realClick(el);
   return true;
 }
-export function pressKeyRef(key: string, ref?: string): string | null {
-  const el = ref ? document.querySelector<HTMLElement>(`[data-senda-ref="${CSS.escape(ref)}"]`) : null;
-  if (ref && !el) return null;
-  el?.focus();
+export function probeKeyTarget(marker: string, ref?: string) {
+  const referenced = ref
+    ? document.querySelector<HTMLElement>(`[data-senda-ref="${CSS.escape(ref)}"]`)
+    : undefined;
+  if (ref && !referenced) return { missing: true, focusFailed: false, label: '', formField: false };
+  referenced?.focus();
+  const active = document.activeElement as HTMLElement;
+  if (ref && active !== referenced) return { missing: false, focusFailed: true, label: '', formField: false };
+  active.setAttribute('data-senda-key-target', marker);
+  const pageRoot = active === document.body || active === document.documentElement;
+  const textInput = active.matches('input:not([type]),input[type=text],input[type=search],input[type=email],input[type=url],input[type=tel],input[type=password]');
+  return {
+    missing: false,
+    focusFailed: false,
+    label: pageRoot
+      ? ''
+      : [active.textContent, active.getAttribute('aria-label'), (active as HTMLInputElement).value, active.getAttribute('title')]
+          .filter(Boolean)
+          .join(' '),
+    formField: !!textInput && !!(active as HTMLInputElement).form,
+  };
+}
+export function pressKeyRef(key: string, marker: string): string {
+  const marked = document.querySelector<HTMLElement>(`[data-senda-key-target="${CSS.escape(marker)}"]`);
+  if (document.activeElement !== marked) {
+    marked?.removeAttribute('data-senda-key-target');
+    return 'FOCUS_MOVED';
+  }
+  marked!.removeAttribute('data-senda-key-target');
   return (globalThis as any).__sendaInput.pressKeyAction(key);
 }
 export function typeRef(ref: string, text: string, submit = false): boolean {
