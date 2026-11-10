@@ -23,7 +23,7 @@ import {
 } from '@senda/protocol';
 import { adapterJsonSchema, STEP_KINDS, ENGINE_VERSION, type AdapterSummary } from '@senda/adapter-schema';
 
-export const SERVER_VERSION = '0.2.0';
+export const SERVER_VERSION = '0.2.1';
 // Set by the esbuild build (seconds since 1970) so a rebuild of the same version still counts as newer.
 declare const __SENDA_BUILD__: number | undefined;
 const SELF: ServerStamp = { version: SERVER_VERSION, build: typeof __SENDA_BUILD__ === 'number' ? __SENDA_BUILD__ : 0 };
