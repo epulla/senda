@@ -77,6 +77,25 @@ describe('press key', () => {
     expect(submitterValue).toBe('yes');
   });
 
+  it('submits without default button only for one blocking field', () => {
+    let submissions = 0;
+    document.body.innerHTML = '<form id="many"><input><input type="search"></form><form id="one"><input type="date"></form>';
+    const forms = [...document.querySelectorAll('form')];
+    for (const form of forms) {
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        submissions++;
+      });
+    }
+    forms[0]!.querySelector('input')!.focus();
+    pressKeyAction('Enter');
+    expect(submissions).toBe(0);
+    forms[1]!.querySelector('input')!.focus();
+    expect(probeKeyTarget('date-field').formField).toBe(true);
+    pressKeyAction('Enter');
+    expect(submissions).toBe(1);
+  });
+
   it('activates Space on keyup unless canceled', () => {
     const button = document.querySelector('button')!;
     let clicks = 0;

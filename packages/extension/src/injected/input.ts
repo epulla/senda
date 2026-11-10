@@ -74,7 +74,7 @@ export function pressKeyAction(key: string): string {
     shiftKey: key === 'Shift+Tab',
   };
   const textInputSelector =
-    'input:not([type]),input[type=text],input[type=search],input[type=email],input[type=url],input[type=tel],input[type=password]';
+    'input:not([type]),input[type=text],input[type=search],input[type=url],input[type=tel],input[type=email],input[type=password],input[type=date],input[type=month],input[type=week],input[type=time],input[type=datetime-local],input[type=number]';
   const form = active instanceof HTMLInputElement && active.matches(textInputSelector) ? active.form : null;
   const field = !!form;
   const deepestContaining = <T extends Element>(elements: T[]) => {
@@ -140,7 +140,7 @@ export function pressKeyAction(key: string): string {
         }
       }
     } else if (code === 'Enter' && (active.matches('a,button,summary,input[type=submit],input[type=button]') || field)) {
-      if (code === 'Enter' && field) {
+      if (field) {
         const submitter = [...form!.elements].find((item) => {
           if (!(item instanceof HTMLButtonElement || item instanceof HTMLInputElement)) return false;
           const type = item.type.toLowerCase();
@@ -151,7 +151,13 @@ export function pressKeyAction(key: string): string {
         } else if (submitter) {
           submitter.click();
         } else {
-          form!.requestSubmit();
+          const blockingFields = [...form!.elements].filter(
+            (item) =>
+              item instanceof HTMLInputElement &&
+              !item.disabled &&
+              item.matches(textInputSelector),
+          );
+          if (blockingFields.length === 1) form!.requestSubmit();
         }
       }
       else (active as HTMLElement).click();

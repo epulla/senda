@@ -16,7 +16,9 @@ export function probeKeyTarget(marker: string, ref?: string) {
   if (ref && active !== referenced) return { missing: false, focusFailed: true, label: '', formField: false };
   active.setAttribute('data-senda-key-target', marker);
   const pageRoot = active === document.body || active === document.documentElement;
-  const textInput = active.matches('input:not([type]),input[type=text],input[type=search],input[type=email],input[type=url],input[type=tel],input[type=password]');
+  const textInput = active.matches(
+    'input:not([type]),input[type=text],input[type=search],input[type=url],input[type=tel],input[type=email],input[type=password],input[type=date],input[type=month],input[type=week],input[type=time],input[type=datetime-local],input[type=number]',
+  );
   const labelledBy = active
     .getAttribute('aria-labelledby')
     ?.split(/\s+/)
