@@ -114,12 +114,12 @@
     outline-offset: 2px;
   }
   .btn-primary {
-    background: var(--primary);
+    background: transparent;
     border-color: var(--primary);
-    color: var(--primary-content);
+    color: var(--primary-text);
   }
   .btn-primary:hover {
-    background: color-mix(in srgb, var(--primary) 88%, black);
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
   }
   .btn-danger {
     background: var(--error);
