@@ -12,15 +12,16 @@ export function snapshotPage(scopeRef?: string): string | null {
   const controlRoles = /^(button|link|checkbox|radio|switch|tab|menuitem|menuitemcheckbox|menuitemradio|option|textbox|searchbox|combobox|slider|spinbutton)$/;
   // Containers (lists, forms, focusable wrappers) only get a ref when it would mean something to the AI.
   const wantsRef = (el: Element) =>
-    el.matches('a,button,input,select,textarea,[contenteditable],[onclick],table,dialog,[role=dialog],[role=alertdialog]') ||
+    el.matches('a,button,input,select,textarea,summary,[contenteditable],[onclick],table,dialog,[role=dialog],[role=alertdialog]') ||
+    (el.matches('label') && !!el.querySelector('input[type=checkbox],input[type=radio]') && !visible(el.querySelector('input[type=checkbox],input[type=radio]')!)) ||
     controlRoles.test(el.getAttribute('role') || '') ||
-    (el.getAttribute('tabindex') !== '-1' &&
+    (!el.matches('label') && el.getAttribute('tabindex') !== '-1' &&
       (['aria-label', 'aria-labelledby', 'title'].some((a) => el.getAttribute(a)?.trim()) ||
         [...el.childNodes].some((c) => c.nodeType === Node.TEXT_NODE && c.textContent?.trim())));
   let n = 0;
   const refs = new Map<Element, number>();
   document
-    .querySelectorAll('a,button,input,select,textarea,[role],[contenteditable],[onclick],[tabindex],table,ul,ol,dl,form,dialog')
+    .querySelectorAll('a,button,input,select,textarea,summary,label,[role],[contenteditable],[onclick],[tabindex],table,ul,ol,dl,form,dialog')
     .forEach((el) => {
       if (visible(el) && wantsRef(el)) {
         const ref = ++n;
@@ -36,6 +37,8 @@ export function snapshotPage(scopeRef?: string): string | null {
   // An ARIA widget wrapping other controls (e.g. a combobox around an input) is a container, not one control.
   const isControl = (el: Element) =>
     ['a', 'button', 'input', 'select', 'textarea'].includes(el.localName) ||
+    el.localName === 'summary' ||
+    (el.hasAttribute('tabindex') && el.getAttribute('tabindex') !== '-1' && !el.querySelector(controlSelector) && wantsRef(el)) ||
     (controlRoles.test(el.getAttribute('role') || '') && !el.querySelector(controlSelector));
   // Last-resort names for icon-only controls; the prefix tells the AI the name is guessed.
   const guessName = (el: Element) => {
@@ -67,16 +70,20 @@ export function snapshotPage(scopeRef?: string): string | null {
   };
   const control = (el: Element) => {
     const ref = refs.get(el);
-    const role = el.getAttribute('role') || el.localName;
+    const role = el.getAttribute('role') || (el instanceof HTMLInputElement && ['checkbox', 'radio'].includes(el.type) ? el.type : el.localName);
     const attr = (a: string) => el.getAttribute(a) || '';
     const labelledBy = attr('aria-labelledby')
       .split(/\s+/)
       .map((id) => (id && document.getElementById(id)?.textContent) || '')
       .join(' ');
+    const labelText = el instanceof HTMLInputElement && ['checkbox', 'radio'].includes(el.type)
+      ? (el.closest('label')?.textContent || (el.id && document.querySelector(`label[for="${CSS.escape(el.id)}"]`)?.textContent) || '')
+      : '';
     const name =
       [
         attr('aria-label'),
         labelledBy,
+        labelText,
         el.textContent || '',
         attr('placeholder'),
         attr('title'),
@@ -97,9 +104,10 @@ export function snapshotPage(scopeRef?: string): string | null {
     if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
       const hidden =
         el instanceof HTMLInputElement && (el.type === 'password' || /cc-number|cc-csc|cc-exp/i.test(el.autocomplete));
-      value = hidden ? ' (hidden)' : el.value ? ` value=${JSON.stringify(el.value)}` : '';
+      value = hidden ? ' (hidden)' : el instanceof HTMLInputElement && ['checkbox', 'radio'].includes(el.type) ? (el.checked ? ' (checked)' : '') : el.value ? ` value=${JSON.stringify(el.value)}` : '';
     }
-    return `${ref ? `[${ref}] ` : ''}${role} "${name}"${menu}${value}`;
+    const state = el.localName === 'summary' ? ` (${el.closest('details')?.hasAttribute('open') ? 'open' : 'closed'})` : '';
+    return `${ref ? `[${ref}] ` : ''}${role} "${name}"${state}${menu}${value}`;
   };
   type Part = { text: string; control?: boolean };
   const lines: string[] = [];
@@ -160,6 +168,10 @@ export function snapshotPage(scopeRef?: string): string | null {
     if (skip.has(tag)) return;
     // display: contents boxes have no size but their children render normally.
     if (!visible(el)) return void (getComputedStyle(el).display === 'contents' && walk(el, label, inline));
+    if (tag === 'label' && el.querySelector('input[type=checkbox],input[type=radio]')) {
+      const input = el.querySelector('input[type=checkbox],input[type=radio]')!;
+      return void buf.push({ text: control(visible(input) ? input : el), control: true });
+    }
     if (isControl(el)) return void buf.push({ text: control(el), control: true });
     if (tag === 'iframe' || tag === 'frame') return frame(el, label, inline);
     if (inline) {

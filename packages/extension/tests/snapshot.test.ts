@@ -23,6 +23,23 @@ describe('snapshot refs and actions', () => {
     document.body.innerHTML = '<input placeholder="Buscar modulo"><input aria-label="Filtro" value="a&quot;b">';
     expect(snapshotPage()!).toBe('[1] input "Buscar modulo"\n[2] input "Filtro" value="a\\"b"');
   });
+  it('refs summary and reports details state', () => {
+    document.body.innerHTML = '<details><summary>Menu</summary><a href="/x">Item</a></details>';
+    document.querySelector('a')!.getBoundingClientRect = () => ({ width: 0, height: 0 }) as DOMRect;
+    expect(snapshotPage()!).toBe('[1] summary "Menu" (closed)');
+    document.querySelector('details')!.setAttribute('open', '');
+    document.querySelector('a')!.getBoundingClientRect = () => ({ width: 10, height: 10 }) as DOMRect;
+    expect(snapshotPage()!).toBe('[1] summary "Menu" (open)\n[2] a "Item"');
+  });
+  it('refs named tabindex widgets and labels checkbox inputs', () => {
+    document.body.innerHTML = '<div tabindex="0" aria-label="Widget"></div><label><input type="checkbox"> Accept terms</label>';
+    expect(snapshotPage()!).toBe('[1] div "Widget"\n[2] checkbox "Accept terms"');
+  });
+  it('refs label for invisible checkbox', () => {
+    document.body.innerHTML = '<label><input type="checkbox"> Accept terms</label>';
+    document.querySelector('input')!.getBoundingClientRect = () => ({ width: 0, height: 0 }) as DOMRect;
+    expect(snapshotPage()!).toBe('[1] label "Accept terms"');
+  });
   it('never exposes password or card values', () => {
     const text = snapshotPage()!;
     expect(text).not.toContain('secret');
@@ -121,7 +138,7 @@ describe('snapshot refs and actions', () => {
       '<div role="combobox" aria-label="Country"><div role="textbox" aria-label="Country search"></div><div role="option">Peru</div></div>' +
       '<table><tr><td onclick="go()">Open Ana</td><td tabindex="0">Focus Luis</td><td>Plain</td></tr></table>';
     expect(snapshotPage()!).toBe(
-      '[1] combobox "Country"\n[2] textbox "Country search"\n[3] option "Peru"\n[4] table:\nrow: [5] Open Ana | [6] Focus Luis | Plain',
+      '[1] combobox "Country"\n[2] textbox "Country search"\n[3] option "Peru"\n[4] table:\nrow: [5] Open Ana | [6] td "Focus Luis" | Plain',
     );
   });
   it('reports missing refs', () => {
