@@ -35,9 +35,8 @@ export function realClick(el: HTMLElement): void {
   for (const type of ['pointerover', 'pointerenter']) target.dispatchEvent(new PointerEvent(type, pointer));
   for (const type of ['mouseover', 'mouseenter']) target.dispatchEvent(new MouseEvent(type, init));
   target.dispatchEvent(new PointerEvent('pointerdown', { ...pointer, buttons: 1 }));
-  const prevented = !target.dispatchEvent(new MouseEvent('mousedown', { ...init, buttons: 1 }));
-  const focusable = target.closest<HTMLElement>('a[href],button,input,select,textarea,summary,[tabindex],[contenteditable]:not([contenteditable=false])');
-  if (focusable || !prevented) moveFocus(focusable);
+  if (target.dispatchEvent(new MouseEvent('mousedown', { ...init, buttons: 1 })))
+    moveFocus(target.closest<HTMLElement>('a[href],button,input,select,textarea,summary,[tabindex],[contenteditable]:not([contenteditable=false])'));
   target.dispatchEvent(new PointerEvent('pointerup', pointer));
   target.dispatchEvent(new MouseEvent('mouseup', init));
   target.dispatchEvent(new MouseEvent('click', { ...init, detail: 1 }));
@@ -67,19 +66,24 @@ export function typeText(el: HTMLElement, text: string): void {
       setter.call(el, '');
       el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: null }));
     }
-    chars.forEach((ch, i) => {
+    let typed = '';
+    for (const ch of chars) {
       const key = ch === '\n' ? 'Enter' : ch;
       const upper = ch.toUpperCase();
       const code = /^[a-z]$/i.test(ch) ? `Key${upper}` : /^\d$/.test(ch) ? `Digit${ch}` : ch === ' ' ? 'Space' : ch === '\n' ? 'Enter' : '';
       const n = /^[a-z\d]$/i.test(ch) ? upper.charCodeAt(0) : ch === ' ' ? 32 : ch === '\n' ? 13 : 0;
       const init = { key, code, keyCode: n, which: n, bubbles: true, cancelable: true, composed: true };
-      el.dispatchEvent(new KeyboardEvent('keydown', init));
-      el.dispatchEvent(new KeyboardEvent('keypress', { ...init, charCode: ch.charCodeAt(0) }));
-      el.dispatchEvent(new InputEvent('beforeinput', { ...init, inputType: 'insertText', data: ch }));
-      setter.call(el, chars.slice(0, i + 1).join(''));
-      el.dispatchEvent(new InputEvent('input', { bubbles: true, composed: true, inputType: 'insertText', data: ch }));
+      const accepted =
+        el.dispatchEvent(new KeyboardEvent('keydown', init)) &&
+        el.dispatchEvent(new KeyboardEvent('keypress', { ...init, charCode: ch.charCodeAt(0) })) &&
+        el.dispatchEvent(new InputEvent('beforeinput', { ...init, inputType: 'insertText', data: ch }));
+      if (accepted) {
+        typed += ch;
+        setter.call(el, typed);
+        el.dispatchEvent(new InputEvent('input', { bubbles: true, composed: true, inputType: 'insertText', data: ch }));
+      }
       el.dispatchEvent(new KeyboardEvent('keyup', init));
-    });
+    }
     el.dispatchEvent(new Event('change', { bubbles: true }));
   }
 }

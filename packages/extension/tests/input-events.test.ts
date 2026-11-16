@@ -63,6 +63,24 @@ describe('injected input events', () => {
     expect(input.value).toBe('a1');
   });
 
+  it.each(['keydown', 'keypress', 'beforeinput'])('skips characters whose %s is canceled', (type) => {
+    const input = document.querySelector('input')!;
+    input.addEventListener(type, (event) => {
+      if ((event as KeyboardEvent).key === 'x' || (event as InputEvent).data === 'x') event.preventDefault();
+    });
+    typeText(input, 'axb');
+    expect(input.value).toBe('ab');
+  });
+
+  it('keeps focus when mousedown is canceled', () => {
+    const [a, b] = [...document.querySelectorAll('button')];
+    a!.focus();
+    b!.addEventListener('mousedown', (event) => event.preventDefault());
+    document.elementFromPoint = () => b!;
+    realClick(b!);
+    expect(document.activeElement).toBe(a);
+  });
+
   it('blurs typed field when Tab moves focus', () => {
     document.body.innerHTML = '<input><button>Next</button>';
     const input = document.querySelector('input')!;
