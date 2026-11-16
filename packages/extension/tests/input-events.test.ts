@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it } from 'vitest';
-import { pressKeyAction, realClick, typeText } from '../src/injected/input';
+import { typeRef } from '../src/injected/actions';
+import { moveFocus, pressKeyAction, realClick, typeText } from '../src/injected/input';
 
-(globalThis as any).__sendaInput = { pressKeyAction, realClick, typeText };
+(globalThis as any).__sendaInput = { moveFocus, pressKeyAction, realClick, typeText };
 
 beforeEach(() => {
   document.body.innerHTML = '<button>A</button><button>B</button><input>';
@@ -69,5 +70,13 @@ describe('injected input events', () => {
     typeText(input, 'x');
     pressKeyAction('Tab');
     expect(log).toEqual(['blur', 'focusout']);
+  });
+
+  it('reports the value a page reverts on blur and keeps focus on the field', async () => {
+    document.body.innerHTML = '<input data-senda-ref="1">';
+    const input = document.querySelector('input')!;
+    input.addEventListener('blur', () => (input.value = ''));
+    expect(await typeRef('1', '0')).toEqual({ ok: true, value: '' });
+    expect(document.activeElement).toBe(input);
   });
 });

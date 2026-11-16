@@ -41,6 +41,8 @@ export default async function type(p: { ref: string; text: string; submit?: bool
     func: typeRef,
     args: [p.ref, p.text, p.submit ?? false],
   });
-  if (!result) throw new CommandError(ErrorCode.REF_NOT_FOUND, `Ref ${p.ref} not found; take a new snapshot.`);
+  if (!result?.ok) throw new CommandError(ErrorCode.REF_NOT_FOUND, `Ref ${p.ref} not found; take a new snapshot.`);
+  if (result.value !== undefined && result.value !== p.text)
+    return { tabId, warning: `field value changed after typing (now "${result.value}")` };
   return { tabId };
 }

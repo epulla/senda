@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { snapshotPage } from '../src/injected/snapshot';
 import { clickRef, typeRef } from '../src/injected/actions';
-import { pressKey, realClick, typeText } from '../src/injected/input';
-(globalThis as any).__sendaInput = { realClick, typeText, pressKey };
+import { moveFocus, pressKey, realClick, typeText } from '../src/injected/input';
+(globalThis as any).__sendaInput = { realClick, typeText, pressKey, moveFocus };
 import { looksLikeInjection } from '../src/core/injection';
 import { maskIntact, maskSensitive } from '../src/injected/screenshot';
 const fixture = (name: string) => readFileSync(`tests/fixtures/${name}`, 'utf8');
@@ -54,9 +54,9 @@ describe('snapshot refs and actions', () => {
     expect(text).not.toContain('4111111111111111');
     expect(text).toContain('(hidden)');
   });
-  it('renumbers and actions target current refs', () => {
+  it('renumbers and actions target current refs', async () => {
     snapshotPage()!;
-    expect(typeRef('1', 'new value')).toBe(true);
+    expect(await typeRef('1', 'new value')).toEqual({ ok: true, value: 'new value' });
     expect(document.querySelector('input[type=text]')?.getAttribute('value')).toBe('old');
     expect((document.querySelector('input[type=text]') as HTMLInputElement).value).toBe('new value');
     let clicked = false;
@@ -149,8 +149,8 @@ describe('snapshot refs and actions', () => {
       '[1] combobox "Country"\n[2] textbox "Country search"\n[3] option "Peru"\n[4] table:\nrow: [5] Open Ana | [6] td "Focus Luis" | Plain',
     );
   });
-  it('reports missing refs', () => {
+  it('reports missing refs', async () => {
     expect(clickRef('999')).toBe(false);
-    expect(typeRef('999', 'x')).toBe(false);
+    expect(await typeRef('999', 'x')).toEqual({ ok: false });
   });
 });

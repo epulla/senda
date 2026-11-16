@@ -68,17 +68,23 @@ export function pressKeyRef(key: string, marker: string): string {
   marked.removeAttribute('data-senda-key-target');
   return (globalThis as any).__sendaInput.pressKeyAction(key);
 }
-export function typeRef(ref: string, text: string, submit = false): boolean {
+export async function typeRef(ref: string, text: string, submit = false): Promise<{ ok: boolean; value?: string }> {
   const el = document.querySelector(`[data-senda-ref="${CSS.escape(ref)}"]`) as HTMLElement | null;
-  if (!el) return false;
+  if (!el) return { ok: false };
   const input = (globalThis as any).__sendaInput;
   input.typeText(el, text);
   if (submit) {
     const form = el.closest('form');
     if (form) form.requestSubmit();
     else input.pressKey(el, 'Enter');
+    return { ok: true };
   }
-  return true;
+  // Blur so save-on-blur pages commit, then re-read to catch pages that revert the value.
+  input.moveFocus(null);
+  await new Promise((resolve) => setTimeout(resolve));
+  const value = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement ? el.value : el.textContent ?? '';
+  input.moveFocus(el);
+  return { ok: true, value };
 }
 export function scrollPage(dx = 0, dy = 600, ref?: string): boolean {
   if (ref !== undefined) {
