@@ -1,3 +1,26 @@
+export function moveFocus(el: HTMLElement | null): void {
+  const prev = document.activeElement;
+  let native = false;
+  const markNative = () => { native = true; };
+  window.addEventListener('focusin', markNative, true);
+  window.addEventListener('focusout', markNative, true);
+  if (el) el.focus();
+  else if (prev instanceof HTMLElement && prev !== document.body) prev.blur();
+  window.removeEventListener('focusin', markNative, true);
+  window.removeEventListener('focusout', markNative, true);
+  const active = document.activeElement;
+  if (native || active === prev) return;
+  // Background windows can update activeElement without dispatching native focus events.
+  if (prev instanceof HTMLElement && prev !== document.body) {
+    prev.dispatchEvent(new FocusEvent('blur', { relatedTarget: active }));
+    prev.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true, relatedTarget: active }));
+  }
+  if (active instanceof HTMLElement && active !== document.body) {
+    active.dispatchEvent(new FocusEvent('focus', { relatedTarget: prev }));
+    active.dispatchEvent(new FocusEvent('focusin', { bubbles: true, composed: true, relatedTarget: prev }));
+  }
+}
+
 // Untrusted events can't pass isTrusted checks, but many apps (WhatsApp Web included) only need the
 // full pointer sequence with coordinates on the element actually under the cursor.
 export function realClick(el: HTMLElement): void {
@@ -12,15 +35,16 @@ export function realClick(el: HTMLElement): void {
   for (const type of ['pointerover', 'pointerenter']) target.dispatchEvent(new PointerEvent(type, pointer));
   for (const type of ['mouseover', 'mouseenter']) target.dispatchEvent(new MouseEvent(type, init));
   target.dispatchEvent(new PointerEvent('pointerdown', { ...pointer, buttons: 1 }));
-  target.dispatchEvent(new MouseEvent('mousedown', { ...init, buttons: 1 }));
-  target.focus?.();
+  const prevented = !target.dispatchEvent(new MouseEvent('mousedown', { ...init, buttons: 1 }));
+  const focusable = target.closest<HTMLElement>('a[href],button,input,select,textarea,summary,[tabindex],[contenteditable]:not([contenteditable=false])');
+  if (focusable || !prevented) moveFocus(focusable);
   target.dispatchEvent(new PointerEvent('pointerup', pointer));
   target.dispatchEvent(new MouseEvent('mouseup', init));
   target.dispatchEvent(new MouseEvent('click', { ...init, detail: 1 }));
 }
 
 export function typeText(el: HTMLElement, text: string): void {
-  el.focus();
+  moveFocus(el);
   if (el.isContentEditable) {
     // Rich editors (Lexical, Draft, ProseMirror) listen to beforeinput/paste, not textContent changes.
     const range = document.createRange();
@@ -37,8 +61,25 @@ export function typeText(el: HTMLElement, text: string): void {
     }
   } else if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
     const proto = el instanceof HTMLInputElement ? HTMLInputElement.prototype : HTMLTextAreaElement.prototype;
-    Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(el, text);
-    el.dispatchEvent(new Event('input', { bubbles: true }));
+    const setter = Object.getOwnPropertyDescriptor(proto, 'value')!.set!;
+    const chars = [...text];
+    if (!chars.length) {
+      setter.call(el, '');
+      el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: null }));
+    }
+    chars.forEach((ch, i) => {
+      const key = ch === '\n' ? 'Enter' : ch;
+      const upper = ch.toUpperCase();
+      const code = /^[a-z]$/i.test(ch) ? `Key${upper}` : /^\d$/.test(ch) ? `Digit${ch}` : ch === ' ' ? 'Space' : ch === '\n' ? 'Enter' : '';
+      const n = /^[a-z\d]$/i.test(ch) ? upper.charCodeAt(0) : ch === ' ' ? 32 : ch === '\n' ? 13 : 0;
+      const init = { key, code, keyCode: n, which: n, bubbles: true, cancelable: true, composed: true };
+      el.dispatchEvent(new KeyboardEvent('keydown', init));
+      el.dispatchEvent(new KeyboardEvent('keypress', { ...init, charCode: ch.charCodeAt(0) }));
+      el.dispatchEvent(new InputEvent('beforeinput', { ...init, inputType: 'insertText', data: ch }));
+      setter.call(el, chars.slice(0, i + 1).join(''));
+      el.dispatchEvent(new InputEvent('input', { bubbles: true, composed: true, inputType: 'insertText', data: ch }));
+      el.dispatchEvent(new KeyboardEvent('keyup', init));
+    });
     el.dispatchEvent(new Event('change', { bubbles: true }));
   }
 }
@@ -125,7 +166,7 @@ export function pressKeyAction(key: string): string {
       const next = els.length
         ? els[i < 0 ? (step > 0 ? 0 : els.length - 1) : (i + step + els.length) % els.length]
         : undefined;
-      next?.focus();
+      if (next) moveFocus(next);
     } else if (code === 'Escape') {
       const popovers = [...document.querySelectorAll<HTMLElement>('[popover]:popover-open')];
       const popover = deepestContaining(popovers) || popovers.find((item) => !popovers.some((other) => other !== item && item.contains(other))) || popovers.at(-1);
