@@ -103,7 +103,7 @@ export function snapshotPage(scopeRef?: string): string | null {
     }
     let value = '';
     if (el instanceof HTMLSelectElement) {
-      const label = (o: HTMLOptionElement) => esc(o.text);
+      const label = (o: HTMLOptionElement) => esc(o.getAttribute('label') || o.text);
       const selected = [...el.selectedOptions].map(label).join(', ');
       value = ` (options: ${[...el.options].map(label).filter(Boolean).join(', ').slice(0, 300)})${selected ? ` selected=${JSON.stringify(selected)}` : ''}`;
     } else if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {

@@ -92,13 +92,15 @@ export function typeText(el: HTMLElement, text: string): void {
 export function chooseOption(el: HTMLSelectElement, value: string | string[]): string[] {
   const wanted = Array.isArray(value) ? value : [value];
   const options = [...el.options];
-  const label = (o: HTMLOptionElement) => o.text.trim();
-  const list = () => options.filter((o) => !o.disabled).map((o) => (!o.value || o.value === label(o) ? label(o) : `${label(o)} (${o.value})`)).join(', ');
+  // <option label> wins over its text, as in the rendered dropdown; a disabled optgroup disables its options.
+  const label = (o: HTMLOptionElement) => (o.getAttribute('label') || o.text).trim();
+  const off = (o: HTMLOptionElement) => o.disabled || !!o.closest('optgroup[disabled]');
+  const list = () => options.filter((o) => !off(o)).map((o) => (!o.value || o.value === label(o) ? label(o) : `${label(o)} (${o.value})`)).join(', ');
   if (wanted.length !== 1 && !el.multiple) throw Error(`This dropdown takes one option. Options: ${list()}`);
   const picked = wanted.map((w) => {
     const o =
       options.find((o) => o.value === w) ?? options.find((o) => label(o).toLowerCase() === w.trim().toLowerCase());
-    if (!o || o.disabled) throw Error(`${o ? 'Option is disabled' : 'No option matches'}: "${w}". Options: ${list()}`);
+    if (!o || off(o)) throw Error(`${o ? 'Option is disabled' : 'No option matches'}: "${w}". Options: ${list()}`);
     return o;
   });
   for (const o of options) o.selected = picked.includes(o);

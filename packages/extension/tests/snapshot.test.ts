@@ -158,6 +158,16 @@ describe('snapshot refs and actions', () => {
     expect(await typeRef('1', 'Otro')).toEqual({ ok: true, error: 'Option is disabled: "Otro". Options: Elegir, Gerente (m)' });
     expect(await typeRef('2', 'x', false, true)).toEqual({ ok: true, error: 'Ref 2 is not a dropdown; use browser_type or browser_click.' });
   });
+  it('uses option label attributes and skips disabled optgroups', async () => {
+    document.body.innerHTML =
+      '<select aria-label="Pick"><option value="id" label="Visible">Internal text</option><optgroup disabled><option value="blocked">Blocked</option></optgroup></select>';
+    expect(snapshotPage()!).toBe('[1] select "Pick" (options: Visible, Blocked) selected="Visible"');
+    let changes = 0;
+    document.querySelector('select')!.addEventListener('change', () => changes++);
+    expect(await typeRef('1', 'blocked')).toEqual({ ok: true, error: 'Option is disabled: "blocked". Options: Visible (id)' });
+    expect(changes).toBe(0);
+    expect(await typeRef('1', 'visible')).toEqual({ ok: true, selected: ['Visible'] });
+  });
   it('reports missing refs', async () => {
     expect(clickRef('999')).toBe(false);
     expect(await typeRef('999', 'x')).toEqual({ ok: false });

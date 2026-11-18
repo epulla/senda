@@ -17,6 +17,8 @@ test('select and type pick options in a controlled dropdown', async ({ context, 
   expect(wrong.isError).toBe(true);
   expect(text(wrong)).toContain('Options: Choose, Gerente (m), Empleado (e)');
   await call('browser_select', { ref, value: 'gerente' });
+  const langs = snapshot.match(/\[(\d+)\] select "Languages"/)![1]!;
+  expect(JSON.parse(text(await call('browser_select', { ref: langs, value: ['English', 'es'] }))).selected).toEqual(['English', 'Español']);
   await tab.locator('button').click();
-  await expect(tab.locator('#sent')).toHaveText('m');
+  await expect(tab.locator('#sent')).toHaveText('m,en,es');
 });

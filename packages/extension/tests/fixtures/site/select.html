@@ -1,5 +1,5 @@
 <!doctype html><meta charset="utf-8"><title>Select</title>
-<form id="f"><label for="role">Role</label><select id="role" name="role"><option value="">Choose</option><option value="m">Gerente</option><option value="e">Empleado</option></select><button>Send</button></form>
+<form id="f"><label for="role">Role</label><select id="role" name="role"><option value="">Choose</option><option value="m">Gerente</option><option value="e">Empleado</option></select><select name="langs" aria-label="Languages" multiple><option value="en">English</option><option value="es">Español</option></select><button>Send</button></form>
 <p id="state"></p><p id="sent"></p>
 <script>
 // Controlled like React: state changes only through change events, and render writes it back.
@@ -7,5 +7,5 @@ let state = '';
 const role = document.querySelector('#role');
 const render = () => { role.value = state; document.querySelector('#state').textContent = state; };
 role.addEventListener('change', (event) => { state = event.target.value; render(); });
-document.querySelector('#f').addEventListener('submit', (event) => { event.preventDefault(); document.querySelector('#sent').textContent = new FormData(event.target).get('role'); });
+document.querySelector('#f').addEventListener('submit', (event) => { event.preventDefault(); const data = new FormData(event.target); document.querySelector('#sent').textContent = [data.get('role'), ...data.getAll('langs')].join(','); });
 </script>
