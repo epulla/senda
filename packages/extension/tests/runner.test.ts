@@ -368,6 +368,33 @@ describe('recipe runner', () => {
     });
     expect(await runRecipe({ adapter: a, tool: 'title', args: {} })).toMatchObject({ ok: true, value: 'n/a' });
   });
+  it('selects templated values by value or label, reads live values and echoes args', async () => {
+    const a = Adapter.parse({
+      ...chat,
+      tools: {
+        set: {
+          description: 'set',
+          effect: 'write',
+          params: { field: { type: 'string' }, value: { type: 'string' } },
+          steps: [
+            { select: { selector: '#id_{{args.field}}', value: '{{args.value}}' } },
+            { extract: { selector: '#id_{{args.field}}', attr: 'value' }, save: 'now' },
+            { return: { now: 'now', field: '{{args.field}}' } },
+          ],
+        },
+      },
+    });
+    document.body.innerHTML =
+      '<select id="id_teamsubmission"><option value="">Elegir</option><option value="0">No</option><option value="1">Sí</option></select>';
+    let changes = 0;
+    document.querySelector('select')!.addEventListener('change', () => changes++);
+    const run = (value: string) =>
+      runRecipe({ adapter: a, tool: 'set', args: { field: 'teamsubmission', value }, approved: true });
+    expect(await run('1')).toMatchObject({ ok: true, value: { now: '1', field: 'teamsubmission' } });
+    expect(await run(' no ')).toMatchObject({ ok: true, value: { now: '0' } });
+    expect(changes).toBe(2);
+    expect(await run('Maybe')).toMatchObject({ ok: false, message: 'No option matches: "Maybe". Options: Elegir, No (0), Sí (1)' });
+  });
   it('enforces 200-step limit', async () => {
     const steps = Array.from({ length: 201 }, () => ({ exists: { selector: 'body' } }));
     const a = Adapter.parse({ ...chat, tools: { many: { description: 'many', effect: 'read', params: {}, steps } } });

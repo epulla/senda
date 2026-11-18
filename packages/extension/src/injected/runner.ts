@@ -3,7 +3,7 @@ import { ErrorCode } from '@senda/protocol';
 import { matchesSites } from '../core/adapters/sites';
 import { cssString, render } from '../core/adapters/template';
 import { isSensitiveLabel } from '../core/sensitive';
-import { pressKey, realClick, typeText } from './input';
+import { chooseOption, pressKey, realClick, typeText } from './input';
 
 type Input = {
   adapter: Adapter;
@@ -76,7 +76,10 @@ export async function runRecipe(input: Input): Promise<RunResult> {
     let v: any = f.text
       ? textOf(el)
       : f.attr
-        ? el.getAttribute(f.attr)
+        ? f.attr === 'value' &&
+          (el instanceof HTMLInputElement || el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement)
+          ? el.value
+          : el.getAttribute(f.attr)
         : f.selector
           ? (() => {
               const child = sel(f.selector, el);
@@ -362,10 +365,10 @@ export async function runRecipe(input: Input): Promise<RunResult> {
             break;
           }
           case 'select': {
-            const e = sel(payload.selector) as HTMLSelectElement | null;
-            if (!e) throw Error('Missing select');
-            e.value = payload.value;
-            e.dispatchEvent(new Event('change', { bubbles: true }));
+            const e = sel(payload.selector);
+            if (!(e instanceof HTMLSelectElement)) throw Error('Missing select');
+            const value = render(payload.value, ctx());
+            chooseOption(e, Array.isArray(value) ? value.map(String) : String(value ?? ''));
             break;
           }
           case 'press': {
@@ -381,14 +384,16 @@ export async function runRecipe(input: Input): Promise<RunResult> {
             break;
           }
           case 'return': {
+            // A name returns that saved variable; a {{template}} is rendered (e.g. to echo args).
             const missing = (typeof payload === 'string' ? [payload] : Object.values(payload)).find(
-              (name) => !Object.hasOwn(vars, name as string),
+              (name) => !(name as string).includes('{{') && !Object.hasOwn(vars, name as string),
             );
             if (missing !== undefined) throw Error(`Unknown variable: ${missing}`);
+            const value = (name: string) => (name.includes('{{') ? render(name, ctx()) : vars[name]);
             out =
               typeof payload === 'string'
-                ? vars[payload]
-                : Object.fromEntries(Object.entries(payload).map(([k, v]) => [k, vars[v as string]]));
+                ? value(payload)
+                : Object.fromEntries(Object.entries(payload).map(([k, v]) => [k, value(v as string)]));
             return { ok: true, value: out };
           }
           default:
