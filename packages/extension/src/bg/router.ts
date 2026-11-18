@@ -4,6 +4,7 @@ import snapshot from './commands/snapshot';
 import click from './commands/click';
 import pressKey from './commands/press-key';
 import typeCommand from './commands/type';
+import select from './commands/select';
 import scroll from './commands/scroll';
 import tabs from './commands/tabs';
 import { back, forward } from './commands/history';
@@ -18,6 +19,7 @@ const commands: Record<string, (p: any) => Promise<unknown>> = {
   click,
   press_key: pressKey,
   type: typeCommand,
+  select,
   scroll,
   tabs,
   screenshot,

@@ -68,10 +68,26 @@ export function pressKeyRef(key: string, marker: string): string {
   marked.removeAttribute('data-senda-key-target');
   return (globalThis as any).__sendaInput.pressKeyAction(key);
 }
-export async function typeRef(ref: string, text: string, submit = false): Promise<{ ok: boolean; value?: string }> {
+export async function typeRef(
+  ref: string,
+  text: string | string[],
+  submit = false,
+  selectOnly = false,
+): Promise<{ ok: boolean; value?: string; selected?: string[]; error?: string }> {
   const el = document.querySelector(`[data-senda-ref="${CSS.escape(ref)}"]`) as HTMLElement | null;
   if (!el) return { ok: false };
   const input = (globalThis as any).__sendaInput;
+  if (el instanceof HTMLSelectElement) {
+    let selected: string[];
+    try {
+      selected = input.chooseOption(el, text);
+    } catch (error) {
+      return { ok: true, error: (error as Error).message };
+    }
+    if (submit) el.form?.requestSubmit();
+    return { ok: true, selected };
+  }
+  if (selectOnly) return { ok: true, error: `Ref ${ref} is not a dropdown; use browser_type or browser_click.` };
   input.typeText(el, text);
   if (submit) {
     const form = el.closest('form');

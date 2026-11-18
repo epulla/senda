@@ -187,6 +187,7 @@ export const en = {
     clickSummary: (label: string, host: string) => `Your AI wants to click “${label}” on ${host}.`,
     typeSummary: (host: string, submit: boolean) =>
       `Your AI wants to enter text on ${host}${submit ? ' and submit the form' : ''}.`,
+    selectSummary: (host: string) => `Your AI wants to choose an option on ${host}.`,
     navigateSummary: (host: string) => `Your AI wants to open ${host}.`,
     element: 'an element',
     reasonLabel: 'Reason',

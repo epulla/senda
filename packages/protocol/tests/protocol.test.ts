@@ -18,6 +18,11 @@ describe('protocol schemas', () => {
   it.each(Object.entries(methods))('rejects unknown params for %s', (_name, schema) => {
     expect(schema.safeParse({ unexpected: true }).success).toBe(false);
   });
+  it('accepts one or several select values', () => {
+    expect(methods.select.safeParse({ ref: '1', value: 'Gerente' }).success).toBe(true);
+    expect(methods.select.safeParse({ ref: '1', value: ['a', 'b'] }).success).toBe(true);
+    expect(methods.select.safeParse({ ref: '1', value: [] }).success).toBe(false);
+  });
 });
 
 describe('server versions', () => {

@@ -76,15 +76,16 @@ export function snapshotPage(scopeRef?: string): string | null {
       .split(/\s+/)
       .map((id) => (id && document.getElementById(id)?.textContent) || '')
       .join(' ');
-    const labelText = el instanceof HTMLInputElement && ['checkbox', 'radio'].includes(el.type)
-      ? (el.closest('label')?.textContent || (el.id && document.querySelector(`label[for="${CSS.escape(el.id)}"]`)?.textContent) || '')
+    const isSelect = el instanceof HTMLSelectElement;
+    const labelText = (el instanceof HTMLInputElement && ['checkbox', 'radio'].includes(el.type)) || isSelect
+      ? ((el.closest('label')?.textContent || '').replace(el.textContent || '', '') || (el.id && document.querySelector(`label[for="${CSS.escape(el.id)}"]`)?.textContent) || '')
       : '';
     const name =
       [
         attr('aria-label'),
         labelledBy,
         labelText,
-        el.textContent || '',
+        isSelect ? '' : el.textContent || '',
         attr('placeholder'),
         attr('title'),
         attr('data-original-title'),
@@ -101,7 +102,11 @@ export function snapshotPage(scopeRef?: string): string | null {
       menu = items.length ? ` (menu: ${items.join(', ').slice(0, 120)})` : ' (menu)';
     }
     let value = '';
-    if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
+    if (el instanceof HTMLSelectElement) {
+      const label = (o: HTMLOptionElement) => esc(o.text);
+      const selected = [...el.selectedOptions].map(label).join(', ');
+      value = ` (options: ${[...el.options].map(label).filter(Boolean).join(', ').slice(0, 300)})${selected ? ` selected=${JSON.stringify(selected)}` : ''}`;
+    } else if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
       const hidden =
         el instanceof HTMLInputElement && (el.type === 'password' || /cc-number|cc-csc|cc-exp/i.test(el.autocomplete));
       value = hidden ? ' (hidden)' : el instanceof HTMLInputElement && ['checkbox', 'radio'].includes(el.type) ? (el.checked ? ' (checked)' : '') : el.value ? ` value=${JSON.stringify(el.value)}` : '';

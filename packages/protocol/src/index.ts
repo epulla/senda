@@ -66,6 +66,7 @@ export const methods = {
   click: z.object({ ref: z.string(), tabId }).strict(),
   press_key: z.object({ key: z.enum(['Tab','Shift+Tab','Escape','Enter','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home','End']), ref: z.string().optional(), tabId }).strict(),
   type: z.object({ ref: z.string(), text: z.string(), submit: z.boolean().optional(), tabId }).strict(),
+  select: z.object({ ref: z.string(), value: z.union([z.string(), z.array(z.string()).min(1)]), tabId }).strict(),
   scroll: z
     .object({ dx: z.number().optional(), dy: z.number().optional(), ref: z.string().optional(), tabId })
     .strict(),

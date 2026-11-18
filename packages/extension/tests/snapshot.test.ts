@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { snapshotPage } from '../src/injected/snapshot';
 import { clickRef, typeRef } from '../src/injected/actions';
-import { moveFocus, pressKey, realClick, typeText } from '../src/injected/input';
-(globalThis as any).__sendaInput = { realClick, typeText, pressKey, moveFocus };
+import { chooseOption, moveFocus, pressKey, realClick, typeText } from '../src/injected/input';
+(globalThis as any).__sendaInput = { realClick, typeText, pressKey, moveFocus, chooseOption };
 import { looksLikeInjection } from '../src/core/injection';
 import { maskIntact, maskSensitive } from '../src/injected/screenshot';
 const fixture = (name: string) => readFileSync(`tests/fixtures/${name}`, 'utf8');
@@ -148,6 +148,15 @@ describe('snapshot refs and actions', () => {
     expect(snapshotPage()!).toBe(
       '[1] combobox "Country"\n[2] textbox "Country search"\n[3] option "Peru"\n[4] table:\nrow: [5] Open Ana | [6] td "Focus Luis" | Plain',
     );
+  });
+  it('lists select options and picks them by value or label', async () => {
+    document.body.innerHTML =
+      '<label>Rol <select><option value="">Elegir</option><option value="m">Gerente</option><option disabled>Otro</option></select></label><input aria-label="Name">';
+    expect(snapshotPage()!).toBe('label: Rol [1] select "Rol" (options: Elegir, Gerente, Otro) selected="Elegir"\n[2] input "Name"');
+    expect(await typeRef('1', 'gerente')).toEqual({ ok: true, selected: ['Gerente'] });
+    expect(snapshotPage()!).toContain('selected="Gerente"');
+    expect(await typeRef('1', 'Otro')).toEqual({ ok: true, error: 'Option is disabled: "Otro". Options: Elegir, Gerente (m)' });
+    expect(await typeRef('2', 'x', false, true)).toEqual({ ok: true, error: 'Ref 2 is not a dropdown; use browser_type or browser_click.' });
   });
   it('reports missing refs', async () => {
     expect(clickRef('999')).toBe(false);

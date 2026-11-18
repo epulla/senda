@@ -191,6 +191,7 @@ export const es: Text = {
     clickSummary: (label: string, host: string) => `Tu IA quiere hacer clic en “${label}” en ${host}.`,
     typeSummary: (host: string, submit: boolean) =>
       `Tu IA quiere escribir en ${host}${submit ? ' y enviar el formulario' : ''}.`,
+    selectSummary: (host: string) => `Tu IA quiere elegir una opción en ${host}.`,
     navigateSummary: (host: string) => `Tu IA quiere abrir ${host}.`,
     element: 'un elemento',
     reasonLabel: 'Motivo',

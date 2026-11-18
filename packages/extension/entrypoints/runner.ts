@@ -1,7 +1,7 @@
 import { runRecipe } from '../src/injected/runner';
-import { moveFocus, pressKey, pressKeyAction, realClick, typeText } from '../src/injected/input';
+import { chooseOption, moveFocus, pressKey, pressKeyAction, realClick, typeText } from '../src/injected/input';
 
 export default defineUnlistedScript(() => {
   (globalThis as any).__sendaRun = runRecipe;
-  (globalThis as any).__sendaInput = { realClick, typeText, pressKey, pressKeyAction, moveFocus };
+  (globalThis as any).__sendaInput = { realClick, typeText, pressKey, pressKeyAction, moveFocus, chooseOption };
 });
