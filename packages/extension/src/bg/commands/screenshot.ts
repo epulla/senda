@@ -20,6 +20,11 @@ const bitmap = async (dataUrl: string) => createImageBitmap(await (await fetch(d
 let lastCapture = 0;
 // One screenshot at a time, so masking and tab switching never overlap.
 let queue: Promise<unknown> = Promise.resolve();
+// Chrome can't read the pixels of a minimized or covered window and only says "image readback failed".
+export const captureError = (error: unknown, minimized: boolean) =>
+  minimized || /readback failed/i.test(String(error))
+    ? new CommandError(ErrorCode.TAB_GONE, "Chrome window isn't visible; bring it to the front and retry.")
+    : error;
 
 export default function screenshot(p: { ref?: string; fullPage?: boolean; tabId?: number }) {
   const run = queue.then(() => take(p));
@@ -55,7 +60,14 @@ async function take(p: { ref?: string; fullPage?: boolean; tabId?: number }) {
     if (wait > 0) await sleep(wait);
     await shown();
     lastCapture = Date.now();
-    const image = await browser.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    let image: string;
+    try {
+      image = await browser.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    } catch (error) {
+      // A reload during capture also fails readback; report that first.
+      await shown();
+      throw captureError(error, (await browser.windows.get(tab.windowId)).state === 'minimized');
+    }
     await shown();
     return bitmap(image);
   };
