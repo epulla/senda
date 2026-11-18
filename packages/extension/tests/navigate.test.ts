@@ -65,3 +65,27 @@ it('opens a blank new tab whose load finished before tabs.create returned', asyn
   await expect(navigate({ url: 'about:blank', newTab: true, internal: true })).resolves.toMatchObject({ tabId: 7 });
   expect(update).not.toHaveBeenCalled();
 });
+
+it('reports a likely Leave site? dialog when the navigation never starts, until the page responds again', async () => {
+  stubBrowserWithoutTabGroups();
+  vi.useFakeTimers();
+  vi.spyOn(fakeBrowser.tabs, 'get').mockResolvedValue({ id: 5 } as any);
+  vi.spyOn(fakeBrowser.tabs, 'update').mockResolvedValue({ id: 5 } as any);
+  let respond = false;
+  const script = vi.spyOn(fakeBrowser.scripting, 'executeScript').mockImplementation(() => (respond ? Promise.resolve([]) : new Promise(() => {})) as any);
+  (await import('../src/bg/agent-tabs')).trackAgentTab(5);
+  const { default: navigate } = await import('../src/bg/commands/navigate');
+  const { target } = await import('../src/bg/commands/shared');
+  const pending = expect(navigate({ url: 'https://example.com/', tabId: 5 })).rejects.toMatchObject({ code: ErrorCode.PAGE_DIALOG, message: expect.stringContaining('Leave site?') });
+  await vi.advanceTimersByTimeAsync(3000);
+  await pending;
+  const blocked = expect(target(5)).rejects.toMatchObject({ code: ErrorCode.PAGE_DIALOG });
+  await vi.advanceTimersByTimeAsync(1000);
+  await blocked;
+  respond = true;
+  await expect(target(5)).resolves.toBe(5);
+  script.mockClear();
+  await expect(target(5)).resolves.toBe(5);
+  expect(script).not.toHaveBeenCalled();
+  vi.useRealTimers();
+});

@@ -9,7 +9,22 @@ export class CommandError extends Error {
     super(message);
   }
 }
+export const LEAVE_HINT =
+  "The page may be showing a 'Leave site?' dialog (unsaved changes). Ask the user to click Leave, or use the page's own Cancel button.";
+// Tabs whose navigation never started, likely held by a "Leave site?" dialog that blocks the page's scripts.
+const stalledTabs = new Set<number>();
 export async function target(tabId?: number, create = false): Promise<number> {
+  const id = await pickTab(tabId, create);
+  if (!stalledTabs.has(id)) return id;
+  const responds = await Promise.race([
+    browser.scripting.executeScript({ target: { tabId: id }, func: () => true }).then(() => true, () => true),
+    new Promise<boolean>((resolve) => setTimeout(resolve, 1000, false)),
+  ]);
+  if (!responds) throw new CommandError(ErrorCode.PAGE_DIALOG, LEAVE_HINT);
+  stalledTabs.delete(id);
+  return id;
+}
+async function pickTab(tabId?: number, create = false): Promise<number> {
   if (tabId !== undefined) {
     try {
       await browser.tabs.get(tabId);
@@ -35,10 +50,12 @@ export async function target(tabId?: number, create = false): Promise<number> {
 // track(id, true) also forgets earlier loads of that tab, for when start loads another page in it (a new tab's blank page).
 export function waitForLoad(start: (track: (id: number, reload?: boolean) => void) => Promise<unknown>, tabId?: number): Promise<number> {
   const completed = new Set<number>();
+  const loading = new Set<number>();
   let started = false;
   return new Promise<number>((resolve, reject) => {
     const finish = (error?: unknown) => {
       clearTimeout(timer);
+      clearTimeout(stall);
       browser.tabs.onUpdated.removeListener(updated);
       browser.tabs.onRemoved.removeListener(removed);
       browser.tabs.onReplaced.removeListener(replaced);
@@ -46,7 +63,14 @@ export function waitForLoad(start: (track: (id: number, reload?: boolean) => voi
       else resolve(tabId!);
     };
     const timer = setTimeout(() => finish(new CommandError(ErrorCode.TIMEOUT, 'Navigation timed out.')), 25000);
+    // Chrome marks a tab loading as soon as a navigation starts; a "Leave site?" dialog holds it back.
+    const stall = setTimeout(() => {
+      if (tabId === undefined || loading.has(tabId)) return;
+      stalledTabs.add(tabId);
+      finish(new CommandError(ErrorCode.PAGE_DIALOG, LEAVE_HINT));
+    }, 3000);
     const updated = (id: number, change: { status?: string }) => {
+      if (change.status) loading.add(id);
       if (change.status !== 'complete') return;
       completed.add(id);
       if (started && id === tabId) finish();
@@ -58,6 +82,7 @@ export function waitForLoad(start: (track: (id: number, reload?: boolean) => voi
     const replaced = (added: number, old: number) => {
       if (old !== tabId) return;
       tabId = added;
+      loading.add(added);
       if (started && completed.has(added)) finish();
     };
     browser.tabs.onUpdated.addListener(updated);

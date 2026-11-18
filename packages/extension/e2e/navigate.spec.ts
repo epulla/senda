@@ -52,3 +52,24 @@ test('new agent tabs survive a tab-reuse extension that closes ungrouped duplica
   // A blank new tab has no page to load after joining the group.
   expect((await mcp.callTool({ name: 'browser_tabs', arguments: { action: 'new' } })).isError).toBeFalsy();
 });
+
+test('browser_navigate away from unsaved changes reports the Leave site? dialog instead of timing out', async ({ context, mcp, fixtureUrl }) => {
+  const call = (name: string, arguments_: Record<string, unknown> = {}) => mcp.callTool({ name, arguments: arguments_ });
+  const text = (result: Awaited<ReturnType<typeof call>>) => (result.content as { text: string }[])[0]!.text;
+  await call('browser_navigate', { url: `${fixtureUrl}/site/leave.html` });
+  const page = context.pages().find((p) => p.url().endsWith('/site/leave.html'))!;
+  // A real keystroke gives the page the user activation Chrome needs before it shows the dialog.
+  await page.getByLabel('Draft').fill('unsaved');
+  const dialog = page.waitForEvent('dialog');
+  const started = Date.now();
+  const away = await call('browser_navigate', { url: `${fixtureUrl}/site/mail.html` });
+  expect(away.isError).toBe(true);
+  expect(text(away)).toContain("PAGE_DIALOG: The page may be showing a 'Leave site?' dialog");
+  expect(Date.now() - started).toBeLessThan(6000);
+  expect((await dialog).type()).toBe('beforeunload');
+  const stuck = await call('browser_snapshot');
+  expect(text(stuck)).toContain('PAGE_DIALOG');
+  await (await dialog).accept();
+  await expect(page).toHaveURL(/mail\.html$/);
+  expect((await call('browser_snapshot')).isError).toBeFalsy();
+});
