@@ -23,7 +23,7 @@ let queue: Promise<unknown> = Promise.resolve();
 // Chrome can't read the pixels of a minimized or covered window and only says "image readback failed".
 export const captureError = (error: unknown, minimized: boolean) =>
   minimized || /readback failed/i.test(String(error))
-    ? new CommandError(ErrorCode.TAB_GONE, "Chrome window isn't visible; bring it to the front and retry.")
+    ? new CommandError(ErrorCode.WINDOW_HIDDEN, "Chrome window isn't visible; bring it to the front and retry.")
     : error;
 
 export default function screenshot(p: { ref?: string; fullPage?: boolean; tabId?: number }) {
