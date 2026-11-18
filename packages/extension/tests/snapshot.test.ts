@@ -168,6 +168,11 @@ describe('snapshot refs and actions', () => {
     expect(changes).toBe(0);
     expect(await typeRef('1', 'visible')).toEqual({ ok: true, selected: ['Visible'] });
   });
+  it('cuts long option lists at whole options', () => {
+    const years = Array.from({ length: 200 }, (_, i) => `<option>${1900 + i}</option>`).join('');
+    document.body.innerHTML = `<select aria-label="Año">${years}</select>`;
+    expect(snapshotPage()!).toBe(`[1] select "Año" (options: ${Array.from({ length: 50 }, (_, i) => 1900 + i).join(', ')}, +150 more) selected="1900"`);
+  });
   it('reports missing refs', async () => {
     expect(clickRef('999')).toBe(false);
     expect(await typeRef('999', 'x')).toEqual({ ok: false });

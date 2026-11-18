@@ -105,7 +105,15 @@ export function snapshotPage(scopeRef?: string): string | null {
     if (el instanceof HTMLSelectElement) {
       const label = (o: HTMLOptionElement) => esc(o.getAttribute('label') || o.text);
       const selected = [...el.selectedOptions].map(label).join(', ');
-      value = ` (options: ${[...el.options].map(label).filter(Boolean).join(', ').slice(0, 300)})${selected ? ` selected=${JSON.stringify(selected)}` : ''}`;
+      const names = [...el.options].map(label).filter(Boolean);
+      let list = '';
+      let shown = 0;
+      for (const n of names) {
+        if (list.length + n.length > 300) break;
+        list += `${shown++ ? ', ' : ''}${n}`;
+      }
+      const more = names.length - shown ? `${shown ? ', ' : ''}+${names.length - shown} more` : '';
+      value = ` (options: ${list}${more})${selected ? ` selected=${JSON.stringify(selected)}` : ''}`;
     } else if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
       const hidden =
         el instanceof HTMLInputElement && (el.type === 'password' || /cc-number|cc-csc|cc-exp/i.test(el.autocomplete));
