@@ -1,6 +1,6 @@
 import { ErrorCode } from '@senda/protocol';
 import { pressKeyRef, probeKeyTarget } from '../../injected/actions';
-import { CommandError, target } from './shared';
+import { CommandError, refNotFound, target } from './shared';
 import { needsApproval } from '../../core/approvals';
 import { requestApproval, riskSource } from '../approvals';
 import { settingsItem, visitedHostsItem } from '../state';
@@ -17,7 +17,7 @@ export default async function pressKey(p: { key: string; ref?: string; tabId?: n
     func: probeKeyTarget,
     args: p.ref === undefined ? [marker] : [marker, p.ref],
   });
-  if (targetInfo.missing) throw new CommandError(ErrorCode.REF_NOT_FOUND, `Ref ${p.ref} not found; take a new snapshot.`);
+  if (targetInfo.missing) throw refNotFound(p.ref!);
   if (targetInfo.focusFailed)
     throw new CommandError(ErrorCode.INVALID_PARAMS, `Ref ${p.ref} can't take keyboard focus; use browser_click instead.`);
   const submitting = p.key === 'Enter' && targetInfo.formField;
@@ -75,5 +75,5 @@ export default async function pressKey(p: { key: string; ref?: string; tabId?: n
   });
   if (result === 'FOCUS_MOVED')
     throw new CommandError(ErrorCode.INVALID_PARAMS, 'Focus moved before the key press; try again.');
-  return { tabId, focused: result };
+  return { tabId, focused: result, ...(targetInfo.reResolved && { reResolved: true }) };
 }

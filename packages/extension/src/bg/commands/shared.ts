@@ -9,6 +9,8 @@ export class CommandError extends Error {
     super(message);
   }
 }
+export const refNotFound = (ref: string) =>
+  new CommandError(ErrorCode.REF_NOT_FOUND, `Ref ${ref} not found; the page may have replaced it and no single match was left; take a new snapshot.`);
 export const LEAVE_HINT =
   "The page may be showing a 'Leave site?' dialog (unsaved changes). Ask the user to click Leave, or use the page's own Cancel button.";
 // Tabs whose navigation never started, likely held by a "Leave site?" dialog that blocks the page's scripts.

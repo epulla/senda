@@ -2,7 +2,7 @@ import { ErrorCode } from '@senda/protocol';
 import { maskIntact, maskSensitive, pageMetrics, refRect } from '../../injected/screenshot';
 import { noteExternal } from '../approvals';
 import { settingsItem } from '../state';
-import { CommandError, target } from './shared';
+import { CommandError, refNotFound, target } from './shared';
 
 const MAX_SCREENS = 10;
 // Most AI clients reject images over 8000px on a side.
@@ -72,7 +72,7 @@ async function take(p: { ref?: string; fullPage?: boolean; tabId?: number }) {
     return bitmap(image);
   };
   const rect = p.ref === undefined ? null : await run(refRect, [p.ref]);
-  if (p.ref !== undefined && !rect) throw new CommandError(ErrorCode.REF_NOT_FOUND, `Ref ${p.ref} not found; take a new snapshot.`);
+  if (p.ref !== undefined && !rect) throw refNotFound(p.ref);
   // captureVisibleTab only sees the active tab, so show the agent tab briefly and switch back after.
   const [previous] = tab.active ? [] : await browser.tabs.query({ active: true, windowId: tab.windowId });
   let start: Awaited<ReturnType<typeof pageMetrics>> | undefined;

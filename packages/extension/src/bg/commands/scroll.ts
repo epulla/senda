@@ -1,6 +1,5 @@
-import { ErrorCode } from '@senda/protocol';
 import { scrollPage } from '../../injected/actions';
-import { CommandError, target } from './shared';
+import { refNotFound, target } from './shared';
 export default async function scroll(p: { dx?: number; dy?: number; ref?: string; tabId?: number }) {
   const tabId = await target(p.tabId);
   const [{ result } = {}] = await browser.scripting.executeScript({
@@ -8,6 +7,6 @@ export default async function scroll(p: { dx?: number; dy?: number; ref?: string
     func: scrollPage,
     args: p.ref === undefined ? [p.dx ?? 0, p.dy ?? 600] : [p.dx ?? 0, p.dy ?? 600, p.ref],
   });
-  if (!result) throw new CommandError(ErrorCode.REF_NOT_FOUND, `Ref ${p.ref} not found; take a new snapshot.`);
-  return { tabId };
+  if (!result) throw refNotFound(p.ref!);
+  return { tabId, ...result };
 }

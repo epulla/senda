@@ -1,3 +1,4 @@
+import type { FoundRef } from './snapshot';
 // Both functions run in the page through scripting.executeScript, so they must stay self-contained.
 export type PageCard = {
   id: string;
@@ -68,7 +69,9 @@ export function showApprovalCard(card: PageCard, t: PageCardText): void {
   if (card.always) row.append(button(card.always, '', { type: 'senda:answer', answer: 'always' }));
   box.append(row, button(t.openPanel, 'link', { type: 'senda:open-panel' }));
   root.append(style);
-  const target = card.ref ? document.querySelector<HTMLElement>(`[data-senda-ref="${CSS.escape(card.ref)}"]`) : null;
+  const target = card.ref
+    ? (((globalThis as any).__sendaFindRef?.(card.ref) ?? { el: document.querySelector(`[data-senda-ref="${CSS.escape(card.ref)}"]`) }) as FoundRef).el
+    : null;
   const hl = el('div', 'hl');
   if (target) root.append(hl);
   root.append(box);

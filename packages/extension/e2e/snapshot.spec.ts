@@ -83,6 +83,11 @@ test('snapshot right after navigate gives refs that still work after an SPA repl
   const result = await mcp.callTool({ name: 'browser_type', arguments: { ref, text: 'ana@example.test' } });
   expect(result.isError ? (result.content as { text: string }[])[0]?.text : '').toBe('');
   expect(await page.inputValue('input[type=email]')).toBe('ana@example.test');
+  await page.evaluate('render()');
+  const password = text.match(/\[(\d+)\] input "Password"/)![1];
+  const retyped = await mcp.callTool({ name: 'browser_type', arguments: { ref: password, text: 'pw' } });
+  expect(JSON.parse((retyped.content as { text: string }[])[0]!.text)).toMatchObject({ reResolved: true });
+  expect(await page.inputValue('input[type=password]')).toBe('pw');
 });
 
 test('snapshot of a page that never stops changing returns within 3 s after load, then within about a second', async ({ context, mcp, fixtureUrl }) => {

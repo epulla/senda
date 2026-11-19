@@ -64,7 +64,7 @@ describe('snapshot refs and actions', () => {
       clicked = true;
     });
     snapshotPage()!;
-    expect(clickRef('5')).toBe(true);
+    expect(clickRef('5')).toEqual({});
     expect(clicked).toBe(true);
   });
   it('flags injection in snapshot-formatted text', () => {
@@ -174,7 +174,29 @@ describe('snapshot refs and actions', () => {
     expect(snapshotPage()!).toBe(`[1] select "Año" (options: ${Array.from({ length: 50 }, (_, i) => 1900 + i).join(', ')}, +150 more) selected="1900"`);
   });
   it('reports missing refs', async () => {
-    expect(clickRef('999')).toBe(false);
+    expect(clickRef('999')).toBeNull();
     expect(await typeRef('999', 'x')).toEqual({ ok: false });
+  });
+  it('re-resolves refs whose elements the page replaced with equivalent ones', async () => {
+    const form = '<form><input type="email" placeholder="Email"><button type="button">Sign in</button></form>';
+    document.body.innerHTML = form;
+    expect(snapshotPage()!).toBe('[1] input "Email"\n[2] button "Sign in"');
+    document.body.innerHTML = form;
+    let clicked = false;
+    document.querySelector('button')!.addEventListener('click', () => (clicked = true));
+    expect(await typeRef('1', 'ana@example.test')).toEqual({ ok: true, value: 'ana@example.test', reResolved: true });
+    expect(document.querySelector('input')!.value).toBe('ana@example.test');
+    expect(clickRef('2')).toEqual({ reResolved: true });
+    expect(clicked).toBe(true);
+    expect(clickRef('2')).toEqual({ reResolved: true });
+  });
+  it('rejects replaced refs without a single equivalent element', async () => {
+    document.body.innerHTML = '<button>Delete</button>';
+    snapshotPage()!;
+    document.body.innerHTML = '<button>Delete</button><button>Delete</button>';
+    expect(clickRef('1')).toBeNull();
+    document.body.innerHTML = '<button>Remove</button>';
+    expect(clickRef('1')).toBeNull();
+    expect(document.querySelector('[data-senda-ref]')).toBeNull();
   });
 });

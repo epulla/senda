@@ -1,6 +1,6 @@
 import { ErrorCode } from '@senda/protocol';
 import { typeRef } from '../../injected/actions';
-import { CommandError, target } from './shared';
+import { CommandError, refNotFound, target } from './shared';
 import { needsApproval } from '../../core/approvals';
 import { requestApproval, riskSource } from '../approvals';
 import { settingsItem, visitedHostsItem } from '../state';
@@ -45,10 +45,11 @@ export async function fill(ref: string, text: string | string[], submit: boolean
     func: typeRef,
     args: [ref, text, submit, selectOnly],
   });
-  if (!result?.ok) throw new CommandError(ErrorCode.REF_NOT_FOUND, `Ref ${ref} not found; take a new snapshot.`);
+  if (!result?.ok) throw refNotFound(ref);
   if (result.error) throw new CommandError(ErrorCode.INVALID_PARAMS, result.error);
-  if (result.selected) return { tabId, selected: result.selected };
+  const done = { tabId, ...(result.reResolved && { reResolved: true }) };
+  if (result.selected) return { ...done, selected: result.selected };
   if (result.value !== undefined && result.value !== text)
-    return { tabId, warning: `field value changed after typing (now "${result.value}")` };
-  return { tabId };
+    return { ...done, warning: `field value changed after typing (now "${result.value}")` };
+  return done;
 }

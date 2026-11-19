@@ -1,3 +1,4 @@
+import type { FoundRef } from './snapshot';
 // These run via scripting.executeScript, so each must be self-contained.
 
 // Hides passwords, card numbers, one-time codes and similar fields before a capture; on=false undoes it.
@@ -53,7 +54,7 @@ export function maskIntact(token: string): boolean {
 }
 
 export function refRect(ref: string) {
-  const el = document.querySelector(`[data-senda-ref="${CSS.escape(ref)}"]`);
+  const { el } = ((globalThis as any).__sendaFindRef?.(ref) ?? { el: document.querySelector(`[data-senda-ref="${CSS.escape(ref)}"]`) }) as FoundRef;
   if (!el) return null;
   el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   const r = el.getBoundingClientRect();

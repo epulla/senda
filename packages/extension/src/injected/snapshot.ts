@@ -1,7 +1,13 @@
+// What every ref lookup in injected code gets back; reResolved marks a replacement element the page rendered in place of the snapshotted one.
+export type FoundRef = { el: HTMLElement | null; reResolved?: true };
 // Runs via scripting.executeScript, so everything it uses must live inside the function.
 // With scopeRef, only that element's subtree is printed; null means the ref is stale.
+// Also installs globalThis.__sendaFindRef, the shared ref lookup for the other injected functions (same isolated world).
 export function snapshotPage(scopeRef?: string): string | null {
-  const scope = scopeRef === undefined ? document.body : document.querySelector(`[data-senda-ref="${CSS.escape(scopeRef)}"]`);
+  const scope =
+    scopeRef === undefined
+      ? document.body
+      : (((globalThis as any).__sendaFindRef?.(scopeRef) ?? { el: document.querySelector(`[data-senda-ref="${CSS.escape(scopeRef)}"]`) }) as FoundRef).el;
   if (!scope) return null;
   document.querySelectorAll('[data-senda-ref]').forEach((el) => el.removeAttribute('data-senda-ref'));
   const visible = (el: Element) => {
@@ -20,8 +26,9 @@ export function snapshotPage(scopeRef?: string): string | null {
         [...el.childNodes].some((c) => c.nodeType === Node.TEXT_NODE && c.textContent?.trim())));
   let n = 0;
   const refs = new Map<Element, number>();
+  const candidates = 'a,button,input,select,textarea,summary,label,[role],[contenteditable],[onclick],[tabindex],table,ul,ol,dl,form,dialog';
   document
-    .querySelectorAll('a,button,input,select,textarea,summary,label,[role],[contenteditable],[onclick],[tabindex],table,ul,ol,dl,form,dialog')
+    .querySelectorAll(candidates)
     .forEach((el) => {
       if (visible(el) && wantsRef(el)) {
         const ref = ++n;
@@ -68,9 +75,9 @@ export function snapshotPage(scopeRef?: string): string | null {
       return '';
     }
   };
-  const control = (el: Element) => {
-    const ref = refs.get(el);
-    const role = el.getAttribute('role') || (el instanceof HTMLInputElement && ['checkbox', 'radio'].includes(el.type) ? el.type : el.localName);
+  const roleOf = (el: Element) =>
+    el.getAttribute('role') || (el instanceof HTMLInputElement && ['checkbox', 'radio'].includes(el.type) ? el.type : el.localName);
+  const nameOf = (el: Element) => {
     const attr = (a: string) => el.getAttribute(a) || '';
     const labelledBy = attr('aria-labelledby')
       .split(/\s+/)
@@ -80,7 +87,7 @@ export function snapshotPage(scopeRef?: string): string | null {
     const labelText = (el instanceof HTMLInputElement && ['checkbox', 'radio'].includes(el.type)) || isSelect
       ? ((el.closest('label')?.textContent || '').replace(el.textContent || '', '') || (el.id && document.querySelector(`label[for="${CSS.escape(el.id)}"]`)?.textContent) || '')
       : '';
-    const name =
+    return (
       [
         attr('aria-label'),
         labelledBy,
@@ -93,7 +100,34 @@ export function snapshotPage(scopeRef?: string): string | null {
         el.querySelector('img[alt]')?.getAttribute('alt') || '',
       ]
         .map(esc)
-        .find(Boolean) || guessName(el);
+        .find(Boolean) || guessName(el)
+    );
+  };
+  // A ref lost to a re-render (React swapping nodes) resolves to the one unreferenced visible element with the same tag, role and name
+  // as the snapshotted element (kept, detached, so the key is only computed when needed).
+  const keyOf = (el: Element) => `${el.localName}|${roleOf(el)}|${nameOf(el)}`;
+  const byRef = new Map([...refs].map(([el, ref]) => [String(ref), el]));
+  const moved = new Set<string>();
+  (globalThis as any).__sendaFindRef = (ref: string): FoundRef => {
+    const el = document.querySelector<HTMLElement>(`[data-senda-ref="${CSS.escape(ref)}"]`);
+    if (el) return moved.has(ref) ? { el, reResolved: true } : { el };
+    const old = byRef.get(ref);
+    const key = old && keyOf(old);
+    const matches = key
+      ? [...document.querySelectorAll<HTMLElement>(candidates)].filter(
+          (c) => !c.hasAttribute('data-senda-ref') && visible(c) && wantsRef(c) && keyOf(c) === key,
+        )
+      : [];
+    if (matches.length !== 1) return { el: null };
+    matches[0]!.setAttribute('data-senda-ref', ref);
+    moved.add(ref);
+    return { el: matches[0]!, reResolved: true };
+  };
+  const control = (el: Element) => {
+    const ref = refs.get(el);
+    const role = roleOf(el);
+    const name = nameOf(el);
+    const attr = (a: string) => el.getAttribute(a) || '';
     // Dropdown toggles: list the (usually hidden) menu items so the AI knows what the button opens.
     let menu = '';
     if (/dropdown/.test(attr('data-toggle') + attr('data-bs-toggle')) || /^(true|menu)$/.test(attr('aria-haspopup'))) {

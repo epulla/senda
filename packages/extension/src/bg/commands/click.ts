@@ -1,6 +1,6 @@
-import { ErrorCode } from '@senda/protocol';
 import { clickRef } from '../../injected/actions';
-import { CommandError, target } from './shared';
+import type { FoundRef } from '../../injected/snapshot';
+import { refNotFound, target } from './shared';
 import { needsApproval } from '../../core/approvals';
 import { requestApproval, riskSource } from '../approvals';
 import { settingsItem, visitedHostsItem } from '../state';
@@ -13,7 +13,7 @@ export default async function click(p: { ref: string; tabId?: number }) {
   const [{ result: label = '' } = {}] = await browser.scripting.executeScript({
     target: { tabId },
     func: (ref: string) => {
-      const e = document.querySelector<HTMLElement>(`[data-senda-ref="${CSS.escape(ref)}"]`);
+      const { el: e } = ((globalThis as any).__sendaFindRef?.(ref) ?? { el: document.querySelector(`[data-senda-ref="${CSS.escape(ref)}"]`) }) as FoundRef;
       return [e?.textContent, e?.getAttribute('aria-label'), (e as HTMLInputElement)?.value, e?.getAttribute('title')]
         .filter(Boolean)
         .join(' ');
@@ -47,6 +47,6 @@ export default async function click(p: { ref: string; tabId?: number }) {
     });
   await browser.scripting.executeScript({ target: { tabId }, files: ['/runner.js'] });
   const [{ result } = {}] = await browser.scripting.executeScript({ target: { tabId }, func: clickRef, args: [p.ref] });
-  if (!result) throw new CommandError(ErrorCode.REF_NOT_FOUND, `Ref ${p.ref} not found; take a new snapshot.`);
-  return { tabId };
+  if (!result) throw refNotFound(p.ref);
+  return { tabId, ...result };
 }

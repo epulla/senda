@@ -1,15 +1,14 @@
+import type { FoundRef } from './snapshot';
 // clickRef/typeRef run via scripting.executeScript, so they can't import: they use the input helpers
-// the background injects first with /runner.js (see entrypoints/runner.ts).
-export function clickRef(ref: string): boolean {
-  const el = document.querySelector(`[data-senda-ref="${CSS.escape(ref)}"]`) as HTMLElement | null;
-  if (!el) return false;
+// the background injects first with /runner.js (see entrypoints/runner.ts), and refs through snapshotPage's __sendaFindRef.
+export function clickRef(ref: string): { reResolved?: true } | null {
+  const { el, reResolved } = ((globalThis as any).__sendaFindRef?.(ref) ?? { el: document.querySelector(`[data-senda-ref="${CSS.escape(ref)}"]`) }) as FoundRef;
+  if (!el) return null;
   (globalThis as any).__sendaInput.realClick(el);
-  return true;
+  return reResolved ? { reResolved } : {};
 }
 export function probeKeyTarget(marker: string, ref?: string) {
-  const referenced = ref
-    ? document.querySelector<HTMLElement>(`[data-senda-ref="${CSS.escape(ref)}"]`)
-    : undefined;
+  const { el: referenced, reResolved } = ref ? ((globalThis as any).__sendaFindRef?.(ref) ?? { el: document.querySelector(`[data-senda-ref="${CSS.escape(ref)}"]`) }) as FoundRef : { el: undefined, reResolved: undefined };
   if (ref && !referenced) return { missing: true, focusFailed: false, label: '', formField: false };
   referenced?.focus();
   const active = document.activeElement as HTMLElement;
@@ -41,6 +40,7 @@ export function probeKeyTarget(marker: string, ref?: string) {
         active.getAttribute('title') ||
         '',
     formField: !!textInput && !!(active as HTMLInputElement).form,
+    reResolved,
   };
 }
 export function pressKeyRef(key: string, marker: string): string {
@@ -73,8 +73,8 @@ export async function typeRef(
   text: string | string[],
   submit = false,
   selectOnly = false,
-): Promise<{ ok: boolean; value?: string; selected?: string[]; error?: string }> {
-  const el = document.querySelector(`[data-senda-ref="${CSS.escape(ref)}"]`) as HTMLElement | null;
+): Promise<{ ok: boolean; value?: string; selected?: string[]; error?: string; reResolved?: true }> {
+  const { el, reResolved } = ((globalThis as any).__sendaFindRef?.(ref) ?? { el: document.querySelector(`[data-senda-ref="${CSS.escape(ref)}"]`) }) as FoundRef;
   if (!el) return { ok: false };
   const input = (globalThis as any).__sendaInput;
   if (el instanceof HTMLSelectElement) {
@@ -85,7 +85,7 @@ export async function typeRef(
       return { ok: true, error: (error as Error).message };
     }
     if (submit) el.form?.requestSubmit();
-    return { ok: true, selected };
+    return { ok: true, selected, reResolved };
   }
   if (selectOnly) return { ok: true, error: `Ref ${ref} is not a dropdown; use browser_type or browser_click.` };
   input.typeText(el, text);
@@ -93,20 +93,22 @@ export async function typeRef(
     const form = el.closest('form');
     if (form) form.requestSubmit();
     else input.pressKey(el, 'Enter');
-    return { ok: true };
+    return { ok: true, reResolved };
   }
   // Blur so save-on-blur pages commit, then re-read to catch pages that revert the value.
   input.moveFocus(null);
   await new Promise((resolve) => setTimeout(resolve));
   const value = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement ? el.value : el.textContent ?? '';
   input.moveFocus(el);
-  return { ok: true, value };
+  return { ok: true, value, reResolved };
 }
-export function scrollPage(dx = 0, dy = 600, ref?: string): boolean {
-  if (ref !== undefined) {
-    const el = document.querySelector(`[data-senda-ref="${CSS.escape(ref)}"]`) as HTMLElement | null;
-    if (!el) return false;
-    el.scrollIntoView({ block: 'center' });
-  } else window.scrollBy(dx, dy);
-  return true;
+export function scrollPage(dx = 0, dy = 600, ref?: string): { reResolved?: true } | null {
+  if (ref === undefined) {
+    window.scrollBy(dx, dy);
+    return {};
+  }
+  const { el, reResolved } = ((globalThis as any).__sendaFindRef?.(ref) ?? { el: document.querySelector(`[data-senda-ref="${CSS.escape(ref)}"]`) }) as FoundRef;
+  if (!el) return null;
+  el.scrollIntoView({ block: 'center' });
+  return reResolved ? { reResolved } : {};
 }
