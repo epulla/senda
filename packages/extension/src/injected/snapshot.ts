@@ -104,15 +104,14 @@ export function snapshotPage(scopeRef?: string): string | null {
     );
   };
   // A ref lost to a re-render (React swapping nodes) resolves to the one unreferenced visible element with the same tag, role and name
-  // as the snapshotted element (kept, detached, so the key is only computed when needed).
+  // as at snapshot time.
   const keyOf = (el: Element) => `${el.localName}|${roleOf(el)}|${nameOf(el)}`;
-  const byRef = new Map([...refs].map(([el, ref]) => [String(ref), el]));
+  const keys = new Map([...refs].map(([el, ref]) => [String(ref), keyOf(el)]));
   const moved = new Set<string>();
   (globalThis as any).__sendaFindRef = (ref: string): FoundRef => {
     const el = document.querySelector<HTMLElement>(`[data-senda-ref="${CSS.escape(ref)}"]`);
     if (el) return moved.has(ref) ? { el, reResolved: true } : { el };
-    const old = byRef.get(ref);
-    const key = old && keyOf(old);
+    const key = keys.get(ref);
     const matches = key
       ? [...document.querySelectorAll<HTMLElement>(candidates)].filter(
           (c) => !c.hasAttribute('data-senda-ref') && visible(c) && wantsRef(c) && keyOf(c) === key,

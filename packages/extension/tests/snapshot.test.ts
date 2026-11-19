@@ -205,4 +205,19 @@ describe('snapshot refs and actions', () => {
     expect(clickRef('1')).toBeNull();
     expect(document.querySelector('[data-senda-ref]')).toBeNull();
   });
+  it('matches replaced refs by the name they had at snapshot time', () => {
+    document.body.innerHTML = '<label id="l">Save</label><button aria-labelledby="l"></button>';
+    snapshotPage()!;
+    document.getElementById('l')!.textContent = 'Delete';
+    document.querySelector('button')!.replaceWith(document.createElement('button'));
+    document.querySelector('button')!.setAttribute('aria-labelledby', 'l');
+    expect(clickRef('1')).toBeNull();
+    document.body.innerHTML = '<label><input type="checkbox"> Accept terms</label>';
+    expect(snapshotPage()!).toBe('[1] checkbox "Accept terms"');
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    document.querySelector('input')!.replaceWith(box);
+    expect(clickRef('1')).toEqual({ reResolved: true });
+    expect(box.checked).toBe(true);
+  });
 });
