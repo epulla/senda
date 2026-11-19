@@ -1,0 +1,19 @@
+<!doctype html><meta charset="utf-8"><title>SPA login</title>
+<p>Status: <span id="status">checking session</span></p>
+<div id="app"></div>
+<script>
+  // Like a React SPA: a first render, a session check that keeps the page busy, then a new identical form replaces it.
+  const render = () => (document.getElementById('app').innerHTML =
+    '<form><input type="email" placeholder="Email"><input type="password" placeholder="Password"><button type="submit">Sign in</button></form>');
+  render();
+  addEventListener('load', () => {
+    let n = 0;
+    const tick = setInterval(() => (document.getElementById('status').textContent = `checking session ${++n}`), 200);
+    setTimeout(() => {
+      clearInterval(tick);
+      render();
+      document.getElementById('status').textContent = 'ready';
+      window.swapped = true;
+    }, 1500);
+  });
+</script>

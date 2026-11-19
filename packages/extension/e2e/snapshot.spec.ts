@@ -74,6 +74,17 @@ test('snapshot right after a slow load waits for the table its load handler fetc
   expect(await read(mcp)).toContain('row: 2 | Ajax Luis');
 });
 
+test('snapshot right after navigate gives refs that still work after an SPA replaces its first render', async ({ context, mcp, fixtureUrl }) => {
+  await mcp.callTool({ name: 'browser_navigate', arguments: { url: `${fixtureUrl}/site/spa-login.html` } });
+  const text = await read(mcp);
+  const page = context.pages().find((p) => p.url().endsWith('/site/spa-login.html'))!;
+  await page.waitForFunction(() => (window as any).swapped);
+  const ref = text.match(/\[(\d+)\] input "Email"/)![1];
+  const result = await mcp.callTool({ name: 'browser_type', arguments: { ref, text: 'ana@example.test' } });
+  expect(result.isError ? (result.content as { text: string }[])[0]?.text : '').toBe('');
+  expect(await page.inputValue('input[type=email]')).toBe('ana@example.test');
+});
+
 test('snapshot of a page that never stops changing returns within about a second', async ({ mcp, fixtureUrl }) => {
   await mcp.callTool({ name: 'browser_navigate', arguments: { url: `${fixtureUrl}/site/ticker.html` } });
   const start = Date.now();
