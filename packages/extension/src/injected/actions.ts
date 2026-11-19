@@ -4,6 +4,7 @@ import type { FoundRef } from './snapshot';
 export function clickRef(ref: string): { reResolved?: true } | null {
   const { el, reResolved } = ((globalThis as any).__sendaFindRef?.(ref) ?? { el: document.querySelector(`[data-senda-ref="${CSS.escape(ref)}"]`) }) as FoundRef;
   if (!el) return null;
+  (globalThis as any).__sendaActedAt = performance.now();
   (globalThis as any).__sendaInput.realClick(el);
   return reResolved ? { reResolved } : {};
 }
@@ -66,6 +67,7 @@ export function pressKeyRef(key: string, marker: string): string {
     return 'FOCUS_MOVED';
   }
   marked.removeAttribute('data-senda-key-target');
+  (globalThis as any).__sendaActedAt = performance.now();
   return (globalThis as any).__sendaInput.pressKeyAction(key);
 }
 export async function typeRef(
@@ -84,12 +86,16 @@ export async function typeRef(
     } catch (error) {
       return { ok: true, error: (error as Error).message };
     }
-    if (submit) el.form?.requestSubmit();
+    if (submit) {
+      (globalThis as any).__sendaActedAt = performance.now();
+      el.form?.requestSubmit();
+    }
     return { ok: true, selected, reResolved };
   }
   if (selectOnly) return { ok: true, error: `Ref ${ref} is not a dropdown; use browser_type or browser_click.` };
   input.typeText(el, text);
   if (submit) {
+    (globalThis as any).__sendaActedAt = performance.now();
     const form = el.closest('form');
     if (form) form.requestSubmit();
     else input.pressKey(el, 'Enter');

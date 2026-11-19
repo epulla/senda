@@ -257,19 +257,23 @@ export function snapshotPage(scopeRef?: string): string | null {
   return out.length > 50000 ? `${out.slice(0, 50000)}\n[truncated: snapshot over 50000 characters]` : out;
 }
 // Waits until the page finished loading at least 1 s ago and the DOM (incl. attributes) has not changed for 300 ms,
-// at most 1 s in total (3 s within 5 s of load, so SPAs can swap their first render), so content fetched on load (AJAX tables) is there.
-// Timers are not nested, so background throttling stays mild.
+// at most 1 s in total (3 s within 5 s of load or of a Senda click/submit/key press, so SPAs can render or change routes),
+// so content fetched on load (AJAX tables) is there. A page with no text or controls keeps waiting, as SPAs blank out while fetching.
+// Only the empty-page recheck nests timers, so background throttling stays mild.
 export function settleDom(): Promise<void> {
   return new Promise((resolve) => {
     const loaded = () =>
       (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.loadEventEnd || performance.now();
-    const wait = () => setTimeout(done, Math.max(300, loaded() + 1000 - performance.now()));
+    const empty = () => !document.body?.innerText.trim() && !document.body?.querySelector('a,button,input,select,textarea,iframe,[role]');
+    const wait = (): ReturnType<typeof setTimeout> =>
+      setTimeout(() => (empty() ? (quiet = wait()) : done()), Math.max(300, loaded() + 1000 - performance.now()));
     let quiet = wait();
     const observer = new MutationObserver(() => {
       clearTimeout(quiet);
       quiet = wait();
     });
-    const cap = setTimeout(done, performance.now() - loaded() < 5000 ? 3000 : 1000);
+    const recent = (t: number) => performance.now() - t < 5000;
+    const cap = setTimeout(done, recent(loaded()) || recent((globalThis as any).__sendaActedAt ?? -Infinity) ? 3000 : 1000);
     function done() {
       observer.disconnect();
       clearTimeout(quiet);
