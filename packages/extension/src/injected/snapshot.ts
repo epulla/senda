@@ -264,7 +264,12 @@ export function settleDom(): Promise<void> {
   return new Promise((resolve) => {
     const loaded = () =>
       (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.loadEventEnd || performance.now();
-    const empty = () => !document.body?.innerText.trim() && !document.body?.querySelector('a,button,input,select,textarea,iframe,[role]');
+    const empty = () =>
+      !document.body?.innerText.trim() &&
+      ![...(document.body?.querySelectorAll('a,button,input,select,textarea,iframe,[role=button],[role=link],[role=textbox],[role=combobox]') ?? [])].some((el) => {
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      });
     const wait = (): ReturnType<typeof setTimeout> =>
       setTimeout(() => (empty() ? (quiet = wait()) : done()), Math.max(300, loaded() + 1000 - performance.now()));
     let quiet = wait();
