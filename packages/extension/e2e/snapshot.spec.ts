@@ -85,9 +85,13 @@ test('snapshot right after navigate gives refs that still work after an SPA repl
   expect(await page.inputValue('input[type=email]')).toBe('ana@example.test');
 });
 
-test('snapshot of a page that never stops changing returns within about a second', async ({ mcp, fixtureUrl }) => {
+test('snapshot of a page that never stops changing returns within 3 s after load, then within about a second', async ({ context, mcp, fixtureUrl }) => {
   await mcp.callTool({ name: 'browser_navigate', arguments: { url: `${fixtureUrl}/site/ticker.html` } });
-  const start = Date.now();
+  let start = Date.now();
+  expect(await read(mcp)).toContain('Ticks:');
+  expect(Date.now() - start).toBeLessThan(3300);
+  await context.pages().find((p) => p.url().endsWith('/site/ticker.html'))!.waitForTimeout(2000);
+  start = Date.now();
   expect(await read(mcp)).toContain('Ticks:');
   expect(Date.now() - start).toBeLessThan(1200);
 });

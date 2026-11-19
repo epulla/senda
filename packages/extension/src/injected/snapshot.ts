@@ -224,7 +224,8 @@ export function snapshotPage(scopeRef?: string): string | null {
   return out.length > 50000 ? `${out.slice(0, 50000)}\n[truncated: snapshot over 50000 characters]` : out;
 }
 // Waits until the page finished loading at least 1 s ago and the DOM (incl. attributes) has not changed for 300 ms,
-// at most 1 s in total, so content fetched on load (AJAX tables) is there. Timers are not nested, so background throttling stays mild.
+// at most 1 s in total (3 s within 5 s of load, so SPAs can swap their first render), so content fetched on load (AJAX tables) is there.
+// Timers are not nested, so background throttling stays mild.
 export function settleDom(): Promise<void> {
   return new Promise((resolve) => {
     const loaded = () =>
@@ -235,7 +236,7 @@ export function settleDom(): Promise<void> {
       clearTimeout(quiet);
       quiet = wait();
     });
-    const cap = setTimeout(done, 1000);
+    const cap = setTimeout(done, performance.now() - loaded() < 5000 ? 3000 : 1000);
     function done() {
       observer.disconnect();
       clearTimeout(quiet);
