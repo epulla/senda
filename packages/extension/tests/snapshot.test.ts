@@ -190,6 +190,12 @@ describe('snapshot refs and actions', () => {
     expect(clicked).toBe(true);
     expect(clickRef('2')).toEqual({ reResolved: true });
   });
+  it('flags fields the page replaces right after typing', async () => {
+    document.body.innerHTML = '<input aria-label="Email">';
+    snapshotPage()!;
+    document.querySelector('input')!.addEventListener('blur', () => (document.body.innerHTML = '<input aria-label="Email">'));
+    expect(await typeRef('1', 'x')).toEqual({ ok: true, detached: true });
+  });
   it('rejects replaced refs without a single equivalent element', async () => {
     document.body.innerHTML = '<button>Delete</button>';
     snapshotPage()!;

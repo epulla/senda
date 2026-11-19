@@ -49,6 +49,7 @@ export async function fill(ref: string, text: string | string[], submit: boolean
   if (result.error) throw new CommandError(ErrorCode.INVALID_PARAMS, result.error);
   const done = { tabId, ...(result.reResolved && { reResolved: true }) };
   if (result.selected) return { ...done, selected: result.selected };
+  if (result.detached) return { ...done, warning: 'field was replaced right after typing; value may be lost, take a new snapshot' };
   if (result.value !== undefined && result.value !== text)
     return { ...done, warning: `field value changed after typing (now "${result.value}")` };
   return done;

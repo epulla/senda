@@ -73,7 +73,7 @@ export async function typeRef(
   text: string | string[],
   submit = false,
   selectOnly = false,
-): Promise<{ ok: boolean; value?: string; selected?: string[]; error?: string; reResolved?: true }> {
+): Promise<{ ok: boolean; value?: string; selected?: string[]; error?: string; detached?: true; reResolved?: true }> {
   const { el, reResolved } = ((globalThis as any).__sendaFindRef?.(ref) ?? { el: document.querySelector(`[data-senda-ref="${CSS.escape(ref)}"]`) }) as FoundRef;
   if (!el) return { ok: false };
   const input = (globalThis as any).__sendaInput;
@@ -98,6 +98,7 @@ export async function typeRef(
   // Blur so save-on-blur pages commit, then re-read to catch pages that revert the value.
   input.moveFocus(null);
   await new Promise((resolve) => setTimeout(resolve));
+  if (!el.isConnected) return { ok: true, detached: true, reResolved };
   const value = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement ? el.value : el.textContent ?? '';
   input.moveFocus(el);
   return { ok: true, value, reResolved };
