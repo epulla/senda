@@ -90,6 +90,15 @@ test('snapshot right after navigate gives refs that still work after an SPA repl
   expect(await page.inputValue('input[type=password]')).toBe('pw');
 });
 
+test('snapshot right after a click waits for an SPA route change that first empties the page', async ({ context, mcp, fixtureUrl }) => {
+  const text = await open(mcp, `${fixtureUrl}/site/spa-route.html`, 'Sign in');
+  const page = context.pages().find((p) => p.url().endsWith('/site/spa-route.html'))!;
+  await page.waitForFunction(() => performance.now() - performance.getEntriesByType('navigation')[0]!.toJSON().loadEventEnd > 5000);
+  const ref = text.match(/\[(\d+)\] button "Sign in"/)![1];
+  await mcp.callTool({ name: 'browser_click', arguments: { ref } });
+  expect(await read(mcp)).toContain('Dashboard');
+});
+
 test('snapshot of a page that never stops changing returns within 3 s after load, then within about a second', async ({ context, mcp, fixtureUrl }) => {
   await mcp.callTool({ name: 'browser_navigate', arguments: { url: `${fixtureUrl}/site/ticker.html` } });
   let start = Date.now();

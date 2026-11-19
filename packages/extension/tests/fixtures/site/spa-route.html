@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><title>SPA route</title>
+<div id="app"><form><input type="email" placeholder="Email"><button type="submit">Sign in</button></form></div>
+<script>
+  // Like a React SPA logging in: the form unmounts, the app shows nothing while it fetches, then pushState + the dashboard.
+  document.querySelector('form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    document.getElementById('app').innerHTML = '';
+    setTimeout(() => {
+      history.pushState(null, '', '#/dashboard');
+      document.getElementById('app').innerHTML = '<h1>Dashboard</h1><p>Welcome back</p>';
+    }, 1200);
+  });
+</script>
