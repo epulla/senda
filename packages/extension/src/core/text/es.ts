@@ -60,11 +60,11 @@ export const es: Text = {
     downloadPatio: 'Descarga Patio',
     brewPatio: 'En macOS también puedes ejecutar:',
     patioAsk: 'Pídele a tu IA en Patio:',
-    patioPrompt: `Configura Senda en Patio por mí (esta computadora puede ser macOS, Windows o Linux; usa comandos que funcionen aquí):
-1. Revisa que Node.js 20 o más reciente esté instalado (node --version). Si no lo está, dime cómo instalarlo en este sistema y detente.
-2. Descarga https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs en una carpeta llamada .senda dentro de mi carpeta personal (créala si hace falta).
-3. Agrega un servidor MCP de Patio llamado "senda": tipo stdio, comando node, y la ruta absoluta completa de ese archivo como su único argumento. Revisa que arranque.
-4. Llama a la herramienta senda_pairing_code de Senda y muéstrame el código. Si las herramientas de Senda aún no están disponibles en este chat, dime que abra un chat nuevo y diga "Conecta Senda".`,
+    patioPrompt: `Configura Senda en Patio:
+1. Si \`node --version\` falla o es menor que 20, instala Node.js LTS con el gestor de paquetes de este sistema (brew, winget, apt…).
+2. Descarga https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs en ~/.senda/ (sobrescríbelo si ya existe).
+3. Agrega o actualiza el servidor MCP de Patio "senda": stdio, comando = ruta absoluta de node, argumento = ruta absoluta de senda-mcp.mjs.
+4. Llama a senda_pairing_code y dame el código para pegarlo en la página de configuración de Senda en mi navegador. Si las herramientas de Senda aún no están disponibles, dime que abra un chat nuevo y diga "Conecta Senda".`,
     byHand: 'O configúralo a mano',
     patio: 'En Patio, abre Ajustes › Servidores MCP › Agregar servidor, elige Comando local y completa:',
     command: 'Comando',

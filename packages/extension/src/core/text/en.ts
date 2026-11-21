@@ -57,11 +57,11 @@ export const en = {
     downloadPatio: 'Download Patio',
     brewPatio: 'On macOS you can also run:',
     patioAsk: 'Ask your AI in Patio:',
-    patioPrompt: `Set up Senda in Patio for me (this computer may be macOS, Windows or Linux; use commands that work here):
-1. Check that Node.js 20 or newer is installed (node --version). If it isn't, tell me how to install it on this system and stop.
-2. Download https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs into a folder named .senda in my home folder (create it if needed).
-3. Add a Patio MCP server named "senda": kind stdio, command node, and the full absolute path of that file as its only argument. Check that it starts.
-4. Call Senda's senda_pairing_code tool and show me the code. If Senda's tools aren't available in this chat yet, tell me to open a new chat and say "Connect Senda".`,
+    patioPrompt: `Set up Senda in Patio:
+1. If \`node --version\` fails or is below 20, install Node.js LTS with this system's package manager (brew, winget, apt…).
+2. Download https://github.com/epulla/senda/releases/latest/download/senda-mcp.mjs into ~/.senda/ (overwrite if it exists).
+3. Add or update the Patio MCP server "senda": stdio, command = absolute path of node, argument = absolute path of senda-mcp.mjs.
+4. Call senda_pairing_code and give me the code to paste on Senda's setup page in my browser. If Senda's tools aren't available yet, tell me to open a new chat and say "Connect Senda".`,
     byHand: 'Or set it up by hand',
     patio: 'In Patio, open Settings › MCP servers › Add server, choose Local command and fill in:',
     command: 'Command',
