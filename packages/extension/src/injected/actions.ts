@@ -4,7 +4,7 @@ import type { FoundRef } from './snapshot';
 export function clickRef(ref: string): { reResolved?: true } | null {
   const { el, reResolved } = ((globalThis as any).__sendaFindRef?.(ref) ?? { el: document.querySelector(`[data-senda-ref="${CSS.escape(ref)}"]`) }) as FoundRef;
   if (!el) return null;
-  (globalThis as any).__sendaActedAt = performance.now();
+  (globalThis as any).__sendaInput.markAction(el);
   (globalThis as any).__sendaInput.realClick(el);
   return reResolved ? { reResolved } : {};
 }
@@ -67,7 +67,7 @@ export function pressKeyRef(key: string, marker: string): string {
     return 'FOCUS_MOVED';
   }
   marked.removeAttribute('data-senda-key-target');
-  (globalThis as any).__sendaActedAt = performance.now();
+  (globalThis as any).__sendaInput.markAction(marked);
   return (globalThis as any).__sendaInput.pressKeyAction(key);
 }
 export async function typeRef(
@@ -87,7 +87,7 @@ export async function typeRef(
       return { ok: true, error: (error as Error).message };
     }
     if (submit) {
-      (globalThis as any).__sendaActedAt = performance.now();
+      input.markAction(el);
       el.form?.requestSubmit();
     }
     return { ok: true, selected, reResolved };
@@ -95,8 +95,8 @@ export async function typeRef(
   if (selectOnly) return { ok: true, error: `Ref ${ref} is not a dropdown; use browser_type or browser_click.` };
   input.typeText(el, text);
   if (submit) {
-    (globalThis as any).__sendaActedAt = performance.now();
     const form = el.closest('form');
+    input.markAction(form?.querySelector('button:not([type=button]):not([type=reset]),input[type=submit]') ?? el);
     if (form) form.requestSubmit();
     else input.pressKey(el, 'Enter');
     return { ok: true, reResolved };

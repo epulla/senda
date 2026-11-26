@@ -258,9 +258,9 @@ export function snapshotPage(scopeRef?: string): string | null {
 }
 // Waits until the page finished loading at least 1 s ago and the DOM (incl. attributes) has not changed for 300 ms,
 // at most 1 s in total (3 s within 5 s of load or of a Senda click/submit/key press, so SPAs can render or change routes),
-// so content fetched on load (AJAX tables) is there. A page with no text or controls keeps waiting, as SPAs blank out while fetching.
-// Only the empty-page recheck nests timers, so background throttling stays mild.
-export function settleDom(): Promise<void> {
+// so content fetched on load (AJAX tables) is there. A page with no text or controls, or still busy after Senda's last action
+// (see actionBusy), keeps waiting. Resolves true if still busy at the cap. Only those rechecks nest timers, so background throttling stays mild.
+export function settleDom(): Promise<boolean> {
   return new Promise((resolve) => {
     const loaded = () =>
       (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.loadEventEnd || performance.now();
@@ -270,20 +270,21 @@ export function settleDom(): Promise<void> {
         const r = el.getBoundingClientRect();
         return r.width > 0 && r.height > 0;
       });
+    const busy = (): boolean => !!(globalThis as any).__sendaInput?.actionBusy();
     const wait = (): ReturnType<typeof setTimeout> =>
-      setTimeout(() => (empty() ? (quiet = wait()) : done()), Math.max(300, loaded() + 1000 - performance.now()));
+      setTimeout(() => (empty() || busy() ? (quiet = wait()) : done()), Math.max(300, loaded() + 1000 - performance.now()));
     let quiet = wait();
     const observer = new MutationObserver(() => {
       clearTimeout(quiet);
       quiet = wait();
     });
     const recent = (t: number) => performance.now() - t < 5000;
-    const cap = setTimeout(done, recent(loaded()) || recent((globalThis as any).__sendaActedAt ?? -Infinity) ? 3000 : 1000);
+    const cap = setTimeout(done, recent(loaded()) || recent((globalThis as any).__sendaActed?.at ?? -Infinity) ? 3000 : 1000);
     function done() {
       observer.disconnect();
       clearTimeout(quiet);
       clearTimeout(cap);
-      resolve();
+      resolve(busy());
     }
     observer.observe(document, { childList: true, subtree: true, characterData: true, attributes: true });
   });

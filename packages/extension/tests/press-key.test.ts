@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it } from 'vitest';
 import { pressKeyRef, probeKeyTarget } from '../src/injected/actions';
-import { pressKeyAction, pressKey, realClick, typeText } from '../src/injected/input';
+import { markAction, pressKeyAction, pressKey, realClick, typeText } from '../src/injected/input';
 import { needsApproval } from '../src/core/approvals';
 
-(globalThis as any).__sendaInput = { pressKeyAction, pressKey, realClick, typeText };
+(globalThis as any).__sendaInput = { pressKeyAction, pressKey, realClick, typeText, markAction };
 
 beforeEach(() => {
   document.body.innerHTML = '<button>A</button><button>B</button><button>C</button>';
