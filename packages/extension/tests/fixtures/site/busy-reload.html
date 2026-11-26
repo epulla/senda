@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><title>Busy reload</title>
+<form><input type="email" placeholder="Email"><button type="submit">Sign in</button></form>
+<script>
+  // Like Rumbo signing in: the button turns into a blank disabled spinner, then a full page load.
+  document.querySelector('form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const button = document.querySelector('button');
+    button.disabled = true;
+    button.textContent = '';
+    setTimeout(() => location.assign('/site/late.html'), 800);
+  });
+</script>

@@ -31,7 +31,8 @@ export const test = base.extend<{ context: BrowserContext; extensionId: string; 
     let context: BrowserContext | undefined;
     try {
       await ready(fixture);
-      context = await chromium.launchPersistentContext('', { channel: 'chromium', args: [`--disable-extensions-except=${path.join(root, 'packages/extension/.output/chrome-mv3')}`, `--load-extension=${path.join(root, 'packages/extension/.output/chrome-mv3')}`] });
+      // Real Chrome keeps left pages in the back/forward cache; Playwright turns that off by default.
+      context = await chromium.launchPersistentContext('', { channel: 'chromium', ignoreDefaultArgs: ['--disable-back-forward-cache'], args: [`--disable-extensions-except=${path.join(root, 'packages/extension/.output/chrome-mv3')}`, `--load-extension=${path.join(root, 'packages/extension/.output/chrome-mv3')}`] });
       await use(context);
     } finally {
       await context?.close();

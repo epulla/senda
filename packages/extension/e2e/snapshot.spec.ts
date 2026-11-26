@@ -106,6 +106,15 @@ test('snapshot right after a click waits while the clicked button shows it is bu
   expect(await read(mcp)).toContain('Dashboard');
 });
 
+test('snapshot right after a click that loads a new page while the button is busy returns the new page', async ({ mcp, fixtureUrl }) => {
+  const text = await open(mcp, `${fixtureUrl}/site/busy-reload.html`, 'Sign in');
+  const ref = text.match(/\[(\d+)\] button "Sign in"/)![1];
+  await mcp.callTool({ name: 'browser_click', arguments: { ref } });
+  const start = Date.now();
+  expect(await read(mcp)).toContain('row: 2 | Late Luis');
+  expect(Date.now() - start).toBeLessThan(5000);
+});
+
 test('snapshot of a page that never stops changing returns within 3 s after load, then within about a second', async ({ context, mcp, fixtureUrl }) => {
   await mcp.callTool({ name: 'browser_navigate', arguments: { url: `${fixtureUrl}/site/ticker.html` } });
   let start = Date.now();
