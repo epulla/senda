@@ -4,7 +4,7 @@ import { refNotFound, target } from './shared';
 import { noteExternal } from '../approvals';
 export default async function snapshot(p: { ref?: string; tabId?: number }) {
   const tabId = await target(p.tabId);
-  await browser.scripting.executeScript({ target: { tabId }, func: settleDom });
+  const [{ result: busy = false } = {}] = await browser.scripting.executeScript({ target: { tabId }, func: settleDom });
   const tab = await browser.tabs.get(tabId);
   const [{ result = '' } = {}] = await browser.scripting.executeScript({
     target: { tabId },
@@ -17,6 +17,9 @@ export default async function snapshot(p: { ref?: string; tabId?: number }) {
     origin = new URL(tab.url || '').host || 'unknown';
   } catch {}
   await noteExternal(origin, result);
-  const empty = p.ref === undefined && !result.trim() && { note: 'page shows no content yet; it may still be loading — snapshot again' };
-  return { tabId, url: tab.url, title: tab.title, snapshot: wrapExternal(origin, result), ...empty };
+  const note =
+    p.ref === undefined && !result.trim()
+      ? 'page shows no content yet; it may still be loading — snapshot again'
+      : busy && 'page still busy after your last action (e.g. button loading); snapshot again';
+  return { tabId, url: tab.url, title: tab.title, snapshot: wrapExternal(origin, result), ...(note && { note }) };
 }
