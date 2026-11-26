@@ -1,0 +1,15 @@
+<!doctype html><meta charset="utf-8"><title>SPA busy</title>
+<div id="app"><h1>Sign in</h1><form><input type="email" placeholder="Email"><button type="submit">Sign in</button></form></div>
+<script>
+  // Like Rumbo: the form stays while signing in, the button turns into a blank disabled spinner, then pushState + the dashboard.
+  document.querySelector('form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const button = document.querySelector('button');
+    button.disabled = true;
+    button.textContent = '';
+    setTimeout(() => {
+      history.pushState(null, '', '#/dashboard');
+      document.getElementById('app').innerHTML = '<h1>Dashboard</h1><p>Welcome back</p>';
+    }, 1200);
+  });
+</script>

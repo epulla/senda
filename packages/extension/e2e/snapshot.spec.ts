@@ -99,6 +99,13 @@ test('snapshot right after a click waits for an SPA route change that first empt
   expect(await read(mcp)).toContain('Dashboard');
 });
 
+test('snapshot right after a click waits while the clicked button shows it is busy', async ({ mcp, fixtureUrl }) => {
+  const text = await open(mcp, `${fixtureUrl}/site/spa-busy.html`, 'Sign in');
+  const ref = text.match(/\[(\d+)\] button "Sign in"/)![1];
+  await mcp.callTool({ name: 'browser_click', arguments: { ref } });
+  expect(await read(mcp)).toContain('Dashboard');
+});
+
 test('snapshot of a page that never stops changing returns within 3 s after load, then within about a second', async ({ context, mcp, fixtureUrl }) => {
   await mcp.callTool({ name: 'browser_navigate', arguments: { url: `${fixtureUrl}/site/ticker.html` } });
   let start = Date.now();
