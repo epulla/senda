@@ -1,15 +1,20 @@
-const busyState = (el: Element) =>
-  [el.textContent?.trim(), (el as HTMLButtonElement).disabled, el.getAttribute('aria-disabled'), el.getAttribute('aria-busy')].join('|');
+// Signs that an element is waiting on its own action; a plain label change ("Show more" → "Show less") isn't one.
+const busyFlags = (el: Element) => [
+  !!(el as HTMLButtonElement).disabled,
+  el.getAttribute('aria-disabled') === 'true',
+  el.getAttribute('aria-busy') === 'true',
+  !el.textContent?.trim(),
+];
 // Remembers what Senda just acted on, so a snapshot can wait while the page reacts (e.g. a sign-in button turning into a spinner).
 export function markAction(el: Element): void {
-  (globalThis as any).__sendaActed = { at: performance.now(), el, url: location.href, state: busyState(el) };
+  (globalThis as any).__sendaActed = { at: performance.now(), el, url: location.href, flags: busyFlags(el) };
 }
-// True while an action from the last 5 s still looks in progress: its element changed in place on the same URL,
+// True while an action from the last 5 s still looks in progress: on the same URL its element became disabled, busy or blank,
 // or something visible is aria-busy or a progressbar.
 export function actionBusy(): boolean {
   const acted = (globalThis as any).__sendaActed;
   if (!acted || performance.now() - acted.at >= 5000) return false;
-  if (acted.el.isConnected && location.href === acted.url && busyState(acted.el) !== acted.state) return true;
+  if (acted.el.isConnected && location.href === acted.url && busyFlags(acted.el).some((on, i) => on && !acted.flags[i])) return true;
   return [...document.querySelectorAll('[aria-busy=true],[role=progressbar]')].some((el) => {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0;

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { snapshotPage } from '../src/injected/snapshot';
 import { clickRef, typeRef } from '../src/injected/actions';
-import { chooseOption, markAction, moveFocus, pressKey, realClick, typeText } from '../src/injected/input';
+import { actionBusy, chooseOption, markAction, moveFocus, pressKey, realClick, typeText } from '../src/injected/input';
 (globalThis as any).__sendaInput = { realClick, typeText, pressKey, moveFocus, chooseOption, markAction };
 import { looksLikeInjection } from '../src/core/injection';
 import { maskIntact, maskSensitive } from '../src/injected/screenshot';
@@ -219,5 +219,19 @@ describe('snapshot refs and actions', () => {
     document.querySelector('input')!.replaceWith(box);
     expect(clickRef('1')).toEqual({ reResolved: true });
     expect(box.checked).toBe(true);
+  });
+});
+describe('actionBusy', () => {
+  it('treats a disabled or blank acted-on button as busy, but not a plain label change', () => {
+    document.body.innerHTML = '<button>Show more</button>';
+    const button = document.querySelector('button')!;
+    markAction(button);
+    button.textContent = 'Show less';
+    expect(actionBusy()).toBe(false);
+    button.textContent = '';
+    expect(actionBusy()).toBe(true);
+    button.textContent = 'Show less';
+    button.disabled = true;
+    expect(actionBusy()).toBe(true);
   });
 });
