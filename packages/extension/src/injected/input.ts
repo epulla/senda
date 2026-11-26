@@ -17,7 +17,7 @@ export function actionBusy(): boolean {
   if (acted.el.isConnected && location.href === acted.url && busyFlags(acted.el).some((on, i) => on && !acted.flags[i])) return true;
   return [...document.querySelectorAll('[aria-busy=true],[role=progressbar]')].some((el) => {
     const r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0;
+    return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden';
   });
 }
 

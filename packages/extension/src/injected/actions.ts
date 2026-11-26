@@ -79,6 +79,9 @@ export async function typeRef(
   const { el, reResolved } = ((globalThis as any).__sendaFindRef?.(ref) ?? { el: document.querySelector(`[data-senda-ref="${CSS.escape(ref)}"]`) }) as FoundRef;
   if (!el) return { ok: false };
   const input = (globalThis as any).__sendaInput;
+  // A submit is watched on the form's submit button, which is what pages turn into a spinner.
+  const markSubmit = (form: HTMLFormElement | null) =>
+    input.markAction(form?.querySelector('button:not([type=button]):not([type=reset]),input[type=submit]') ?? el);
   if (el instanceof HTMLSelectElement) {
     let selected: string[];
     try {
@@ -87,7 +90,7 @@ export async function typeRef(
       return { ok: true, error: (error as Error).message };
     }
     if (submit) {
-      input.markAction(el);
+      markSubmit(el.form);
       el.form?.requestSubmit();
     }
     return { ok: true, selected, reResolved };
@@ -96,7 +99,7 @@ export async function typeRef(
   input.typeText(el, text);
   if (submit) {
     const form = el.closest('form');
-    input.markAction(form?.querySelector('button:not([type=button]):not([type=reset]),input[type=submit]') ?? el);
+    markSubmit(form);
     if (form) form.requestSubmit();
     else input.pressKey(el, 'Enter');
     return { ok: true, reResolved };

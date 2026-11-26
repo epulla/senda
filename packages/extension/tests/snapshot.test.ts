@@ -234,4 +234,18 @@ describe('actionBusy', () => {
     button.disabled = true;
     expect(actionBusy()).toBe(true);
   });
+  it('counts visible loaders only', () => {
+    document.body.innerHTML = '<button>Go</button><div style="visibility: hidden"><div role="progressbar"></div></div>';
+    markAction(document.querySelector('button')!);
+    expect(actionBusy()).toBe(false);
+    document.querySelector('div')!.removeAttribute('style');
+    expect(actionBusy()).toBe(true);
+  });
+  it('watches the submit button when a dropdown submits its form', async () => {
+    document.body.innerHTML = '<form><select><option>A</option><option>B</option></select><button>Save</button></form>';
+    document.querySelector('form')!.addEventListener('submit', (event) => event.preventDefault());
+    snapshotPage();
+    await typeRef('1', 'B', true);
+    expect((globalThis as any).__sendaActed.el).toBe(document.querySelector('button'));
+  });
 });
